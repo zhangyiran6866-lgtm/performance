@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed } from 'vue';
 import {
   Search,
   Send,
@@ -11,11 +11,11 @@ import {
   Save,
   CalendarDays,
   TrendingUp,
-} from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+} from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 // Mock Data
 const employees = [
@@ -24,7 +24,7 @@ const employees = [
   { id: 'emp-003', name: '穆宏洋', role: 'KA经理', avatar: 'HY', status: 'confirmed' },
   { id: 'emp-004', name: '邱臻', role: 'KA经理', avatar: 'QZ', status: 'disputed' },
   { id: 'emp-005', name: '郑甜甜', role: 'KA经理', avatar: 'TT', status: 'pending_set' },
-]
+];
 
 const mockIndicators = [
   {
@@ -54,65 +54,65 @@ const mockIndicators = [
     source: '管理扣分',
     targetBase: '0',
   },
-]
+];
 
 type EmployeeStatus = 'pending_set' | 'pending_confirm' | 'confirmed' | 'disputed'
 
-const searchQuery = ref('')
-const selectedEmpId = ref('emp-001')
-const targets = ref<Record<string, string>>({})
+const searchQuery = ref('');
+const selectedEmpId = ref('emp-001');
+const targets = ref<Record<string, string>>({});
 
 const getStatusUI = (status: EmployeeStatus) => {
   switch (status) {
-    case 'pending_set':
-      return {
-        icon: CircleDashed,
-        iconClass: 'text-slate-300',
-        badgeText: '待设定目标',
-        badgeClass: 'text-slate-500 bg-slate-50 border-slate-200',
-      }
-    case 'pending_confirm':
-      return {
-        icon: FileSignature,
-        iconClass: 'text-amber-500',
-        badgeText: '待员工签署',
-        badgeClass: 'text-amber-600 bg-amber-50 border-amber-200',
-      }
-    case 'confirmed':
-      return {
-        icon: CheckCircle2,
-        iconClass: 'text-emerald-500',
-        badgeText: '已签署确认',
-        badgeClass: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-      }
-    case 'disputed':
-      return {
-        icon: AlertCircle,
-        iconClass: 'text-red-500',
-        badgeText: '有异议',
-        badgeClass: 'text-red-600 bg-red-50 border-red-200',
-      }
-    default:
-      return { icon: null, iconClass: '', badgeText: '', badgeClass: '' }
+  case 'pending_set':
+    return {
+      icon: CircleDashed,
+      iconClass: 'text-slate-300',
+      badgeText: '待设定目标',
+      badgeClass: 'text-slate-500 bg-slate-50 border-slate-200',
+    };
+  case 'pending_confirm':
+    return {
+      icon: FileSignature,
+      iconClass: 'text-amber-500',
+      badgeText: '待员工签署',
+      badgeClass: 'text-amber-600 bg-amber-50 border-amber-200',
+    };
+  case 'confirmed':
+    return {
+      icon: CheckCircle2,
+      iconClass: 'text-emerald-500',
+      badgeText: '已签署确认',
+      badgeClass: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+    };
+  case 'disputed':
+    return {
+      icon: AlertCircle,
+      iconClass: 'text-red-500',
+      badgeText: '有异议',
+      badgeClass: 'text-red-600 bg-red-50 border-red-200',
+    };
+  default:
+    return { icon: null, iconClass: '', badgeText: '', badgeClass: '' };
   }
-}
+};
 
-const selectedEmp = computed(() => employees.find((e) => e.id === selectedEmpId.value))
+const selectedEmp = computed(() => employees.find((e) => e.id === selectedEmpId.value));
 
 const stats = computed(() => ({
   total: employees.length,
   pendingSet: employees.filter((e) => e.status === 'pending_set').length,
   pendingConfirm: employees.filter((e) => e.status === 'pending_confirm').length,
   confirmed: employees.filter((e) => e.status === 'confirmed').length,
-}))
+}));
 
 const filteredEmployees = computed(() =>
   employees.filter((e) => e.name.includes(searchQuery.value)),
-)
+);
 
 const handleTargetChange = (indId: string, value: string) => {
-  targets.value[indId] = value
-}
+  targets.value[indId] = value;
+};
 </script>
 
 <template>
@@ -123,10 +123,15 @@ const handleTargetChange = (indId: string, value: string) => {
     >
       <div>
         <div class="flex items-center gap-3 mb-1">
-          <Badge variant="secondary" class="bg-blue-100 text-blue-700 hover:bg-blue-100">
+          <Badge
+            variant="secondary"
+            class="bg-blue-100 text-blue-700 hover:bg-blue-100"
+          >
             进行中
           </Badge>
-          <h1 class="text-xl font-bold text-slate-900">2026年3月份初级销售KPI考核</h1>
+          <h1 class="text-xl font-bold text-slate-900">
+            2026年3月份初级销售KPI考核
+          </h1>
         </div>
         <p class="text-sm text-slate-500 flex items-center mt-2">
           <CalendarDays class="h-4 w-4 mr-1.5 opacity-70" />
@@ -136,23 +141,39 @@ const handleTargetChange = (indId: string, value: string) => {
 
       <div class="flex items-center gap-4 lg:gap-8 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
         <div class="text-center shrink-0">
-          <div class="text-2xl font-bold text-slate-700">{{ stats.total }}</div>
-          <div class="text-xs text-slate-500 font-medium mt-1">考核总人数</div>
+          <div class="text-2xl font-bold text-slate-700">
+            {{ stats.total }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            考核总人数
+          </div>
         </div>
-        <div class="h-10 w-px bg-slate-200 hidden lg:block"></div>
+        <div class="h-10 w-px bg-slate-200 hidden lg:block" />
         <div class="text-center shrink-0">
-          <div class="text-2xl font-bold text-amber-500">{{ stats.pendingConfirm }}</div>
-          <div class="text-xs text-slate-500 font-medium mt-1">待签署</div>
+          <div class="text-2xl font-bold text-amber-500">
+            {{ stats.pendingConfirm }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            待签署
+          </div>
         </div>
-        <div class="h-10 w-px bg-slate-200 hidden lg:block"></div>
+        <div class="h-10 w-px bg-slate-200 hidden lg:block" />
         <div class="text-center shrink-0">
-          <div class="text-2xl font-bold text-slate-400">{{ stats.pendingSet }}</div>
-          <div class="text-xs text-slate-500 font-medium mt-1">待设定数值</div>
+          <div class="text-2xl font-bold text-slate-400">
+            {{ stats.pendingSet }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            待设定数值
+          </div>
         </div>
-        <div class="h-10 w-px bg-slate-200 hidden lg:block"></div>
+        <div class="h-10 w-px bg-slate-200 hidden lg:block" />
         <div class="text-center shrink-0">
-          <div class="text-2xl font-bold text-emerald-500">{{ stats.confirmed }}</div>
-          <div class="text-xs text-slate-500 font-medium mt-1">已生效完成</div>
+          <div class="text-2xl font-bold text-emerald-500">
+            {{ stats.confirmed }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            已生效完成
+          </div>
         </div>
       </div>
     </div>
@@ -177,13 +198,13 @@ const handleTargetChange = (indId: string, value: string) => {
           <div
             v-for="emp in filteredEmployees"
             :key="emp.id"
-            @click="selectedEmpId = emp.id"
             :class="[
               'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border',
               selectedEmpId === emp.id
                 ? 'bg-blue-50 border-blue-200 shadow-sm'
                 : 'border-transparent hover:bg-slate-50',
             ]"
+            @click="selectedEmpId = emp.id"
           >
             <Avatar class="h-10 w-10 border border-slate-200 shadow-sm">
               <AvatarFallback
@@ -210,7 +231,9 @@ const handleTargetChange = (indId: string, value: string) => {
                   :class="['h-4 w-4', getStatusUI(emp.status as EmployeeStatus).iconClass]"
                 />
               </div>
-              <div class="text-xs text-slate-500 truncate mt-0.5">{{ emp.role }}</div>
+              <div class="text-xs text-slate-500 truncate mt-0.5">
+                {{ emp.role }}
+              </div>
             </div>
           </div>
         </div>
@@ -233,7 +256,9 @@ const handleTargetChange = (indId: string, value: string) => {
               </Avatar>
               <div class="min-w-0">
                 <div class="flex items-center gap-3">
-                  <h2 class="text-xl font-bold text-slate-900 truncate">{{ selectedEmp.name }}</h2>
+                  <h2 class="text-xl font-bold text-slate-900 truncate">
+                    {{ selectedEmp.name }}
+                  </h2>
                   <Badge
                     variant="outline"
                     :class="getStatusUI(selectedEmp.status as EmployeeStatus).badgeClass"
@@ -247,7 +272,10 @@ const handleTargetChange = (indId: string, value: string) => {
               </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
-              <Button variant="outline" class="bg-white text-slate-700">
+              <Button
+                variant="outline"
+                class="bg-white text-slate-700"
+              >
                 <Save class="h-4 w-4 mr-2 shrink-0" />
                 暂存修改
               </Button>
@@ -265,7 +293,10 @@ const handleTargetChange = (indId: string, value: string) => {
           <div
             class="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 bg-slate-50/30 custom-scrollbar"
           >
-            <div v-if="selectedEmp.status !== 'pending_set'" class="mb-6">
+            <div
+              v-if="selectedEmp.status !== 'pending_set'"
+              class="mb-6"
+            >
               <div
                 class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl inline-flex items-start gap-3 text-sm shadow-sm max-w-full xl:max-w-2xl"
               >
@@ -294,12 +325,19 @@ const handleTargetChange = (indId: string, value: string) => {
                     >
                       {{ index + 1 }}
                     </div>
-                    <h3 class="font-bold text-slate-800">{{ ind.name }}</h3>
-                    <Badge variant="secondary" class="font-normal text-[10px] ml-2">
+                    <h3 class="font-bold text-slate-800">
+                      {{ ind.name }}
+                    </h3>
+                    <Badge
+                      variant="secondary"
+                      class="font-normal text-[10px] ml-2"
+                    >
                       {{ ind.nature }}
                     </Badge>
                   </div>
-                  <div class="text-sm font-semibold text-slate-700">权重: {{ ind.weight }}%</div>
+                  <div class="text-sm font-semibold text-slate-700">
+                    权重: {{ ind.weight }}%
+                  </div>
                 </div>
 
                 <!-- Middle config -->
@@ -307,7 +345,9 @@ const handleTargetChange = (indId: string, value: string) => {
                   <!-- Left: properties -->
                   <div class="flex-1 grid grid-cols-2 gap-4 text-sm w-full">
                     <div>
-                      <div class="text-slate-400 text-xs mb-1">数据采集方式</div>
+                      <div class="text-slate-400 text-xs mb-1">
+                        数据采集方式
+                      </div>
                       <div
                         class="font-medium text-slate-700 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100 inline-block"
                       >
@@ -315,7 +355,9 @@ const handleTargetChange = (indId: string, value: string) => {
                       </div>
                     </div>
                     <div>
-                      <div class="text-slate-400 text-xs mb-1">考核汇聚手段</div>
+                      <div class="text-slate-400 text-xs mb-1">
+                        考核汇聚手段
+                      </div>
                       <div
                         class="font-medium text-slate-700 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-100 inline-block"
                       >
@@ -337,8 +379,8 @@ const handleTargetChange = (indId: string, value: string) => {
                       class="h-11 bg-white border-blue-200 shadow-sm text-center font-bold text-lg focus-visible:ring-blue-500"
                       placeholder="请输入需达成的具体数值..."
                       :value="targets[ind.id] !== undefined ? targets[ind.id] : ind.targetBase"
-                      @input="(e: Event) => handleTargetChange(ind.id, (e.target as HTMLInputElement).value)"
                       :disabled="selectedEmp.status !== 'pending_set'"
+                      @input="(e: Event) => handleTargetChange(ind.id, (e.target as HTMLInputElement).value)"
                     />
                     <div class="mt-2 text-[10px] text-slate-500 text-center">
                       系统将以期末实际总值除以此基数进行计分转换。
@@ -349,7 +391,10 @@ const handleTargetChange = (indId: string, value: string) => {
             </div>
           </div>
         </template>
-        <div v-else class="flex-1 flex flex-col items-center justify-center text-slate-400">
+        <div
+          v-else
+          class="flex-1 flex flex-col items-center justify-center text-slate-400"
+        >
           <TrendingUp class="h-16 w-16 mb-4 opacity-20" />
           <p>请在左侧选择需要设定目标的员工</p>
         </div>

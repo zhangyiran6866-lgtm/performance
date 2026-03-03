@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import type { IndicatorData } from './IndicatorCard.vue'
+import { ref, computed, watch } from 'vue';
+import type { IndicatorData } from './IndicatorCard.vue';
 
 const props = defineProps<{
   isOpen: boolean
   initialData: IndicatorData | null
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'save', data: IndicatorData): void
   (e: 'update:isOpen', value: boolean): void
-}>()
+}>();
 
-const step = ref(1)
+const step = ref(1);
 
 const formData = ref({
   name: '',
@@ -21,18 +21,18 @@ const formData = ref({
   mapField: '',
   period: 'month',
   ruleCode: 'STEP_90_70',
-})
+});
 
-const previewValue = ref(85)
-const deductValue = ref(0)
+const previewValue = ref(85);
+const deductValue = ref(0);
 
 const internalOpen = computed({
   get: () => props.isOpen,
   set: (val) => {
-    emit('update:isOpen', val)
-    if (!val) emit('close')
+    emit('update:isOpen', val);
+    if (!val) emit('close');
   },
-})
+});
 
 watch(
   () => props.isOpen,
@@ -45,7 +45,7 @@ watch(
           mapField: props.initialData.mapField || '',
           period: props.initialData.period || 'month',
           ruleCode: props.initialData.ruleCode || 'STEP_90_70',
-        }
+        };
       } else {
         formData.value = {
           name: '',
@@ -53,53 +53,53 @@ watch(
           mapField: '',
           period: 'month',
           ruleCode: 'STEP_90_70',
-        }
+        };
       }
-      step.value = 1
+      step.value = 1;
     }
-  }
-)
+  },
+);
 
 const handleNext = () => {
-  step.value = 2
-}
+  step.value = 2;
+};
 
 const handleBack = () => {
-  step.value = 1
-}
+  step.value = 1;
+};
 
 const handleSave = () => {
-  let ruleType = ''
-  let ruleDesc = ''
+  let ruleType = '';
+  let ruleDesc = '';
   switch (formData.value.ruleCode) {
-    case 'STEP_90_70':
-      ruleType = '90/70阶梯制(标准型)'
-      ruleDesc = '低于70%得0分，70%-90%线性得分，90%以上得满分。'
-      break
-    case 'STEP_80_70':
-      ruleType = '80/70阶梯制(宽限型)'
-      ruleDesc = '低于70%得0分，70%-80%线性得分，80%即可得满分。'
-      break
-    case 'STEP_100_70':
-      ruleType = '100/70阶梯制(严格型)'
-      ruleDesc = '低于70%得0分，70%-100%线性得分，100%以上得满分。'
-      break
-    case 'BUDGET_DEDUCT':
-      ruleType = '预算控制(扣分型)'
-      ruleDesc = 'X≤0%得满分，X＞0%每多1%扣罚1分，扣完为止。'
-      break
-    case 'BINARY_TASK':
-      ruleType = '任务节点(二元型)'
-      ruleDesc = '按期发布得满分，逾期或未发布得0分。'
-      break
-    case 'QUALITATIVE_100':
-      ruleType = '定性测定(直接打分)'
-      ruleDesc = '由主管主观打分，0-100分。'
-      break
-    case 'QUALITATIVE_LEVEL':
-      ruleType = '定性分级'
-      ruleDesc = '评定为：优秀、良好、普通、不合格。'
-      break
+  case 'STEP_90_70':
+    ruleType = '90/70阶梯制(标准型)';
+    ruleDesc = '低于70%得0分，70%-90%线性得分，90%以上得满分。';
+    break;
+  case 'STEP_80_70':
+    ruleType = '80/70阶梯制(宽限型)';
+    ruleDesc = '低于70%得0分，70%-80%线性得分，80%即可得满分。';
+    break;
+  case 'STEP_100_70':
+    ruleType = '100/70阶梯制(严格型)';
+    ruleDesc = '低于70%得0分，70%-100%线性得分，100%以上得满分。';
+    break;
+  case 'BUDGET_DEDUCT':
+    ruleType = '预算控制(扣分型)';
+    ruleDesc = 'X≤0%得满分，X＞0%每多1%扣罚1分，扣完为止。';
+    break;
+  case 'BINARY_TASK':
+    ruleType = '任务节点(二元型)';
+    ruleDesc = '按期发布得满分，逾期或未发布得0分。';
+    break;
+  case 'QUALITATIVE_100':
+    ruleType = '定性测定(直接打分)';
+    ruleDesc = '由主管主观打分，0-100分。';
+    break;
+  case 'QUALITATIVE_LEVEL':
+    ruleType = '定性分级';
+    ruleDesc = '评定为：优秀、良好、普通、不合格。';
+    break;
   }
 
   const resultData: IndicatorData = {
@@ -107,33 +107,33 @@ const handleSave = () => {
     ...formData.value,
     ruleType,
     ruleDesc,
-  }
+  };
 
-  emit('save', resultData)
-}
+  emit('save', resultData);
+};
 
 const stepScore = computed(() => {
-  const code = formData.value.ruleCode
-  let min = 70
-  let max = 90
-  if (code === 'STEP_80_70') max = 80
-  if (code === 'STEP_100_70') max = 100
+  const code = formData.value.ruleCode;
+  let min = 70;
+  let max = 90;
+  if (code === 'STEP_80_70') max = 80;
+  if (code === 'STEP_100_70') max = 100;
 
-  const val = previewValue.value
-  if (val < min) return 0
-  if (val >= max) return 100
-  return Math.round(((val - min) / (max - min)) * 100)
-})
+  const val = previewValue.value;
+  if (val < min) return 0;
+  if (val >= max) return 100;
+  return Math.round(((val - min) / (max - min)) * 100);
+});
 
 const budgetScore = computed(() => {
-  return Math.max(0, 100 - deductValue.value)
-})
+  return Math.max(0, 100 - deductValue.value);
+});
 
 const onRuleChange = (v: any) => {
-  formData.value.ruleCode = v
-  previewValue.value = 85
-  deductValue.value = 0
-}
+  formData.value.ruleCode = v;
+  previewValue.value = 85;
+  deductValue.value = 0;
+};
 </script>
 
 <template>
@@ -146,7 +146,9 @@ const onRuleChange = (v: any) => {
   >
     <template #header>
       <div class="px-2">
-        <h3 class="text-xl font-bold text-slate-800">{{ initialData ? '编辑指标配置元数据' : '新增指标配置元数据' }}</h3>
+        <h3 class="text-xl font-bold text-slate-800">
+          {{ initialData ? '编辑指标配置元数据' : '新增指标配置元数据' }}
+        </h3>
         <p class="mt-1.5 text-slate-500 text-sm font-normal leading-relaxed">
           采用向导模式配置指标元数据，配置完成后，可配置成考核目标分发汇入各个各业务或职能部门的月底绩效报表中。
         </p>
@@ -154,7 +156,10 @@ const onRuleChange = (v: any) => {
     </template>
 
     <div class="px-2 py-2">
-      <div v-if="step === 1" class="space-y-5 animate-in fade-in">
+      <div
+        v-if="step === 1"
+        class="space-y-5 animate-in fade-in"
+      >
         <div class="space-y-2">
           <label class="text-slate-700 font-semibold text-sm">指标名称</label>
           <el-input
@@ -167,28 +172,69 @@ const onRuleChange = (v: any) => {
         <div class="grid grid-cols-2 gap-5">
           <div class="space-y-2">
             <label class="text-slate-700 font-semibold text-sm">所属维度分类</label>
-            <el-select v-model="formData.dimension" placeholder="选择所属维度" class="w-full custom-select-h10">
-              <el-option label="销售业绩" value="销售业绩" />
-              <el-option label="产品力" value="产品力" />
-              <el-option label="渠道力" value="渠道力" />
-              <el-option label="市场指标" value="市场指标" />
-              <el-option label="费用管理" value="费用管理" />
-              <el-option label="组织力" value="组织力" />
-              <el-option label="行动计划" value="行动计划" />
+            <el-select
+              v-model="formData.dimension"
+              placeholder="选择所属维度"
+              class="w-full custom-select-h10"
+            >
+              <el-option
+                label="销售业绩"
+                value="销售业绩"
+              />
+              <el-option
+                label="产品力"
+                value="产品力"
+              />
+              <el-option
+                label="渠道力"
+                value="渠道力"
+              />
+              <el-option
+                label="市场指标"
+                value="市场指标"
+              />
+              <el-option
+                label="费用管理"
+                value="费用管理"
+              />
+              <el-option
+                label="组织力"
+                value="组织力"
+              />
+              <el-option
+                label="行动计划"
+                value="行动计划"
+              />
             </el-select>
           </div>
           <div class="space-y-2">
             <label class="text-slate-700 font-semibold text-sm">考核周期</label>
-            <el-select v-model="formData.period" placeholder="选择考核周期" class="w-full custom-select-h10">
-              <el-option label="月度" value="month" />
-              <el-option label="季度" value="quarter" />
-              <el-option label="年度" value="year" />
+            <el-select
+              v-model="formData.period"
+              placeholder="选择考核周期"
+              class="w-full custom-select-h10"
+            >
+              <el-option
+                label="月度"
+                value="month"
+              />
+              <el-option
+                label="季度"
+                value="quarter"
+              />
+              <el-option
+                label="年度"
+                value="year"
+              />
             </el-select>
           </div>
         </div>
       </div>
 
-      <div v-else class="space-y-5 animate-in fade-in">
+      <div
+        v-else
+        class="space-y-5 animate-in fade-in"
+      >
         <div class="space-y-2">
           <label class="text-slate-700 font-semibold text-sm">考核记分规则</label>
           <el-select
@@ -197,13 +243,34 @@ const onRuleChange = (v: any) => {
             class="w-full custom-rule-select"
             @change="onRuleChange"
           >
-            <el-option label="90/70阶梯制 (满分90%，底线70%)" value="STEP_90_70" />
-            <el-option label="80/70阶梯制 (满分80%，底线70%)" value="STEP_80_70" />
-            <el-option label="100/70阶梯制 (满分100%，底线70%)" value="STEP_100_70" />
-            <el-option label="预算控制 (超出扣分型)" value="BUDGET_DEDUCT" />
-            <el-option label="任务节点 (完成即满分，逾期0分)" value="BINARY_TASK" />
-            <el-option label="定性测定 (直接打分)" value="QUALITATIVE_100" />
-            <el-option label="定性分级 (优秀/良好/普通/不合格)" value="QUALITATIVE_LEVEL" />
+            <el-option
+              label="90/70阶梯制 (满分90%，底线70%)"
+              value="STEP_90_70"
+            />
+            <el-option
+              label="80/70阶梯制 (满分80%，底线70%)"
+              value="STEP_80_70"
+            />
+            <el-option
+              label="100/70阶梯制 (满分100%，底线70%)"
+              value="STEP_100_70"
+            />
+            <el-option
+              label="预算控制 (超出扣分型)"
+              value="BUDGET_DEDUCT"
+            />
+            <el-option
+              label="任务节点 (完成即满分，逾期0分)"
+              value="BINARY_TASK"
+            />
+            <el-option
+              label="定性测定 (直接打分)"
+              value="QUALITATIVE_100"
+            />
+            <el-option
+              label="定性分级 (优秀/良好/普通/不合格)"
+              value="QUALITATIVE_LEVEL"
+            />
           </el-select>
           <p class="text-xs text-slate-500 ml-1 mt-1.5 leading-relaxed">
             该规则决定了该指标在月末是如何将“实际业务数值”自动转化成“绩效考分”的。
@@ -237,7 +304,7 @@ const onRuleChange = (v: any) => {
               class="absolute text-xs text-slate-500 font-bold -translate-x-1/2 flex flex-col items-center"
               :style="{ left: `${(70 / 120) * 100}%` }"
             >
-              <span class="h-2 w-px bg-slate-400 mb-1"></span>
+              <span class="h-2 w-px bg-slate-400 mb-1" />
               70% (零分线)
             </span>
             <span
@@ -246,7 +313,7 @@ const onRuleChange = (v: any) => {
                 left: `${(formData.ruleCode === 'STEP_80_70' ? 80 : formData.ruleCode === 'STEP_100_70' ? 100 : 90) / 120 * 100}%`,
               }"
             >
-              <span class="h-2 w-px bg-blue-300 mb-1"></span>
+              <span class="h-2 w-px bg-blue-300 mb-1" />
               {{ formData.ruleCode === 'STEP_80_70' ? 80 : formData.ruleCode === 'STEP_100_70' ? 100 : 90 }}% (满分线)
             </span>
             <span class="absolute right-0 text-xs text-slate-400 font-medium translate-x-1/2">120%</span>
@@ -276,14 +343,14 @@ const onRuleChange = (v: any) => {
           />
           <div class="relative w-full h-8 mt-2">
             <span class="absolute left-0 text-xs text-emerald-600 font-bold -translate-x-1/2 flex flex-col items-center">
-              <span class="h-2 w-px bg-emerald-300 mb-1"></span>
+              <span class="h-2 w-px bg-emerald-300 mb-1" />
               ≤0% (满分线)
             </span>
             <span
               class="absolute text-xs text-red-500 font-bold -translate-x-1/2 flex flex-col items-center"
               :style="{ left: '83.33%' }"
             >
-              <span class="h-2 w-px bg-red-300 mb-1"></span>
+              <span class="h-2 w-px bg-red-300 mb-1" />
               100% (扣完线)
             </span>
             <span class="absolute right-0 text-xs text-slate-400 font-medium translate-x-1/2">120%</span>
@@ -293,7 +360,7 @@ const onRuleChange = (v: any) => {
         <div
           v-else
           class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center text-sm text-slate-500 min-h-[100px] shadow-sm"
-         >
+        >
           通用打分预设，直接由考核人在月底输入 0-100 的数值。
         </div>
       </div>
@@ -302,10 +369,17 @@ const onRuleChange = (v: any) => {
     <template #footer>
       <div class="flex items-center justify-between w-full px-2">
         <div>
-          <el-button v-if="step === 2" @click="handleBack">上一步</el-button>
+          <el-button
+            v-if="step === 2"
+            @click="handleBack"
+          >
+            上一步
+          </el-button>
         </div>
         <div class="flex gap-2">
-          <el-button @click="internalOpen = false">取消</el-button>
+          <el-button @click="internalOpen = false">
+            取消
+          </el-button>
           <el-button
             v-if="step === 1"
             type="primary"

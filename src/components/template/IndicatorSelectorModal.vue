@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Search, CheckCircle2 } from 'lucide-vue-next'
+import { ref, computed } from 'vue';
+import { Search, CheckCircle2 } from 'lucide-vue-next';
 import {
   Dialog,
   DialogContent,
@@ -8,21 +8,21 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const props = defineProps<{
   isOpen: boolean
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'add', selected: any[]): void
   (e: 'update:isOpen', value: boolean): void
-}>()
+}>();
 
 // Mock data for library indicators
 const mockLibraryIndicators = [
@@ -75,43 +75,43 @@ const mockLibraryIndicators = [
     ruleType: '预算控制减分',
     ruleCode: 'BUDGET_DEDUCT',
   },
-]
+];
 
-const search = ref('')
-const selectedIds = ref<string[]>([])
+const search = ref('');
+const selectedIds = ref<string[]>([]);
 
 const internalOpen = computed({
   get: () => props.isOpen,
   set: (val) => emit('update:isOpen', val),
-})
+});
 
 const filteredIndicators = computed(() => {
   return mockLibraryIndicators.filter(
-    (ind) => ind.name.includes(search.value) || ind.dimension.includes(search.value)
-  )
-})
+    (ind) => ind.name.includes(search.value) || ind.dimension.includes(search.value),
+  );
+});
 
 const handleToggle = (id: string) => {
   if (selectedIds.value.includes(id)) {
-    selectedIds.value = selectedIds.value.filter((i) => i !== id)
+    selectedIds.value = selectedIds.value.filter((i) => i !== id);
   } else {
-    selectedIds.value.push(id)
+    selectedIds.value.push(id);
   }
-}
+};
 
 const handleConfirm = () => {
   const selectedItems = mockLibraryIndicators.filter((ind) =>
-    selectedIds.value.includes(ind.id)
-  )
-  emit('add', selectedItems)
-  selectedIds.value = [] // reset
-  emit('close')
-}
+    selectedIds.value.includes(ind.id),
+  );
+  emit('add', selectedItems);
+  selectedIds.value = []; // reset
+  emit('close');
+};
 
 const handleCancel = () => {
-  selectedIds.value = []
-  emit('close')
-}
+  selectedIds.value = [];
+  emit('close');
+};
 </script>
 
 <template>
@@ -128,9 +128,9 @@ const handleCancel = () => {
         <div class="relative flex-1">
           <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
           <Input
+            v-model="search"
             placeholder="搜索指标名称或归属维度..."
             class="pl-9"
-            v-model="search"
           />
         </div>
       </div>
@@ -147,13 +147,13 @@ const handleCancel = () => {
             <div
               v-for="ind in filteredIndicators"
               :key="ind.id"
-              @click="handleToggle(ind.id)"
               :class="[
                 'flex items-center gap-3 p-3 rounded-md cursor-pointer transition-all border',
                 selectedIds.includes(ind.id)
                   ? 'bg-blue-50 border-blue-200 shadow-sm'
                   : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200',
               ]"
+              @click="handleToggle(ind.id)"
             >
               <div
                 :class="[
@@ -188,7 +188,10 @@ const handleCancel = () => {
                 </div>
               </div>
             </div>
-            <div v-if="filteredIndicators.length === 0" class="text-center py-10 text-slate-500 text-sm">
+            <div
+              v-if="filteredIndicators.length === 0"
+              class="text-center py-10 text-slate-500 text-sm"
+            >
               未找到对应的指标项
             </div>
           </div>
@@ -196,11 +199,16 @@ const handleCancel = () => {
       </div>
 
       <DialogFooter class="mt-4">
-        <Button variant="outline" @click="handleCancel">取消</Button>
         <Button
-          @click="handleConfirm"
+          variant="outline"
+          @click="handleCancel"
+        >
+          取消
+        </Button>
+        <Button
           class="bg-blue-600 hover:bg-blue-700 text-white"
           :disabled="selectedIds.length === 0"
+          @click="handleConfirm"
         >
           确认添加 ({{ selectedIds.length }})
         </Button>

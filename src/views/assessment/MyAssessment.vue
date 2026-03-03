@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed } from 'vue';
 import {
   AlertCircle,
   FileSignature,
@@ -14,11 +14,11 @@ import {
   ChevronLeft,
   CalendarDays,
   Clock,
-} from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // ========== Mock Data ==========
 const cycleList = [
@@ -54,7 +54,7 @@ const cycleList = [
     totalScore: 76.8,
     grade: 'B',
   },
-]
+];
 
 const personalIndicators = [
   {
@@ -84,7 +84,7 @@ const personalIndicators = [
     source: '管理扣分',
     targetBase: '0',
   },
-]
+];
 
 const resultIndicators = [
   {
@@ -181,29 +181,29 @@ const resultIndicators = [
     supervisorComment:
       '本月处理了3起客诉事件，其中1起处理时效偏长，客户反馈一般。需加强对紧急客诉的响应速度。',
   },
-]
+];
 
 
-const selectedCycleId = ref<string | null>(null)
-const confirmStatus = ref<Record<string, 'pending_confirm' | 'confirmed'>>({})
+const selectedCycleId = ref<string | null>(null);
+const confirmStatus = ref<Record<string, 'pending_confirm' | 'confirmed'>>({});
 
-const selectedCycle = computed(() => cycleList.find((c) => c.id === selectedCycleId.value))
+const selectedCycle = computed(() => cycleList.find((c) => c.id === selectedCycleId.value));
 
 const currentStatus = computed(() => {
-  if (!selectedCycleId.value) return 'pending_confirm'
+  if (!selectedCycleId.value) return 'pending_confirm';
   return (
     confirmStatus.value[selectedCycleId.value] ||
     cycleList.find((c) => c.id === selectedCycleId.value)?.status ||
     'pending_confirm'
-  )
-})
+  );
+});
 
 const handleConfirm = (cycleId: string) => {
-  confirmStatus.value[cycleId] = 'confirmed'
-}
+  confirmStatus.value[cycleId] = 'confirmed';
+};
 
-const quantitativeResults = computed(() => resultIndicators.filter((i) => i.nature === '定量计算'))
-const qualitativeResults = computed(() => resultIndicators.filter((i) => i.nature !== '定量计算'))
+const quantitativeResults = computed(() => resultIndicators.filter((i) => i.nature === '定量计算'));
+const qualitativeResults = computed(() => resultIndicators.filter((i) => i.nature !== '定量计算'));
 </script>
 
 <template>
@@ -211,7 +211,9 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
     <!-- Cycle List View -->
     <template v-if="!selectedCycle">
       <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">我的考核目标与结果</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+          我的考核目标与结果
+        </h1>
         <p class="text-sm text-slate-500 mt-1">
           李小明 (工号: 00192) · 查阅您参与的所有考核周期的目标与最终评价结果。
         </p>
@@ -258,11 +260,14 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                     已结案
                   </Badge>
 
-                  <span v-if="cycle.status === 'pending_confirm'" class="relative flex h-2 w-2">
+                  <span
+                    v-if="cycle.status === 'pending_confirm'"
+                    class="relative flex h-2 w-2"
+                  >
                     <span
                       class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"
-                    ></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    />
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
                   </span>
                 </div>
                 <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
@@ -272,10 +277,17 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
             </div>
 
             <div class="flex items-center gap-4 shrink-0 px-2 lg:px-0 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 mt-1 lg:mt-0">
-              <div v-if="cycle.totalScore !== null" class="flex items-center gap-3">
+              <div
+                v-if="cycle.totalScore !== null"
+                class="flex items-center gap-3"
+              >
                 <div class="text-right">
-                  <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">综合评分</div>
-                  <div class="text-xl font-black text-slate-800 leading-none mt-0.5">{{ cycle.totalScore }}</div>
+                  <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                    综合评分
+                  </div>
+                  <div class="text-xl font-black text-slate-800 leading-none mt-0.5">
+                    {{ cycle.totalScore }}
+                  </div>
                 </div>
                 <div
                   :class="[
@@ -289,7 +301,10 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                   {{ cycle.grade }}
                 </div>
               </div>
-              <div v-else class="text-sm font-medium text-amber-600 flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100">
+              <div
+                v-else
+                class="text-sm font-medium text-amber-600 flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100"
+              >
                 <AlertCircle class="h-4 w-4" /> 需要签署目标
               </div>
               <ArrowRight
@@ -308,8 +323,8 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
         <Button
           variant="ghost"
           size="sm"
-          @click="selectedCycleId = null"
           class="text-slate-500 hover:text-slate-900 -ml-2 hover:bg-slate-100 rounded-lg"
+          @click="selectedCycleId = null"
         >
           <ChevronLeft class="h-4 w-4 mr-1" /> 返回列表
         </Button>
@@ -330,7 +345,9 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
             <CalendarDays class="h-5 w-5" />
           </div>
           <div class="min-w-0">
-            <h1 class="text-xl font-bold text-slate-900 truncate">{{ selectedCycle.title }}</h1>
+            <h1 class="text-xl font-bold text-slate-900 truncate">
+              {{ selectedCycle.title }}
+            </h1>
             <p class="text-sm text-slate-500 mt-1">
               适用人: 李小明 (工号: 00192) · 角色: 区域销售
             </p>
@@ -352,7 +369,10 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
       </div>
 
       <!-- Tabs -->
-      <Tabs defaultValue="goals" class="w-full animate-in fade-in duration-700 delay-150">
+      <Tabs
+        default-value="goals"
+        class="w-full animate-in fade-in duration-700 delay-150"
+      >
         <TabsList class="grid w-full grid-cols-2 h-14 bg-slate-100 p-1.5 rounded-2xl shadow-inner border border-slate-200">
           <TabsTrigger
             value="goals"
@@ -371,7 +391,10 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
         </TabsList>
 
         <!-- ========== Tab 1: 考核目标 ========== -->
-        <TabsContent value="goals" class="mt-8 space-y-8">
+        <TabsContent
+          value="goals"
+          class="mt-8 space-y-8"
+        >
           <div
             v-if="selectedCycle.status === 'pending_confirm' && currentStatus === 'pending_confirm'"
             class="bg-red-50 border-l-4 border-l-red-500 border-y border-r border-y-red-100 border-r-red-100 p-6 rounded-r-2xl shadow-sm flex items-start gap-5 animate-in slide-in-from-top-4 duration-500 active-notice"
@@ -380,7 +403,9 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
               <AlertCircle class="h-6 w-6 text-red-600" />
             </div>
             <div class="flex-1">
-              <h2 class="text-red-900 font-black text-lg">待确认：本月绩效核心目标</h2>
+              <h2 class="text-red-900 font-black text-lg">
+                待确认：本月绩效核心目标
+              </h2>
               <div class="mt-3 text-red-800/80 text-sm leading-relaxed space-y-3">
                 <p>上级主管已正式下发考核基数。请核对下方各项指标权重与目标值是否属实。</p>
                 <div class="bg-white/40 p-3 rounded-lg border border-red-200/50 flex items-center gap-2 text-xs font-bold text-red-600">
@@ -399,8 +424,12 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                 <CheckCircle2 class="h-7 w-7 text-emerald-600" />
               </div>
               <div>
-                <h2 class="text-emerald-900 font-black text-lg">签署生效：年度/月度目标契约已达成</h2>
-                <p class="text-emerald-700/70 text-sm mt-1">签署摘要加密存证：SHA-256 (0x7F...3B91)，请全力以赴！</p>
+                <h2 class="text-emerald-900 font-black text-lg">
+                  签署生效：年度/月度目标契约已达成
+                </h2>
+                <p class="text-emerald-700/70 text-sm mt-1">
+                  签署摘要加密存证：SHA-256 (0x7F...3B91)，请全力以赴！
+                </p>
               </div>
             </div>
           </div>
@@ -428,13 +457,19 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                   <div class="p-6 flex flex-col md:flex-row gap-8 items-center">
                     <div class="flex-1 space-y-4 w-full">
                       <div class="flex items-center gap-3">
-                        <Badge variant="outline" class="h-6 w-6 rounded-full flex items-center justify-center p-0 font-bold bg-slate-50 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
+                        <Badge
+                          variant="outline"
+                          class="h-6 w-6 rounded-full flex items-center justify-center p-0 font-bold bg-slate-50 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"
+                        >
                           {{ index + 1 }}
                         </Badge>
                         <h4 class="text-lg font-black text-slate-800 leading-none group-hover:text-blue-900">
                           {{ ind.name }}
                         </h4>
-                        <Badge variant="secondary" class="font-medium text-[10px] px-2 py-0 border-none bg-slate-100 text-slate-500">
+                        <Badge
+                          variant="secondary"
+                          class="font-medium text-[10px] px-2 py-0 border-none bg-slate-100 text-slate-500"
+                        >
                           {{ ind.nature }}
                         </Badge>
                       </div>
@@ -459,8 +494,11 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                     >
                       <div class="flex justify-between items-center mb-4 relative z-10">
                         <span class="text-[10px] font-bold text-blue-800 uppercase tracking-widest opacity-60">考核基数</span>
-                        <Badge variant="outline" class="bg-white/80 backdrop-blur shadow-sm text-blue-700 border-blue-200/50 font-black">
-                         权重 {{ ind.weight }}%
+                        <Badge
+                          variant="outline"
+                          class="bg-white/80 backdrop-blur shadow-sm text-blue-700 border-blue-200/50 font-black"
+                        >
+                          权重 {{ ind.weight }}%
                         </Badge>
                       </div>
                       <div class="text-3xl font-black text-blue-900 tracking-tight transition-transform duration-300 group-hover:scale-105">
@@ -483,14 +521,24 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
               <FileSignature class="h-10 w-10 opacity-40" />
               <CheckCircle2 class="h-5 w-5 text-emerald-500 absolute -right-1 -bottom-1 bg-white rounded-full" />
             </div>
-            <p class="font-bold tracking-widest text-xs uppercase">电子签名存证系统保护中</p>
-            <p class="text-[10px] mt-1 font-mono">ID: 00192 | SIGNED: 2026-03-01 09:15:30 CST</p>
+            <p class="font-bold tracking-widest text-xs uppercase">
+              电子签名存证系统保护中
+            </p>
+            <p class="text-[10px] mt-1 font-mono">
+              ID: 00192 | SIGNED: 2026-03-01 09:15:30 CST
+            </p>
           </div>
         </TabsContent>
 
         <!-- ========== Tab 2: 考核结果 ========== -->
-        <TabsContent value="results" class="mt-8 space-y-8">
-          <div v-if="selectedCycle.status === 'finished'" class="space-y-10 animate-in fade-in duration-700">
+        <TabsContent
+          value="results"
+          class="mt-8 space-y-8"
+        >
+          <div
+            v-if="selectedCycle.status === 'finished'"
+            class="space-y-10 animate-in fade-in duration-700"
+          >
             <!-- Score Dashboard Card -->
             <div class="relative overflow-hidden group">
               <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-600 group-hover:scale-110 transition-transform duration-1000" />
@@ -507,7 +555,9 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                       <Award class="h-12 w-12 text-blue-100" />
                     </div>
                     <div>
-                      <div class="text-blue-100/70 font-black text-xs uppercase tracking-[0.2em] mb-1">综合考核得分 (满分100)</div>
+                      <div class="text-blue-100/70 font-black text-xs uppercase tracking-[0.2em] mb-1">
+                        综合考核得分 (满分100)
+                      </div>
                       <div class="text-7xl font-black tracking-tighter leading-none shadow-sm drop-shadow-md transition-transform duration-300 hover:translate-x-1">
                         {{ selectedCycle.totalScore }}
                       </div>
@@ -516,16 +566,28 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                   
                   <div class="grid grid-cols-3 md:flex md:items-center gap-4 lg:gap-10 w-full md:w-auto">
                     <div class="bg-black/10 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/5">
-                      <div class="text-2xl font-black">{{ quantitativeResults.length }}</div>
-                      <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">定量</div>
+                      <div class="text-2xl font-black">
+                        {{ quantitativeResults.length }}
+                      </div>
+                      <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">
+                        定量
+                      </div>
                     </div>
                     <div class="bg-black/10 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/5">
-                      <div class="text-2xl font-black">{{ qualitativeResults.length }}</div>
-                      <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">定性</div>
+                      <div class="text-2xl font-black">
+                        {{ qualitativeResults.length }}
+                      </div>
+                      <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">
+                        定性
+                      </div>
                     </div>
                     <div class="bg-white/15 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/20 shadow-xl scale-110">
-                      <div class="text-4xl font-black text-white leading-none">{{ selectedCycle.grade }}</div>
-                      <div class="text-[10px] text-blue-100/70 font-bold mt-1 uppercase">等第</div>
+                      <div class="text-4xl font-black text-white leading-none">
+                        {{ selectedCycle.grade }}
+                      </div>
+                      <div class="text-[10px] text-blue-100/70 font-bold mt-1 uppercase">
+                        等第
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -536,42 +598,80 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
             <div class="space-y-5">
               <div class="flex items-center gap-3">
                 <div class="bg-blue-100 p-2 rounded-xl">
-                    <Calculator class="h-5 w-5 text-blue-600" />
+                  <Calculator class="h-5 w-5 text-blue-600" />
                 </div>
-                <h3 class="text-xl font-black text-slate-900">系统业绩测算明细</h3>
+                <h3 class="text-xl font-black text-slate-900">
+                  系统业绩测算明细
+                </h3>
               </div>
               <div class="grid gap-4">
-                <Card v-for="(ind, index) in quantitativeResults" :key="ind.id" class="border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 group">
+                <Card
+                  v-for="(ind, index) in quantitativeResults"
+                  :key="ind.id"
+                  class="border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-300 group"
+                >
                   <CardContent class="p-6">
                     <div class="flex items-center justify-between mb-6">
                       <div class="flex items-center gap-3">
                         <span class="h-7 w-7 bg-blue-50 text-blue-600 flex items-center justify-center rounded-lg text-sm font-black">{{ index + 1 }}</span>
-                        <h4 class="font-black text-slate-800 text-lg">{{ ind.name }}</h4>
-                        <Badge variant="secondary" class="bg-slate-100 text-slate-500 font-bold text-[10px] h-5">{{ ind.nature }}</Badge>
-                        <Badge variant="outline" class="border-slate-200 text-slate-400 font-bold text-[10px] h-5 hidden sm:inline-flex">{{ ind.ruleType }}</Badge>
+                        <h4 class="font-black text-slate-800 text-lg">
+                          {{ ind.name }}
+                        </h4>
+                        <Badge
+                          variant="secondary"
+                          class="bg-slate-100 text-slate-500 font-bold text-[10px] h-5"
+                        >
+                          {{ ind.nature }}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          class="border-slate-200 text-slate-400 font-bold text-[10px] h-5 hidden sm:inline-flex"
+                        >
+                          {{ ind.ruleType }}
+                        </Badge>
                       </div>
                       <div class="text-right">
-                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">占比权重</div>
-                        <div class="text-lg font-black text-slate-700 leading-none mt-1">{{ ind.weight }}%</div>
+                        <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                          占比权重
+                        </div>
+                        <div class="text-lg font-black text-slate-700 leading-none mt-1">
+                          {{ ind.weight }}%
+                        </div>
                       </div>
                     </div>
                     
                     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                       <div class="bg-slate-50/80 border border-slate-100 p-4 rounded-xl group-hover:bg-white group-hover:shadow-inner transition-all">
-                        <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">目标参考</div>
-                        <div class="font-black text-slate-900">{{ ind.targetValue }} <span class="text-[10px] font-normal text-slate-400">{{ ind.unit }}</span></div>
+                        <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">
+                          目标参考
+                        </div>
+                        <div class="font-black text-slate-900">
+                          {{ ind.targetValue }} <span class="text-[10px] font-normal text-slate-400">{{ ind.unit }}</span>
+                        </div>
                       </div>
                       <div class="bg-slate-50/80 border border-slate-100 p-4 rounded-xl group-hover:bg-white group-hover:shadow-inner transition-all">
-                        <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">业务实际</div>
-                        <div class="font-black text-slate-900">{{ ind.actualValue }} <span class="text-[10px] font-normal text-slate-400">{{ ind.unit }}</span></div>
+                        <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">
+                          业务实际
+                        </div>
+                        <div class="font-black text-slate-900">
+                          {{ ind.actualValue }} <span class="text-[10px] font-normal text-slate-400">{{ ind.unit }}</span>
+                        </div>
                       </div>
                       <div class="bg-blue-50/50 border border-blue-100 p-4 rounded-xl">
-                        <div class="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-tighter">系统原始分</div>
-                        <div class="font-black text-blue-600 text-2xl leading-none">{{ ind.systemScore }}</div>
+                        <div class="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-tighter">
+                          系统原始分
+                        </div>
+                        <div class="font-black text-blue-600 text-2xl leading-none">
+                          {{ ind.systemScore }}
+                        </div>
                       </div>
                       <div class="bg-gradient-to-br from-indigo-50 to-blue-100 border border-blue-200 p-4 rounded-xl shadow-sm scale-105">
-                        <div class="text-[10px] font-black text-blue-800 mb-2 uppercase tracking-tighter">最终核算分</div>
-                        <div class="font-black text-indigo-700 text-3xl leading-none drop-shadow-sm">{{ ind.finalScore }}</div>
+                        <div class="text-[10px] font-black text-blue-800 mb-2 uppercase tracking-tighter">
+                          最终核算分
+                        </div>
+                        <div class="font-black text-indigo-700 text-3xl leading-none drop-shadow-sm">
+                          {{ ind.finalScore }}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -583,41 +683,67 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
             <div class="space-y-5">
               <div class="flex items-center gap-3">
                 <div class="bg-purple-100 p-2 rounded-xl">
-                    <TrendingUp class="h-5 w-5 text-purple-600" />
+                  <TrendingUp class="h-5 w-5 text-purple-600" />
                 </div>
-                <h3 class="text-xl font-black text-slate-900">主管定性评定明细</h3>
+                <h3 class="text-xl font-black text-slate-900">
+                  主管定性评定明细
+                </h3>
               </div>
               <div class="grid gap-4">
-                <Card v-for="(ind, index) in qualitativeResults" :key="ind.id" class="border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <Card
+                  v-for="(ind, index) in qualitativeResults"
+                  :key="ind.id"
+                  class="border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-300"
+                >
                   <CardContent class="p-6">
                     <div class="flex items-center justify-between mb-6">
                       <div class="flex items-center gap-3">
                         <span class="h-7 w-7 bg-purple-50 text-purple-600 flex items-center justify-center rounded-lg text-sm font-black">{{ index + 1 }}</span>
-                        <h4 class="font-black text-slate-800 text-lg">{{ ind.name }}</h4>
-                        <Badge variant="secondary" class="bg-slate-100 text-slate-500 font-bold text-[10px] h-5">{{ ind.nature }}</Badge>
+                        <h4 class="font-black text-slate-800 text-lg">
+                          {{ ind.name }}
+                        </h4>
+                        <Badge
+                          variant="secondary"
+                          class="bg-slate-100 text-slate-500 font-bold text-[10px] h-5"
+                        >
+                          {{ ind.nature }}
+                        </Badge>
                       </div>
                       <div class="flex items-center gap-6">
                         <div class="text-right">
-                          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">权重</div>
-                          <div class="text-base font-black text-slate-600 leading-none mt-1">{{ ind.weight }}%</div>
+                          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                            权重
+                          </div>
+                          <div class="text-base font-black text-slate-600 leading-none mt-1">
+                            {{ ind.weight }}%
+                          </div>
                         </div>
                         <div class="bg-purple-600 rounded-xl px-5 py-3 shadow-lg shadow-purple-100 border-b-4 border-purple-800 flex items-center gap-3">
                           <div class="text-right">
-                            <div class="text-[9px] font-bold text-white/70 uppercase">本项得分</div>
-                            <div class="text-2xl font-black text-white leading-none">{{ ind.finalScore }}</div>
+                            <div class="text-[9px] font-bold text-white/70 uppercase">
+                              本项得分
+                            </div>
+                            <div class="text-2xl font-black text-white leading-none">
+                              {{ ind.finalScore }}
+                            </div>
                           </div>
                           <Star class="h-5 w-5 text-white/50 animate-pulse" />
                         </div>
                       </div>
                     </div>
                     
-                    <div v-if="ind.supervisorComment" class="relative">
+                    <div
+                      v-if="ind.supervisorComment"
+                      class="relative"
+                    >
                       <div class="absolute -left-2 top-0 bottom-0 w-1 bg-purple-200/50 rounded-full" />
                       <div class="bg-slate-50/80 rounded-2xl p-5 border border-slate-100">
                         <div class="text-[10px] font-black text-slate-400 mb-3 flex items-center gap-2">
-                           <Star class="h-3 w-3 text-amber-500" /> 上级实操评语 & 工作反馈
+                          <Star class="h-3 w-3 text-amber-500" /> 上级实操评语 & 工作反馈
                         </div>
-                        <p class="text-sm text-slate-700 leading-relaxed font-medium italic">“ {{ ind.supervisorComment }} ”</p>
+                        <p class="text-sm text-slate-700 leading-relaxed font-medium italic">
+                          “ {{ ind.supervisorComment }} ”
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -626,15 +752,26 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
             </div>
           </div>
 
-          <div v-else class="flex flex-col items-center justify-center py-32 text-slate-400 animate-in zoom-in-95 duration-1000">
+          <div
+            v-else
+            class="flex flex-col items-center justify-center py-32 text-slate-400 animate-in zoom-in-95 duration-1000"
+          >
             <div class="relative bg-slate-50 p-10 rounded-full mb-6 shadow-inner">
-               <Clock class="h-16 w-16 opacity-30 animate-spin-slow" />
-               <Target class="h-8 w-8 text-blue-400 absolute top-2 right-2 opacity-50" />
+              <Clock class="h-16 w-16 opacity-30 animate-spin-slow" />
+              <Target class="h-8 w-8 text-blue-400 absolute top-2 right-2 opacity-50" />
             </div>
-            <p class="text-xl font-black text-slate-800 tracking-tight">绩效大盘尚未正式“结案”</p>
-            <p class="text-sm mt-3 font-medium max-w-xs text-center leading-relaxed">请耐心等待周期进入<b>评分公示期</b>或<b>归档阶段</b>。届时我们将为您解密最终得分与等级。</p>
-            <Button variant="outline" class="mt-8 rounded-full h-11 px-8 border-slate-200 font-bold hover:bg-slate-100" @click="selectedCycleId = null">
-                先去查看其他周期记录
+            <p class="text-xl font-black text-slate-800 tracking-tight">
+              绩效大盘尚未正式“结案”
+            </p>
+            <p class="text-sm mt-3 font-medium max-w-xs text-center leading-relaxed">
+              请耐心等待周期进入<b>评分公示期</b>或<b>归档阶段</b>。届时我们将为您解密最终得分与等级。
+            </p>
+            <Button
+              variant="outline"
+              class="mt-8 rounded-full h-11 px-8 border-slate-200 font-bold hover:bg-slate-100"
+              @click="selectedCycleId = null"
+            >
+              先去查看其他周期记录
             </Button>
           </div>
         </TabsContent>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from 'vue';
 import {
   Dialog,
   DialogContent,
@@ -7,39 +7,39 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { FileText, Database } from 'lucide-vue-next'
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { FileText, Database } from 'lucide-vue-next';
 
 const props = defineProps<{
   isOpen: boolean
   indicators: any[]
-}>()
+}>();
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'confirm'): void
   (e: 'update:isOpen', value: boolean): void
-}>()
+}>();
 
 const internalOpen = computed({
   get: () => props.isOpen,
   set: (val) => emit('update:isOpen', val),
-})
+});
 
 const getMockValues = (i: number) => {
-  const mockAchieved = i === 0 ? 24500 : i === 2 ? 1 : 450
-  const mockTarget = i === 0 ? 50000 : i === 2 ? 0 : 500
+  const mockAchieved = i === 0 ? 24500 : i === 2 ? 1 : 450;
+  const mockTarget = i === 0 ? 50000 : i === 2 ? 0 : 500;
   const progressPercent = Math.min(
     100,
-    Math.max(0, (mockAchieved / (mockTarget || 1)) * 100)
-  )
-  return { mockAchieved, mockTarget, progressPercent }
-}
+    Math.max(0, (mockAchieved / (mockTarget || 1)) * 100),
+  );
+  return { mockAchieved, mockTarget, progressPercent };
+};
 </script>
 
 <template>
@@ -57,13 +57,24 @@ const getMockValues = (i: number) => {
           <!-- Fake Context Header -->
           <div class="flex justify-between items-center pb-2 border-b border-slate-200">
             <span class="text-sm font-semibold text-slate-800">2026年3月15日 日报</span>
-            <Badge variant="outline" class="bg-blue-50 text-blue-600">待提交</Badge>
+            <Badge
+              variant="outline"
+              class="bg-blue-50 text-blue-600"
+            >
+              待提交
+            </Badge>
           </div>
 
-          <div v-if="indicators.length === 0" class="text-center py-10 text-xs text-slate-400">
+          <div
+            v-if="indicators.length === 0"
+            class="text-center py-10 text-xs text-slate-400"
+          >
             模板当前没有任何指标
           </div>
-          <div v-else class="space-y-4">
+          <div
+            v-else
+            class="space-y-4"
+          >
             <div
               v-for="(ind, i) in indicators"
               :key="ind.id"
@@ -71,8 +82,14 @@ const getMockValues = (i: number) => {
             >
               <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <Label class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  <FileText v-if="ind.dataSourceType === 'manual'" class="h-4 w-4 text-emerald-500" />
-                  <Database v-else class="h-4 w-4 text-blue-500" />
+                  <FileText
+                    v-if="ind.dataSourceType === 'manual'"
+                    class="h-4 w-4 text-emerald-500"
+                  />
+                  <Database
+                    v-else
+                    class="h-4 w-4 text-blue-500"
+                  />
                   {{ ind.name }}
                 </Label>
                 <Badge
@@ -84,7 +101,10 @@ const getMockValues = (i: number) => {
                 </Badge>
               </div>
 
-              <div v-if="ind.dataSourceType === 'manual'" class="space-y-2">
+              <div
+                v-if="ind.dataSourceType === 'manual'"
+                class="space-y-2"
+              >
                 <p
                   class="text-xs text-slate-500 font-medium bg-slate-50 p-2 rounded-md border border-slate-100"
                 >
@@ -99,7 +119,10 @@ const getMockValues = (i: number) => {
                   />
                 </div>
               </div>
-              <div v-else class="bg-slate-50/50 rounded-lg p-3">
+              <div
+                v-else
+                class="bg-slate-50/50 rounded-lg p-3"
+              >
                 <div class="flex justify-between items-end mb-2">
                   <div>
                     <p class="text-[11px] text-slate-500 mb-1 font-medium">
@@ -139,7 +162,7 @@ const getMockValues = (i: number) => {
               <textarea
                 class="flex min-h-[80px] w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50 resize-none h-20 shadow-sm"
                 placeholder="工作总结..."
-              ></textarea>
+              />
             </div>
           </div>
           <Button class="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm mt-4">
@@ -148,10 +171,15 @@ const getMockValues = (i: number) => {
         </div>
       </ScrollArea>
       <DialogFooter class="mt-4">
-        <Button variant="outline" @click="emit('close')">取消</Button>
         <Button
-          @click="emit('confirm')"
+          variant="outline"
+          @click="emit('close')"
+        >
+          取消
+        </Button>
+        <Button
           class="bg-emerald-600 hover:bg-emerald-700 text-white"
+          @click="emit('confirm')"
         >
           已确认，界面无误
         </Button>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ArrowRight } from '@element-plus/icons-vue'
-import AppSidebar from '@/components/AppSidebar.vue'
-import { RouterView } from 'vue-router'
+import { ArrowRight } from '@element-plus/icons-vue';
+import AppSidebar from '@/components/AppSidebar.vue';
+import { RouterView } from 'vue-router';
 </script>
 
 <template>
@@ -16,14 +16,16 @@ import { RouterView } from 'vue-router'
         ].join(', '),
         backgroundSize: '100% 100%, 20px 20px',
       }"
-    ></div>
+    />
 
     <AppSidebar class="relative z-20" />
 
     <div class="flex-1 flex flex-col min-w-0 bg-slate-50/30 overflow-hidden relative z-10">
       <header class="flex h-14 shrink-0 items-center gap-2 border-b bg-white/80 backdrop-blur-sm px-4 shadow-sm relative z-20">
         <el-breadcrumb :separator-icon="ArrowRight">
-          <el-breadcrumb-item to="/">工作台</el-breadcrumb-item>
+          <el-breadcrumb-item to="/">
+            工作台
+          </el-breadcrumb-item>
           <el-breadcrumb-item>绩效总览</el-breadcrumb-item>
         </el-breadcrumb>
       </header>

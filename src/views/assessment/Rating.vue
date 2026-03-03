@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed } from 'vue';
 import {
   Search,
   CheckCircle2,
@@ -14,13 +14,13 @@ import {
   Info,
   ChevronDown,
   ChevronRight,
-} from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
+} from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 // Mock Data
 const employees = [
@@ -29,7 +29,7 @@ const employees = [
   { id: 'emp-003', name: '穆宏洋', role: 'KA经理', avatar: 'HY', status: 'pending' },
   { id: 'emp-004', name: '邱臻', role: 'KA经理', avatar: 'QZ', status: 'pending' },
   { id: 'emp-005', name: '郑甜甜', role: 'KA经理', avatar: 'TT', status: 'rated' },
-]
+];
 
 const mockIndicators = [
   {
@@ -92,64 +92,64 @@ const mockIndicators = [
     unit: '元',
     desc: '本月实际完成销售额与HR设定的目标销售额之比，未达标则按阶梯系数折算。',
   },
-]
+];
 
 type EmployeeStatus = 'pending' | 'rated'
 
-const searchQuery = ref('')
-const selectedEmpId = ref('emp-001')
-const scores = ref<Record<string, { score: string; comment: string }>>({})
-const adjustingIds = ref<Record<string, boolean>>({})
+const searchQuery = ref('');
+const selectedEmpId = ref('emp-001');
+const scores = ref<Record<string, { score: string; comment: string }>>({});
+const adjustingIds = ref<Record<string, boolean>>({});
 
 const getStatusUI = (status: EmployeeStatus) => {
   switch (status) {
-    case 'pending':
-      return {
-        icon: CircleDashed,
-        iconClass: 'text-amber-400',
-        badgeText: '待完成打分',
-        badgeClass: 'text-amber-600 bg-amber-50 border-amber-200',
-      }
-    case 'rated':
-      return {
-        icon: CheckCircle2,
-        iconClass: 'text-emerald-500',
-        badgeText: '已完成评估',
-        badgeClass: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-      }
-    default:
-      return { icon: null, iconClass: '', badgeText: '', badgeClass: '' }
+  case 'pending':
+    return {
+      icon: CircleDashed,
+      iconClass: 'text-amber-400',
+      badgeText: '待完成打分',
+      badgeClass: 'text-amber-600 bg-amber-50 border-amber-200',
+    };
+  case 'rated':
+    return {
+      icon: CheckCircle2,
+      iconClass: 'text-emerald-500',
+      badgeText: '已完成评估',
+      badgeClass: 'text-emerald-600 bg-emerald-50 border-emerald-200',
+    };
+  default:
+    return { icon: null, iconClass: '', badgeText: '', badgeClass: '' };
   }
-}
+};
 
-const selectedEmp = computed(() => employees.find((e) => e.id === selectedEmpId.value))
+const selectedEmp = computed(() => employees.find((e) => e.id === selectedEmpId.value));
 
 const stats = computed(() => ({
   total: employees.length,
   pending: employees.filter((e) => e.status === 'pending').length,
   rated: employees.filter((e) => e.status === 'rated').length,
-}))
+}));
 
 const filteredEmployees = computed(() =>
   employees.filter((e) => e.name.includes(searchQuery.value)),
-)
+);
 
 const handleScoreChange = (indId: string, value: string) => {
-  if (!scores.value[indId]) scores.value[indId] = { score: '', comment: '' }
-  scores.value[indId].score = value
-}
+  if (!scores.value[indId]) scores.value[indId] = { score: '', comment: '' };
+  scores.value[indId].score = value;
+};
 
 const handleCommentChange = (indId: string, value: string) => {
-  if (!scores.value[indId]) scores.value[indId] = { score: '', comment: '' }
-  scores.value[indId].comment = value
-}
+  if (!scores.value[indId]) scores.value[indId] = { score: '', comment: '' };
+  scores.value[indId].comment = value;
+};
 
 const toggleAdjustment = (indId: string) => {
-  adjustingIds.value[indId] = !adjustingIds.value[indId]
-}
+  adjustingIds.value[indId] = !adjustingIds.value[indId];
+};
 
-const quantitativeIndicators = computed(() => mockIndicators.filter((i) => i.nature === '定量计算'))
-const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.nature !== '定量计算'))
+const quantitativeIndicators = computed(() => mockIndicators.filter((i) => i.nature === '定量计算'));
+const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.nature !== '定量计算'));
 </script>
 
 <template>
@@ -160,10 +160,15 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
     >
       <div>
         <div class="flex items-center gap-3 mb-1">
-          <Badge variant="secondary" class="bg-purple-100 text-purple-700 hover:bg-purple-100">
+          <Badge
+            variant="secondary"
+            class="bg-purple-100 text-purple-700 hover:bg-purple-100"
+          >
             评分期
           </Badge>
-          <h1 class="text-xl font-bold text-slate-900">2026年3月份初级销售KPI考核</h1>
+          <h1 class="text-xl font-bold text-slate-900">
+            2026年3月份初级销售KPI考核
+          </h1>
         </div>
         <p class="text-sm text-slate-500 flex items-center mt-2">
           <CalendarDays class="h-4 w-4 mr-1.5 opacity-70" />
@@ -173,18 +178,30 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
 
       <div class="flex items-center gap-4 lg:gap-8 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
         <div class="text-center shrink-0">
-          <div class="text-2xl font-bold text-slate-700">{{ stats.total }}</div>
-          <div class="text-xs text-slate-500 font-medium mt-1">需考评总人数</div>
+          <div class="text-2xl font-bold text-slate-700">
+            {{ stats.total }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            需考评总人数
+          </div>
         </div>
-        <div class="h-10 w-px bg-slate-200 hidden md:block"></div>
+        <div class="h-10 w-px bg-slate-200 hidden md:block" />
         <div class="text-center shrink-0">
-          <div class="text-2xl font-bold text-amber-500">{{ stats.pending }}</div>
-          <div class="text-xs text-slate-500 font-medium mt-1">待打分</div>
+          <div class="text-2xl font-bold text-amber-500">
+            {{ stats.pending }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            待打分
+          </div>
         </div>
-        <div class="h-10 w-px bg-slate-200 hidden md:block"></div>
+        <div class="h-10 w-px bg-slate-200 hidden md:block" />
         <div class="text-center shrink-0">
-          <div class="text-2xl font-bold text-emerald-500">{{ stats.rated }}</div>
-          <div class="text-xs text-slate-500 font-medium mt-1">已完成评估</div>
+          <div class="text-2xl font-bold text-emerald-500">
+            {{ stats.rated }}
+          </div>
+          <div class="text-xs text-slate-500 font-medium mt-1">
+            已完成评估
+          </div>
         </div>
       </div>
     </div>
@@ -209,13 +226,13 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
           <div
             v-for="emp in filteredEmployees"
             :key="emp.id"
-            @click="selectedEmpId = emp.id"
             :class="[
               'flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border',
               selectedEmpId === emp.id
                 ? 'bg-purple-50 border-purple-200 shadow-sm'
                 : 'border-transparent hover:bg-slate-50',
             ]"
+            @click="selectedEmpId = emp.id"
           >
             <Avatar class="h-10 w-10 border border-slate-200 shadow-sm shrink-0">
               <AvatarFallback
@@ -244,7 +261,9 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
                   :class="['h-4 w-4', getStatusUI(emp.status as EmployeeStatus).iconClass]"
                 />
               </div>
-              <div class="text-xs text-slate-500 truncate mt-0.5">{{ emp.role }}</div>
+              <div class="text-xs text-slate-500 truncate mt-0.5">
+                {{ emp.role }}
+              </div>
             </div>
           </div>
         </div>
@@ -267,7 +286,9 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
               </Avatar>
               <div class="min-w-0">
                 <div class="flex items-center gap-3">
-                  <h2 class="text-xl font-bold text-slate-900 truncate">{{ selectedEmp.name }}</h2>
+                  <h2 class="text-xl font-bold text-slate-900 truncate">
+                    {{ selectedEmp.name }}
+                  </h2>
                   <Badge
                     variant="outline"
                     :class="getStatusUI(selectedEmp.status as EmployeeStatus).badgeClass"
@@ -281,7 +302,10 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
               </div>
             </div>
             <div class="flex items-center gap-3 shrink-0">
-              <Button variant="outline" class="bg-white text-slate-700">
+              <Button
+                variant="outline"
+                class="bg-white text-slate-700"
+              >
                 <Save class="h-4 w-4 mr-2 shrink-0" />
                 保存草稿
               </Button>
@@ -300,7 +324,9 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
             <div>
               <div class="flex items-center gap-2 mb-4">
                 <Calculator class="h-5 w-5 text-blue-600" />
-                <h3 class="text-lg font-bold text-slate-900">系统测算类指标 (定量)</h3>
+                <h3 class="text-lg font-bold text-slate-900">
+                  系统测算类指标 (定量)
+                </h3>
                 <Badge
                   variant="outline"
                   class="ml-2 font-normal text-slate-500 bg-white shadow-sm border-slate-200"
@@ -324,7 +350,9 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
                       >
                         {{ index + 1 }}
                       </div>
-                      <h3 class="font-bold text-slate-800">{{ ind.name }}</h3>
+                      <h3 class="font-bold text-slate-800">
+                        {{ ind.name }}
+                      </h3>
                       <Badge
                         variant="secondary"
                         class="font-normal text-[10px] ml-2 shrink-0 bg-white border-slate-200"
@@ -361,7 +389,9 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
                           </div>
                         </div>
                         <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg">
-                          <div class="text-xs text-slate-500 mb-1 flex items-center">业务实际值</div>
+                          <div class="text-xs text-slate-500 mb-1 flex items-center">
+                            业务实际值
+                          </div>
                           <div class="font-semibold text-slate-800">
                             {{ ind.actualValue }}
                             <span class="text-xs font-normal text-slate-500">{{ ind.unit }}</span>
@@ -390,8 +420,12 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
                             <Calculator class="h-5 w-5 text-blue-600" />
                           </div>
                           <div>
-                            <div class="text-sm font-semibold text-blue-900">系统计算原始得分</div>
-                            <div class="text-xs text-blue-600 mt-0.5">数据来源：BI系统</div>
+                            <div class="text-sm font-semibold text-blue-900">
+                              系统计算原始得分
+                            </div>
+                            <div class="text-xs text-blue-600 mt-0.5">
+                              数据来源：BI系统
+                            </div>
                           </div>
                         </div>
                         <div class="text-3xl font-black text-blue-700">
@@ -404,13 +438,13 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
                         <Button
                           variant="ghost"
                           size="sm"
-                          @click="toggleAdjustment(ind.id)"
                           :class="[
                             'px-0 hover:bg-transparent transition-colors',
                             adjustingIds[ind.id]
                               ? 'text-blue-600'
                               : 'text-slate-500 hover:text-slate-800',
                           ]"
+                          @click="toggleAdjustment(ind.id)"
                         >
                           <component
                             :is="adjustingIds[ind.id] ? ChevronDown : ChevronRight"
@@ -420,10 +454,10 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
                             <span class="relative flex h-2 w-2">
                               <span
                                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"
-                              ></span>
+                              />
                               <span
                                 class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"
-                              ></span>
+                              />
                             </span>
                             我要人工调整分数
                           </span>
@@ -489,7 +523,9 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
             <div>
               <div class="flex items-center gap-2 mb-4">
                 <TrendingUp class="h-5 w-5 text-purple-600" />
-                <h3 class="text-lg font-bold text-slate-900">主管评价类指标 (定性)</h3>
+                <h3 class="text-lg font-bold text-slate-900">
+                  主管评价类指标 (定性)
+                </h3>
                 <Badge
                   variant="outline"
                   class="ml-2 font-normal text-slate-500 bg-white shadow-sm border-slate-200"
@@ -513,7 +549,9 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
                       >
                         {{ index + 1 }}
                       </div>
-                      <h3 class="font-bold text-slate-800">{{ ind.name }}</h3>
+                      <h3 class="font-bold text-slate-800">
+                        {{ ind.name }}
+                      </h3>
                       <Badge
                         variant="secondary"
                         class="font-normal text-[10px] ml-2 shrink-0 bg-white border-slate-200"
@@ -589,7 +627,10 @@ const qualitativeIndicators = computed(() => mockIndicators.filter((i) => i.natu
             </div>
           </div>
         </template>
-        <div v-else class="flex-1 flex flex-col items-center justify-center text-slate-400">
+        <div
+          v-else
+          class="flex-1 flex flex-col items-center justify-center text-slate-400"
+        >
           <TrendingUp class="h-16 w-16 mb-4 opacity-20" />
           <p>请在左侧选择需要评价打分的员工</p>
         </div>

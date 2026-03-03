@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed } from 'vue';
 import {
   Warning,
   Edit,
@@ -13,7 +13,7 @@ import {
   Operation as Calculator,
   Wallet,
   PriceTag as Award,
-} from '@element-plus/icons-vue'
+} from '@element-plus/icons-vue';
 
 // Define Props
 interface Props {
@@ -21,7 +21,7 @@ interface Props {
 }
 const props = withDefaults(defineProps<Props>(), {
   isLocked: false,
-})
+});
 
 // ========== Mock Data ==========
 const cycleList = [
@@ -57,7 +57,7 @@ const cycleList = [
     totalScore: 76.8,
     grade: 'B',
   },
-]
+];
 
 const personalIndicators = [
   {
@@ -87,7 +87,7 @@ const personalIndicators = [
     source: '管理扣分',
     targetBase: '0',
   },
-]
+];
 
 const resultIndicators = [
   {
@@ -184,29 +184,29 @@ const resultIndicators = [
     supervisorComment:
       '本月处理了3起客诉事件，其中1起处理时效偏长，客户反馈一般。需加强对紧急客诉的响应速度。',
   },
-]
+];
 
 
-const selectedCycleId = ref<string | null>(null)
-const confirmStatus = ref<Record<string, 'pending_confirm' | 'confirmed'>>({})
+const selectedCycleId = ref<string | null>(null);
+const confirmStatus = ref<Record<string, 'pending_confirm' | 'confirmed'>>({});
 
-const selectedCycle = computed(() => cycleList.find((c) => c.id === selectedCycleId.value))
+const selectedCycle = computed(() => cycleList.find((c) => c.id === selectedCycleId.value));
 
 const currentStatus = computed(() => {
-  if (!selectedCycleId.value) return 'pending_confirm'
+  if (!selectedCycleId.value) return 'pending_confirm';
   return (
     confirmStatus.value[selectedCycleId.value] ||
     cycleList.find((c) => c.id === selectedCycleId.value)?.status ||
     'pending_confirm'
-  )
-})
+  );
+});
 
 const handleConfirm = (cycleId: string) => {
-  confirmStatus.value[cycleId] = 'confirmed'
-}
+  confirmStatus.value[cycleId] = 'confirmed';
+};
 
-const quantitativeResults = computed(() => resultIndicators.filter((i) => i.nature === '定量计算'))
-const qualitativeResults = computed(() => resultIndicators.filter((i) => i.nature !== '定性评分')) // Fixed filter
+const quantitativeResults = computed(() => resultIndicators.filter((i) => i.nature === '定量计算'));
+const qualitativeResults = computed(() => resultIndicators.filter((i) => i.nature !== '定性评分')); // Fixed filter
 </script>
 
 <template>
@@ -215,7 +215,9 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
     <template v-if="!selectedCycle">
       <div class="px-8 py-10 space-y-8 overflow-y-auto custom-scrollbar">
         <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <h2 class="text-3xl font-black tracking-tight text-slate-900">我的考核目标与结果</h2>
+          <h2 class="text-3xl font-black tracking-tight text-slate-900">
+            我的考核目标与结果
+          </h2>
           <p class="text-base text-slate-500 mt-2">
             李小明 (工号: 00192) · 查阅您参与的所有考核周期的目标与最终评价结果。
           </p>
@@ -241,7 +243,9 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                       : 'bg-blue-50 text-blue-600',
                   ]"
                 >
-                  <el-icon :size="24"><Calendar /></el-icon>
+                  <el-icon :size="24">
+                    <Calendar />
+                  </el-icon>
                 </div>
                 <div class="min-w-0">
                   <div class="flex items-center gap-3 flex-wrap">
@@ -272,10 +276,17 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
               </div>
 
               <div class="flex items-center gap-4 shrink-0 px-2 lg:px-0 w-full lg:w-auto justify-between lg:justify-end border-t lg:border-t-0 pt-3 lg:pt-0 mt-1 lg:mt-0">
-                <div v-if="cycle.totalScore !== null" class="flex items-center gap-3">
+                <div
+                  v-if="cycle.totalScore !== null"
+                  class="flex items-center gap-3"
+                >
                   <div class="text-right text-left">
-                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">综合评分</div>
-                    <div class="text-xl font-black text-slate-800 leading-none mt-0.5">{{ cycle.totalScore }}</div>
+                    <div class="text-[10px] text-slate-400 font-medium uppercase tracking-wider">
+                      综合评分
+                    </div>
+                    <div class="text-xl font-black text-slate-800 leading-none mt-0.5">
+                      {{ cycle.totalScore }}
+                    </div>
                   </div>
                   <div
                     :class="[
@@ -289,10 +300,15 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                     {{ cycle.grade }}
                   </div>
                 </div>
-                <div v-else class="text-sm font-medium text-amber-600 flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100">
+                <div
+                  v-else
+                  class="text-sm font-medium text-amber-600 flex items-center gap-1 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100"
+                >
                   <el-icon><Warning /></el-icon> 需要签署目标
                 </div>
-                <el-icon class="h-5 w-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"><Right /></el-icon>
+                <el-icon class="h-5 w-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all">
+                  <Right />
+                </el-icon>
               </div>
             </div>
           </el-card>
@@ -307,10 +323,12 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
         <div class="px-6 pt-6 flex items-center gap-3 animate-in fade-in duration-300">
           <el-button
             link
-            @click="selectedCycleId = null"
             class="text-slate-500 hover:text-slate-900 -ml-2 rounded-lg"
+            @click="selectedCycleId = null"
           >
-            <el-icon class="mr-1"><ArrowLeft /></el-icon> 返回列表
+            <el-icon class="mr-1">
+              <ArrowLeft />
+            </el-icon> 返回列表
           </el-button>
         </div>
 
@@ -327,10 +345,14 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                     : 'bg-blue-50 text-blue-600',
                 ]"
               >
-                <el-icon :size="20"><Calendar /></el-icon>
+                <el-icon :size="20">
+                  <Calendar />
+                </el-icon>
               </div>
               <div class="min-w-0">
-                <h3 class="text-xl font-bold text-slate-900 truncate">{{ selectedCycle.title }}</h3>
+                <h3 class="text-xl font-bold text-slate-900 truncate">
+                  {{ selectedCycle.title }}
+                </h3>
                 <p class="text-sm text-slate-500 mt-1">
                   李小明 (工号: 00192) · 角色: 区域销售
                 </p>
@@ -344,17 +366,22 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                 type="danger"
                 size="large"
                 class="custom-confirm-button"
-                @click="handleConfirm(selectedCycle.id)"
                 :disabled="props.isLocked"
+                @click="handleConfirm(selectedCycle.id)"
               >
-                <el-icon class="mr-2"><Edit /></el-icon>
+                <el-icon class="mr-2">
+                  <Edit />
+                </el-icon>
                 我已完整阅读，确认签署
               </el-button>
             </div>
           </div>
 
           <!-- Tabs -->
-          <el-tabs type="border-card" class="custom-tabs-borderless animate-in fade-in duration-700 delay-150">
+          <el-tabs
+            type="border-card"
+            class="custom-tabs-borderless animate-in fade-in duration-700 delay-150"
+          >
             <el-tab-pane label="考核指标设定 (目标)">
               <template #label>
                 <span class="flex items-center gap-2 font-bold">
@@ -367,10 +394,17 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                   class="bg-red-50 border-l-4 border-l-red-500 border-y border-r border-y-red-100 border-r-red-100 p-6 rounded-r-2xl shadow-sm flex items-start gap-5 animate-in slide-in-from-top-4 duration-500 active-notice"
                 >
                   <div class="bg-red-100 p-3 rounded-2xl shrink-0 shadow-sm">
-                    <el-icon :size="24" class="text-red-600"><Warning /></el-icon>
+                    <el-icon
+                      :size="24"
+                      class="text-red-600"
+                    >
+                      <Warning />
+                    </el-icon>
                   </div>
                   <div class="flex-1 text-left">
-                    <h4 class="text-red-900 font-black text-lg">待确认：本月绩效核心目标</h4>
+                    <h4 class="text-red-900 font-black text-lg">
+                      待确认：本月绩效核心目标
+                    </h4>
                     <div class="mt-3 text-red-800/80 text-sm leading-relaxed space-y-3">
                       <p>上级主管已正式下发考核基数。请核对下方各项指标权重与目标值是否属实。</p>
                       <div class="bg-white/40 p-3 rounded-lg border border-red-200/50 flex items-center gap-2 text-xs font-bold text-red-600">
@@ -386,18 +420,29 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                 >
                   <div class="flex items-center gap-5">
                     <div class="bg-emerald-100 p-3 rounded-full shadow-sm">
-                      <el-icon :size="28" class="text-emerald-600"><CircleCheck /></el-icon>
+                      <el-icon
+                        :size="28"
+                        class="text-emerald-600"
+                      >
+                        <CircleCheck />
+                      </el-icon>
                     </div>
                     <div>
-                      <h4 class="text-emerald-900 font-black text-lg">签署生效：年度/月度目标契约已达成</h4>
-                      <p class="text-emerald-700/70 text-sm mt-1">签署摘要加密存证：SHA-256 (0x7F...3B91)，请全力以赴！</p>
+                      <h4 class="text-emerald-900 font-black text-lg">
+                        签署生效：年度/月度目标契约已达成
+                      </h4>
+                      <p class="text-emerald-700/70 text-sm mt-1">
+                        签署摘要加密存证：SHA-256 (0x7F...3B91)，请全力以赴！
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 <div class="space-y-6 text-left">
                   <h4 class="font-black text-slate-800 flex items-center gap-3 pb-3 border-b-2 border-slate-100">
-                    <el-icon class="text-blue-600"><Calculator /></el-icon>
+                    <el-icon class="text-blue-600">
+                      <Calculator />
+                    </el-icon>
                     本期考核指标明细
                   </h4>
                   <div class="grid gap-4">
@@ -418,13 +463,22 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                       <div class="p-2 flex flex-col md:flex-row gap-8 items-center">
                         <div class="flex-1 space-y-4 w-full">
                           <div class="flex items-center gap-4">
-                            <el-tag size="default" effect="plain" class="rounded-full w-8 h-8 p-0 border-slate-200 text-slate-500 font-bold bg-slate-50 flex items-center justify-center">
+                            <el-tag
+                              size="default"
+                              effect="plain"
+                              class="rounded-full w-8 h-8 p-0 border-slate-200 text-slate-500 font-bold bg-slate-50 flex items-center justify-center"
+                            >
                               {{ index + 1 }}
                             </el-tag>
                             <h5 class="text-xl font-black text-slate-800 leading-none">
                               {{ ind.name }}
                             </h5>
-                            <el-tag size="default" effect="light" type="info" class="border-none bg-slate-100 text-slate-500 font-bold px-3">
+                            <el-tag
+                              size="default"
+                              effect="light"
+                              type="info"
+                              class="border-none bg-slate-100 text-slate-500 font-bold px-3"
+                            >
                               {{ ind.nature }}
                             </el-tag>
                           </div>
@@ -443,14 +497,20 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                         <div class="w-full md:w-[260px] shrink-0 bg-blue-50/50 rounded-2xl border border-blue-100/50 p-5 relative overflow-hidden">
                           <div class="flex justify-between items-center mb-4 relative z-10">
                             <span class="text-[10px] font-bold text-blue-800 uppercase tracking-widest opacity-60">考核基数</span>
-                            <el-tag effect="dark" type="primary" class="font-black border-none">
-                             权重 {{ ind.weight }}%
+                            <el-tag
+                              effect="dark"
+                              type="primary"
+                              class="font-black border-none"
+                            >
+                              权重 {{ ind.weight }}%
                             </el-tag>
                           </div>
                           <div class="text-3xl font-black text-blue-900 tracking-tight">
                             {{ ind.targetBase || '待设定' }}
                           </div>
-                          <el-icon class="absolute -right-2 -bottom-2 text-6xl text-blue-100/30 rotate-12"><Aim /></el-icon>
+                          <el-icon class="absolute -right-2 -bottom-2 text-6xl text-blue-100/30 rotate-12">
+                            <Aim />
+                          </el-icon>
                         </div>
                       </div>
                     </el-card>
@@ -465,21 +525,35 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                   <el-icon><Aim /></el-icon>最终考核结果 (闭案)
                 </span>
               </template>
-              <div v-if="selectedCycle.status === 'finished'" class="mt-4 space-y-10 animate-in fade-in duration-700">
+              <div
+                v-if="selectedCycle.status === 'finished'"
+                class="mt-4 space-y-10 animate-in fade-in duration-700"
+              >
                 <!-- Score Dashboard Card -->
                 <div class="relative overflow-hidden group rounded-2xl bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-600 p-8 text-white shadow-xl">
                   <div class="absolute inset-0 opacity-10 pointer-events-none">
-                    <el-icon class="absolute -left-10 -bottom-10 text-[120px] rotate-12"><TrendCharts /></el-icon>
-                    <el-icon class="absolute -right-10 -top-10 text-[120px] -rotate-12"><Award /></el-icon>
+                    <el-icon class="absolute -left-10 -bottom-10 text-[120px] rotate-12">
+                      <TrendCharts />
+                    </el-icon>
+                    <el-icon class="absolute -right-10 -top-10 text-[120px] -rotate-12">
+                      <Award />
+                    </el-icon>
                   </div>
                   
                   <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
                     <div class="flex items-center gap-6">
                       <div class="bg-white/10 backdrop-blur-md rounded-3xl p-5 shadow-2xl border border-white/20">
-                        <el-icon :size="48" class="text-blue-100"><Award /></el-icon>
+                        <el-icon
+                          :size="48"
+                          class="text-blue-100"
+                        >
+                          <Award />
+                        </el-icon>
                       </div>
                       <div class="text-left">
-                        <div class="text-blue-100/70 font-black text-xs uppercase tracking-[0.2em] mb-1">综合考核得分</div>
+                        <div class="text-blue-100/70 font-black text-xs uppercase tracking-[0.2em] mb-1">
+                          综合考核得分
+                        </div>
                         <div class="text-7xl font-black tracking-tighter leading-none shadow-sm drop-shadow-md">
                           {{ selectedCycle.totalScore }}
                         </div>
@@ -488,16 +562,28 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                     
                     <div class="grid grid-cols-3 md:flex md:items-center gap-4 lg:gap-10 w-full md:w-auto">
                       <div class="bg-black/10 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/5">
-                        <div class="text-2xl font-black">{{ quantitativeResults.length }}</div>
-                        <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">定量</div>
+                        <div class="text-2xl font-black">
+                          {{ quantitativeResults.length }}
+                        </div>
+                        <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">
+                          定量
+                        </div>
                       </div>
                       <div class="bg-black/10 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/5">
-                        <div class="text-2xl font-black">{{ qualitativeResults.length }}</div>
-                        <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">定性</div>
+                        <div class="text-2xl font-black">
+                          {{ qualitativeResults.length }}
+                        </div>
+                        <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">
+                          定性
+                        </div>
                       </div>
                       <div class="bg-white/15 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/20 shadow-xl scale-110">
-                        <div class="text-4xl font-black text-white leading-none">{{ selectedCycle.grade }}</div>
-                        <div class="text-[10px] text-blue-100/70 font-bold mt-1 uppercase">等第</div>
+                        <div class="text-4xl font-black text-white leading-none">
+                          {{ selectedCycle.grade }}
+                        </div>
+                        <div class="text-[10px] text-blue-100/70 font-bold mt-1 uppercase">
+                          等第
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -507,41 +593,78 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                 <div class="space-y-5 text-left">
                   <div class="flex items-center gap-3">
                     <div class="bg-blue-100 p-2 rounded-xl">
-                        <el-icon class="text-blue-600"><Calculator /></el-icon>
+                      <el-icon class="text-blue-600">
+                        <Calculator />
+                      </el-icon>
                     </div>
-                    <h4 class="text-xl font-black text-slate-900">系统业绩测算明细</h4>
+                    <h4 class="text-xl font-black text-slate-900">
+                      系统业绩测算明细
+                    </h4>
                   </div>
                   <div class="grid gap-4">
-                    <el-card v-for="(ind, index) in quantitativeResults" :key="ind.id" shadow="hover" class="border-slate-200 custom-result-card">
+                    <el-card
+                      v-for="(ind, index) in quantitativeResults"
+                      :key="ind.id"
+                      shadow="hover"
+                      class="border-slate-200 custom-result-card"
+                    >
                       <div class="p-2">
                         <div class="flex items-center justify-between mb-6">
                           <div class="flex items-center gap-3">
                             <span class="h-7 w-7 bg-blue-50 text-blue-600 flex items-center justify-center rounded-lg text-sm font-black">{{ index + 1 }}</span>
-                            <h5 class="font-black text-slate-800 text-lg">{{ ind.name }}</h5>
-                            <el-tag type="info" size="small" class="bg-slate-100 text-slate-500 font-bold text-[10px] h-5 border-none">{{ ind.nature }}</el-tag>
+                            <h5 class="font-black text-slate-800 text-lg">
+                              {{ ind.name }}
+                            </h5>
+                            <el-tag
+                              type="info"
+                              size="small"
+                              class="bg-slate-100 text-slate-500 font-bold text-[10px] h-5 border-none"
+                            >
+                              {{ ind.nature }}
+                            </el-tag>
                           </div>
                           <div class="text-right">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">占比权重</div>
-                            <div class="text-lg font-black text-slate-700 leading-none mt-1">{{ ind.weight }}%</div>
+                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                              占比权重
+                            </div>
+                            <div class="text-lg font-black text-slate-700 leading-none mt-1">
+                              {{ ind.weight }}%
+                            </div>
                           </div>
                         </div>
                         
                         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                           <div class="bg-slate-50/80 border border-slate-100 p-4 rounded-xl">
-                            <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">目标参考</div>
-                            <div class="font-black text-slate-900">{{ ind.targetValue }}</div>
+                            <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">
+                              目标参考
+                            </div>
+                            <div class="font-black text-slate-900">
+                              {{ ind.targetValue }}
+                            </div>
                           </div>
                           <div class="bg-slate-50/80 border border-slate-100 p-4 rounded-xl">
-                            <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">业务实际</div>
-                            <div class="font-black text-slate-900">{{ ind.actualValue }}</div>
+                            <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">
+                              业务实际
+                            </div>
+                            <div class="font-black text-slate-900">
+                              {{ ind.actualValue }}
+                            </div>
                           </div>
                           <div class="bg-blue-50/50 border border-blue-100 p-4 rounded-xl text-left">
-                            <div class="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-tighter">系统原始分</div>
-                            <div class="font-black text-blue-600 text-2xl leading-none">{{ ind.systemScore }}</div>
+                            <div class="text-[10px] font-black text-blue-400 mb-2 uppercase tracking-tighter">
+                              系统原始分
+                            </div>
+                            <div class="font-black text-blue-600 text-2xl leading-none">
+                              {{ ind.systemScore }}
+                            </div>
                           </div>
                           <div class="bg-gradient-to-br from-indigo-50 to-blue-100 border border-blue-200 p-4 rounded-xl shadow-sm scale-105 text-left">
-                            <div class="text-[10px] font-black text-blue-800 mb-2 uppercase tracking-tighter">最终核算分</div>
-                            <div class="font-black text-indigo-700 text-3xl leading-none drop-shadow-sm">{{ ind.finalScore }}</div>
+                            <div class="text-[10px] font-black text-blue-800 mb-2 uppercase tracking-tighter">
+                              最终核算分
+                            </div>
+                            <div class="font-black text-indigo-700 text-3xl leading-none drop-shadow-sm">
+                              {{ ind.finalScore }}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -550,13 +673,30 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                 </div>
               </div>
 
-              <div v-else class="flex flex-col items-center justify-center py-20 text-slate-400 animate-in zoom-in-95 duration-1000">
+              <div
+                v-else
+                class="flex flex-col items-center justify-center py-20 text-slate-400 animate-in zoom-in-95 duration-1000"
+              >
                 <div class="relative bg-slate-50 p-10 rounded-full mb-6 shadow-inner">
-                   <el-icon :size="64" class="opacity-30 animate-spin-slow"><Clock /></el-icon>
-                   <el-icon :size="32" class="text-blue-400 absolute top-2 right-2 opacity-50"><Aim /></el-icon>
+                  <el-icon
+                    :size="64"
+                    class="opacity-30 animate-spin-slow"
+                  >
+                    <Clock />
+                  </el-icon>
+                  <el-icon
+                    :size="32"
+                    class="text-blue-400 absolute top-2 right-2 opacity-50"
+                  >
+                    <Aim />
+                  </el-icon>
                 </div>
-                <h4 class="text-xl font-black text-slate-800 tracking-tight">绩效大盘尚未正式“结案”</h4>
-                <p class="text-sm mt-3 font-medium max-w-xs text-center leading-relaxed">请耐心等待周期进入<b>评分公示期</b>或<b>归档阶段</b>。届时我们将为您解密最终得分与等级。</p>
+                <h4 class="text-xl font-black text-slate-800 tracking-tight">
+                  绩效大盘尚未正式“结案”
+                </h4>
+                <p class="text-sm mt-3 font-medium max-w-xs text-center leading-relaxed">
+                  请耐心等待周期进入<b>评分公示期</b>或<b>归档阶段</b>。届时我们将为您解密最终得分与等级。
+                </p>
               </div>
             </el-tab-pane>
           </el-tabs>

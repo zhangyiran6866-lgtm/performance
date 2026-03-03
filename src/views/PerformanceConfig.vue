@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import IndicatorLibrary from '@/components/library/IndicatorLibrary.vue'
-import TemplateList from '@/components/template/TemplateList.vue'
+import { ref } from 'vue';
+import IndicatorLibrary from '@/components/library/IndicatorLibrary.vue';
+import TemplateList from '@/components/template/TemplateList.vue';
 
-const activeTab = ref('library')
+const activeTab = ref('library');
 </script>
 
 <template>
@@ -11,21 +11,32 @@ const activeTab = ref('library')
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center">
-          <el-icon class="text-xl text-white"><Setting /></el-icon>
+          <el-icon class="text-xl text-white">
+            <Setting />
+          </el-icon>
         </div>
         <div>
-          <h1 class="text-3xl font-black tracking-tight text-slate-900">绩效配置中心</h1>
-          <p class="text-base text-slate-500">统一管理企业考核指标元数据与绩效评价模板</p>
+          <h1 class="text-3xl font-black tracking-tight text-slate-900">
+            绩效配置中心
+          </h1>
+          <p class="text-base text-slate-500">
+            统一管理企业考核指标元数据与绩效评价模板
+          </p>
         </div>
       </div>
     </div>
 
     <div class="custom-tabs-container">
-      <el-tabs v-model="activeTab" class="custom-tabs">
+      <el-tabs
+        v-model="activeTab"
+        class="custom-tabs"
+      >
         <el-tab-pane name="library">
           <template #label>
             <div class="flex items-center py-2 px-1">
-              <el-icon class="mr-2 text-blue-600"><Document /></el-icon>
+              <el-icon class="mr-2 text-blue-600">
+                <Document />
+              </el-icon>
               <span>指标元数据库</span>
             </div>
           </template>
@@ -37,7 +48,9 @@ const activeTab = ref('library')
         <el-tab-pane name="template">
           <template #label>
             <div class="flex items-center py-2 px-1">
-              <el-icon class="mr-2 text-purple-600"><Memo /></el-icon>
+              <el-icon class="mr-2 text-purple-600">
+                <Memo />
+              </el-icon>
               <span>考核模板管理</span>
             </div>
           </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowDown as ChevronDown,
   ArrowRight as ChevronRight,
@@ -13,11 +13,11 @@ import {
   Printer,
   Download,
   Calendar,
-} from '@element-plus/icons-vue'
+} from '@element-plus/icons-vue';
 
-const route = useRoute()
-const router = useRouter()
-const cycleId = route.params.id as string
+const route = useRoute();
+const router = useRouter();
+const cycleId = route.params.id as string;
 
 // ========== Mock Data for the selected cycle ==========
 // In a real app, this would be fetched based on cycleId
@@ -26,7 +26,7 @@ const cycleInfo = {
   title: '2026年3月份初级销售KPI考核',
   period: '2026/03/01 - 2026/03/31',
   status: 'rating', // 'rating' or 'finished'
-}
+};
 
 type EmployeeRecord = {
   id: string
@@ -54,7 +54,7 @@ const generateHistory = (base: number): { month: string; score: number }[] => [
   { month: '2025-12', score: Math.round(base + (Math.random() - 0.5) * 10) },
   { month: '2026-01', score: Math.round(base + (Math.random() - 0.5) * 8) },
   { month: '2026-02', score: Math.round(base + (Math.random() - 0.5) * 6) },
-]
+];
 
 const departments = ref<Department[]>([
   {
@@ -109,42 +109,42 @@ const departments = ref<Department[]>([
       { id: 'e16', name: '褚小芳', role: '业务专员', avatar: '褚', score: 76, grade: 'B', goalStatus: '已确认', history: generateHistory(74) },
     ],
   },
-])
+]);
 
-const expandedDepts = ref<Record<string, boolean>>({})
+const expandedDepts = ref<Record<string, boolean>>({});
 
 const toggleDept = (deptId: string) => {
-  expandedDepts.value[deptId] = !expandedDepts.value[deptId]
-}
+  expandedDepts.value[deptId] = !expandedDepts.value[deptId];
+};
 
 const gradeColor = (grade: string | null) => {
   switch (grade) {
-    case 'A': return 'bg-emerald-100 text-emerald-700 border-emerald-200'
-    case 'B': return 'bg-blue-100 text-blue-700 border-blue-200'
-    case 'C': return 'bg-amber-100 text-amber-700 border-amber-200'
-    case 'D': return 'bg-red-100 text-red-700 border-red-200'
-    default: return 'bg-slate-100 text-slate-500 border-slate-200'
+  case 'A': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+  case 'B': return 'bg-blue-100 text-blue-700 border-blue-200';
+  case 'C': return 'bg-amber-100 text-amber-700 border-amber-200';
+  case 'D': return 'bg-red-100 text-red-700 border-red-200';
+  default: return 'bg-slate-100 text-slate-500 border-slate-200';
   }
-}
+};
 
 // Summary stats
 const summary = computed(() => {
-  const totalEmployees = departments.value.reduce((s, d) => s + d.headcount, 0)
-  const totalRated = departments.value.reduce((s, d) => s + d.ratedCount, 0)
+  const totalEmployees = departments.value.reduce((s, d) => s + d.headcount, 0);
+  const totalRated = departments.value.reduce((s, d) => s + d.ratedCount, 0);
   const allScores = departments.value.flatMap((d) =>
     d.employees.map((e) => e.score).filter((s): s is number => s !== null),
-  )
-  const overallAvg = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : null
+  );
+  const overallAvg = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : null;
   
   return {
     totalEmployees,
     totalRated,
     overallAvg,
     deptCount: departments.value.length,
-  }
-})
+  };
+});
 
-const goBack = () => router.push('/assessment/cycle')
+const goBack = () => router.push('/assessment/cycle');
 </script>
 
 <template>
@@ -152,13 +152,25 @@ const goBack = () => router.push('/assessment/cycle')
     <!-- Header with Back Button -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div class="flex items-center gap-4">
-        <el-button circle @click="goBack" class="shadow-sm">
+        <el-button
+          circle
+          class="shadow-sm"
+          @click="goBack"
+        >
           <el-icon><ChevronLeft /></el-icon>
         </el-button>
         <div>
           <div class="flex items-center gap-2 mb-1">
-             <el-tag type="primary" effect="light" class="custom-tag">绩效大盘</el-tag>
-             <h1 class="text-xl font-bold tracking-tight text-slate-900">{{ cycleInfo.title }}</h1>
+            <el-tag
+              type="primary"
+              effect="light"
+              class="custom-tag"
+            >
+              绩效大盘
+            </el-tag>
+            <h1 class="text-xl font-bold tracking-tight text-slate-900">
+              {{ cycleInfo.title }}
+            </h1>
           </div>
           <p class="text-sm text-slate-500 flex items-center gap-1.5 text-left">
             <el-icon><Calendar /></el-icon> {{ cycleInfo.period }} · 仅HR可见统计视图
@@ -166,128 +178,245 @@ const goBack = () => router.push('/assessment/cycle')
         </div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <el-button @click="" class="custom-header-button">
-          <el-icon class="mr-2"><Printer /></el-icon> 打印报告
+        <el-button
+          class="custom-header-button"
+          @click=""
+        >
+          <el-icon class="mr-2">
+            <Printer />
+          </el-icon> 打印报告
         </el-button>
-        <el-button @click="" class="custom-header-button">
-          <el-icon class="mr-2"><Download /></el-icon> 导出Excel
+        <el-button
+          class="custom-header-button"
+          @click=""
+        >
+          <el-icon class="mr-2">
+            <Download />
+          </el-icon> 导出Excel
         </el-button>
       </div>
     </div>
 
     <!-- Summary Statistics Dashboard -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <el-card shadow="hover" class="relative group custom-stat-card border-none">
+      <el-card
+        shadow="hover"
+        class="relative group custom-stat-card border-none"
+      >
         <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
         <div class="p-1 flex items-center gap-4">
-          <div class="bg-blue-50 p-3 rounded-xl"><el-icon :size="24" class="text-blue-600"><Users /></el-icon></div>
+          <div class="bg-blue-50 p-3 rounded-xl">
+            <el-icon
+              :size="24"
+              class="text-blue-600"
+            >
+              <Users />
+            </el-icon>
+          </div>
           <div class="text-left">
-            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">考核总人数</div>
-            <div class="text-2xl font-black text-slate-800">{{ summary.totalEmployees }}</div>
+            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
+              考核总人数
+            </div>
+            <div class="text-2xl font-black text-slate-800">
+              {{ summary.totalEmployees }}
+            </div>
           </div>
         </div>
       </el-card>
 
-      <el-card shadow="hover" class="relative group custom-stat-card border-none">
+      <el-card
+        shadow="hover"
+        class="relative group custom-stat-card border-none"
+      >
         <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
         <div class="p-1 flex items-center gap-4">
-          <div class="bg-emerald-50 p-3 rounded-xl"><el-icon :size="24" class="text-emerald-600"><UserCheck /></el-icon></div>
+          <div class="bg-emerald-50 p-3 rounded-xl">
+            <el-icon
+              :size="24"
+              class="text-emerald-600"
+            >
+              <UserCheck />
+            </el-icon>
+          </div>
           <div class="text-left">
-            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">已完成评分</div>
-            <div class="text-2xl font-black text-slate-800">{{ summary.totalRated }}</div>
+            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
+              已完成评分
+            </div>
+            <div class="text-2xl font-black text-slate-800">
+              {{ summary.totalRated }}
+            </div>
           </div>
         </div>
       </el-card>
 
-      <el-card shadow="hover" class="relative group custom-stat-card border-none">
+      <el-card
+        shadow="hover"
+        class="relative group custom-stat-card border-none"
+      >
         <div class="absolute left-0 top-0 bottom-0 w-1 bg-purple-500" />
         <div class="p-1 flex items-center gap-4">
-          <div class="bg-purple-50 p-3 rounded-xl"><el-icon :size="24" class="text-purple-600"><TrendingUp /></el-icon></div>
+          <div class="bg-purple-50 p-3 rounded-xl">
+            <el-icon
+              :size="24"
+              class="text-purple-600"
+            >
+              <TrendingUp />
+            </el-icon>
+          </div>
           <div class="text-left">
-            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">全周期平均分</div>
-            <div class="text-2xl font-black text-slate-800">{{ summary.overallAvg?.toFixed(1) || '--' }}</div>
+            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
+              全周期平均分
+            </div>
+            <div class="text-2xl font-black text-slate-800">
+              {{ summary.overallAvg?.toFixed(1) || '--' }}
+            </div>
           </div>
         </div>
       </el-card>
 
-      <el-card shadow="hover" class="relative group custom-stat-card border-none">
+      <el-card
+        shadow="hover"
+        class="relative group custom-stat-card border-none"
+      >
         <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
         <div class="p-1 flex items-center gap-4">
-          <div class="bg-amber-50 p-3 rounded-xl"><el-icon :size="24" class="text-amber-600"><BarChart3 /></el-icon></div>
+          <div class="bg-amber-50 p-3 rounded-xl">
+            <el-icon
+              :size="24"
+              class="text-amber-600"
+            >
+              <BarChart3 />
+            </el-icon>
+          </div>
           <div class="text-left">
-            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">参评部门总数</div>
-            <div class="text-2xl font-black text-slate-800">{{ summary.deptCount }}</div>
+            <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
+              参评部门总数
+            </div>
+            <div class="text-2xl font-black text-slate-800">
+              {{ summary.deptCount }}
+            </div>
           </div>
         </div>
       </el-card>
     </div>
 
     <!-- Alert for active cycles -->
-    <div v-if="cycleInfo.status === 'rating'" class="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-start gap-3 shadow-inner text-left">
-      <el-icon :size="20" class="text-blue-500 shrink-0 mt-0.5"><AlertCircle /></el-icon>
+    <div
+      v-if="cycleInfo.status === 'rating'"
+      class="bg-blue-50 border border-blue-200 p-4 rounded-xl flex items-start gap-3 shadow-inner text-left"
+    >
+      <el-icon
+        :size="20"
+        class="text-blue-500 shrink-0 mt-0.5"
+      >
+        <AlertCircle />
+      </el-icon>
       <div class="text-sm text-blue-800">
-        <p class="font-bold mb-1">考核正在进行中</p>
+        <p class="font-bold mb-1">
+          考核正在进行中
+        </p>
         <p>当前分数为实时计算的参考得分，最终成绩将以周期正式结案归档后的记录为准。</p>
       </div>
     </div>
 
     <!-- Department Detail List -->
     <div class="space-y-4">
-      <el-card v-for="dept in departments" :key="dept.id" shadow="hover" class="custom-dept-card border-slate-200">
+      <el-card
+        v-for="dept in departments"
+        :key="dept.id"
+        shadow="hover"
+        class="custom-dept-card border-slate-200"
+      >
         <div 
           class="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-slate-50/50 transition-colors select-none"
           @click="toggleDept(dept.id)"
         >
           <div class="flex items-center gap-4 min-w-0">
-             <div class="text-slate-400">
-                <el-icon v-if="expandedDepts[dept.id]"><ChevronDown /></el-icon>
-                <el-icon v-else><ChevronRight /></el-icon>
-             </div>
-             <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                   <h3 class="font-bold text-slate-800">{{ dept.name }}</h3>
-                   <el-tag size="small" effect="light" type="info" class="bg-slate-100 text-slate-500 font-bold border-none text-[10px]">{{ dept.headcount }}人</el-tag>
-                </div>
-                <div class="flex items-center gap-2 mt-2">
-                   <span class="text-[10px] text-slate-400 font-bold uppercase">评分进度</span>
-                   <el-progress 
-                      :percentage="(dept.ratedCount / dept.headcount) * 100" 
-                      :show-text="false" 
-                      class="w-16 custom-progress"
-                   />
-                   <span class="text-[10px] font-bold text-slate-600">{{ dept.ratedCount }}/{{ dept.headcount }}</span>
-                </div>
-             </div>
+            <div class="text-slate-400">
+              <el-icon v-if="expandedDepts[dept.id]">
+                <ChevronDown />
+              </el-icon>
+              <el-icon v-else>
+                <ChevronRight />
+              </el-icon>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="font-bold text-slate-800">
+                  {{ dept.name }}
+                </h3>
+                <el-tag
+                  size="small"
+                  effect="light"
+                  type="info"
+                  class="bg-slate-100 text-slate-500 font-bold border-none text-[10px]"
+                >
+                  {{ dept.headcount }}人
+                </el-tag>
+              </div>
+              <div class="flex items-center gap-2 mt-2">
+                <span class="text-[10px] text-slate-400 font-bold uppercase">评分进度</span>
+                <el-progress 
+                  :percentage="(dept.ratedCount / dept.headcount) * 100" 
+                  :show-text="false" 
+                  class="w-16 custom-progress"
+                />
+                <span class="text-[10px] font-bold text-slate-600">{{ dept.ratedCount }}/{{ dept.headcount }}</span>
+              </div>
+            </div>
           </div>
 
           <div class="flex items-center gap-4 shrink-0">
             <template v-if="dept.avgScore !== null">
-               <div class="text-right">
-                  <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">部门均分</div>
-                  <div class="text-xl font-black text-slate-800 leading-none mt-1.5">{{ dept.avgScore }}</div>
-               </div>
-               <div :class="['w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-sm border border-white/50', 
-                   gradeColor(dept.avgScore >= 85 ? 'A' : dept.avgScore >= 70 ? 'B' : dept.avgScore >= 60 ? 'C' : 'D')]">
-                  {{ dept.avgScore >= 85 ? 'A' : dept.avgScore >= 70 ? 'B' : dept.avgScore >= 60 ? 'C' : 'D' }}
-               </div>
+              <div class="text-right">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">
+                  部门均分
+                </div>
+                <div class="text-xl font-black text-slate-800 leading-none mt-1.5">
+                  {{ dept.avgScore }}
+                </div>
+              </div>
+              <div
+                :class="['w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shadow-sm border border-white/50', 
+                         gradeColor(dept.avgScore >= 85 ? 'A' : dept.avgScore >= 70 ? 'B' : dept.avgScore >= 60 ? 'C' : 'D')]"
+              >
+                {{ dept.avgScore >= 85 ? 'A' : dept.avgScore >= 70 ? 'B' : dept.avgScore >= 60 ? 'C' : 'D' }}
+              </div>
             </template>
           </div>
         </div>
 
-        <div v-if="expandedDepts[dept.id]" class="border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+        <div
+          v-if="expandedDepts[dept.id]"
+          class="border-t border-slate-100 animate-in slide-in-from-top-2 duration-300"
+        >
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
                 <tr class="bg-slate-50/50 border-b border-slate-100 italic">
-                  <th class="text-left font-bold text-slate-400 text-[10px] uppercase px-6 py-3 tracking-widest">考核对象</th>
-                  <th class="text-left font-bold text-slate-400 text-[10px] uppercase px-4 py-3 tracking-widest">业务岗位</th>
-                  <th class="text-center font-bold text-slate-400 text-[10px] uppercase px-4 py-3 tracking-widest">当前分</th>
-                  <th class="text-center font-bold text-slate-400 text-[10px] uppercase px-4 py-3 tracking-widest">评级</th>
-                  <th class="text-right font-bold text-slate-400 text-[10px] uppercase px-6 py-3 tracking-widest">半年趋势</th>
+                  <th class="text-left font-bold text-slate-400 text-[10px] uppercase px-6 py-3 tracking-widest">
+                    考核对象
+                  </th>
+                  <th class="text-left font-bold text-slate-400 text-[10px] uppercase px-4 py-3 tracking-widest">
+                    业务岗位
+                  </th>
+                  <th class="text-center font-bold text-slate-400 text-[10px] uppercase px-4 py-3 tracking-widest">
+                    当前分
+                  </th>
+                  <th class="text-center font-bold text-slate-400 text-[10px] uppercase px-4 py-3 tracking-widest">
+                    评级
+                  </th>
+                  <th class="text-right font-bold text-slate-400 text-[10px] uppercase px-6 py-3 tracking-widest">
+                    半年趋势
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-50">
-                <tr v-for="emp in dept.employees" :key="emp.id" class="group hover:bg-blue-50/30 transition-colors">
+                <tr
+                  v-for="emp in dept.employees"
+                  :key="emp.id"
+                  class="group hover:bg-blue-50/30 transition-colors"
+                >
                   <td class="px-6 py-3.5">
                     <div class="flex items-center gap-3">
                       <div class="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 shadow-sm flex items-center justify-center text-xs font-bold text-slate-600 transition-colors group-hover:bg-blue-100 group-hover:text-blue-700">
@@ -296,12 +425,17 @@ const goBack = () => router.push('/assessment/cycle')
                       <span class="font-bold text-slate-700 group-hover:text-blue-900 transition-colors">{{ emp.name }}</span>
                     </div>
                   </td>
-                  <td class="px-4 py-3.5 text-slate-500 font-medium">{{ emp.role }}</td>
+                  <td class="px-4 py-3.5 text-slate-500 font-medium">
+                    {{ emp.role }}
+                  </td>
                   <td class="px-4 py-3.5 text-center">
                     <span class="font-black text-slate-800 tracking-tight">{{ emp.score ?? '--' }}</span>
                   </td>
                   <td class="px-4 py-3.5 text-center">
-                    <div v-if="emp.grade" :class="['inline-flex w-7 h-7 rounded items-center justify-center text-xs font-black shadow-inner', gradeColor(emp.grade)]">
+                    <div
+                      v-if="emp.grade"
+                      :class="['inline-flex w-7 h-7 rounded items-center justify-center text-xs font-black shadow-inner', gradeColor(emp.grade)]"
+                    >
                       {{ emp.grade }}
                     </div>
                   </td>
@@ -313,27 +447,39 @@ const goBack = () => router.push('/assessment/cycle')
                         popper-class="custom-chart-tooltip"
                       >
                         <template #content>
-                           <div class="bg-white min-w-[200px]">
-                              <div class="p-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-                                 <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-black">{{ emp.avatar }}</div>
-                                 <span class="font-black text-xs text-slate-800">{{ emp.name }} · 历史绩效分布</span>
+                          <div class="bg-white min-w-[200px]">
+                            <div class="p-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                              <div class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-black">
+                                {{ emp.avatar }}
                               </div>
-                              <div class="p-3 space-y-2">
-                                 <div v-for="h in emp.history" :key="h.month" class="flex items-center justify-between gap-6">
-                                    <span class="text-[10px] font-bold text-slate-400 font-mono">{{ h.month }}</span>
-                                    <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
-                                       <div class="h-full bg-blue-500 rounded-full" :style="{ width: `${h.score}%` }" />
-                                    </div>
-                                    <span class="text-[10px] font-black text-slate-700 w-4 text-right">{{ h.score }}</span>
-                                 </div>
+                              <span class="font-black text-xs text-slate-800">{{ emp.name }} · 历史绩效分布</span>
+                            </div>
+                            <div class="p-3 space-y-2">
+                              <div
+                                v-for="h in emp.history"
+                                :key="h.month"
+                                class="flex items-center justify-between gap-6"
+                              >
+                                <span class="text-[10px] font-bold text-slate-400 font-mono">{{ h.month }}</span>
+                                <div class="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden min-w-[60px]">
+                                  <div
+                                    class="h-full bg-blue-500 rounded-full"
+                                    :style="{ width: `${h.score}%` }"
+                                  />
+                                </div>
+                                <span class="text-[10px] font-black text-slate-700 w-4 text-right">{{ h.score }}</span>
                               </div>
-                           </div>
+                            </div>
+                          </div>
                         </template>
                         <div class="flex items-end gap-1 h-6 cursor-help group-hover:scale-110 transition-transform origin-right">
-                           <div v-for="(h, i) in emp.history.slice(-4)" :key="i" 
-                              :class="['w-1.5 rounded-t-sm transition-all duration-500', 
-                                 h.score >= 85 ? 'bg-emerald-400' : h.score >= 70 ? 'bg-blue-400' : 'bg-slate-300']"
-                              :style="{ height: `${Math.max(4, (h.score / 100) * 24)}px` }" />
+                          <div
+                            v-for="(h, i) in emp.history.slice(-4)"
+                            :key="i" 
+                            :class="['w-1.5 rounded-t-sm transition-all duration-500', 
+                                     h.score >= 85 ? 'bg-emerald-400' : h.score >= 70 ? 'bg-blue-400' : 'bg-slate-300']"
+                            :style="{ height: `${Math.max(4, (h.score / 100) * 24)}px` }"
+                          />
                         </div>
                       </el-tooltip>
                     </div>

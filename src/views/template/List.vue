@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { RouterLink } from 'vue-router'
-import { Plus, Search, FileEdit, Trash2, PowerOff, Power, MoreHorizontal } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Card } from '@/components/ui/card'
+import { ref, computed } from 'vue';
+import { RouterLink } from 'vue-router';
+import { Plus, Search, FileEdit, Trash2, PowerOff, Power, MoreHorizontal } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -13,13 +13,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@/components/ui/dropdown-menu';
 
 // Mock data for initial templates
 const mockTemplates = [
@@ -77,36 +77,38 @@ const mockTemplates = [
     status: 'disabled',
     updatedAt: '2024-12-30 18:00',
   },
-]
+];
 
-const search = ref('')
-const templates = ref(mockTemplates)
+const search = ref('');
+const templates = ref(mockTemplates);
 
 const filteredTemplates = computed(() => {
   return templates.value.filter(
-    (t) => t.name.includes(search.value) || t.id.includes(search.value)
-  )
-})
+    (t) => t.name.includes(search.value) || t.id.includes(search.value),
+  );
+});
 
 const getStatusBadge = (status: string) => {
   switch (status) {
-    case 'published':
-      return { text: '生效中 (已发布)', class: 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 font-normal' }
-    case 'draft':
-      return { text: '草稿中', class: 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 font-normal' }
-    case 'disabled':
-      return { text: '已禁用', class: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 font-normal' }
-    default:
-      return { text: status, class: '' }
+  case 'published':
+    return { text: '生效中 (已发布)', class: 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 font-normal' };
+  case 'draft':
+    return { text: '草稿中', class: 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 font-normal' };
+  case 'disabled':
+    return { text: '已禁用', class: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 font-normal' };
+  default:
+    return { text: status, class: '' };
   }
-}
+};
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">考核模板管理</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+          考核模板管理
+        </h1>
         <p class="text-sm text-slate-500 mt-1">
           基于指标元数据库搭建面向不同组织、不同岗位的绩效自动计算模板。
         </p>
@@ -115,9 +117,9 @@ const getStatusBadge = (status: string) => {
         <div class="relative w-full md:w-64">
           <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
           <Input
+            v-model="search"
             placeholder="搜索模板名称或编号..."
             class="pl-9 bg-white"
-            v-model="search"
           />
         </div>
         <RouterLink to="/template/builder">
@@ -133,13 +135,25 @@ const getStatusBadge = (status: string) => {
       <Table>
         <TableHeader class="bg-slate-50/50">
           <TableRow>
-            <TableHead class="w-[300px]">模板名称 & 编号</TableHead>
+            <TableHead class="w-[300px]">
+              模板名称 & 编号
+            </TableHead>
             <TableHead>说明摘要</TableHead>
-            <TableHead class="text-center">指标个数</TableHead>
-            <TableHead class="text-center">权重分配</TableHead>
-            <TableHead class="text-center">当前状态</TableHead>
-            <TableHead class="text-right">最后修改时间</TableHead>
-            <TableHead class="w-[80px] text-right">操作</TableHead>
+            <TableHead class="text-center">
+              指标个数
+            </TableHead>
+            <TableHead class="text-center">
+              权重分配
+            </TableHead>
+            <TableHead class="text-center">
+              当前状态
+            </TableHead>
+            <TableHead class="text-right">
+              最后修改时间
+            </TableHead>
+            <TableHead class="w-[80px] text-right">
+              操作
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -150,14 +164,20 @@ const getStatusBadge = (status: string) => {
           >
             <TableCell>
               <div class="flex flex-col">
-                <span class="font-semibold text-slate-800 line-clamp-1" :title="template.name">
+                <span
+                  class="font-semibold text-slate-800 line-clamp-1"
+                  :title="template.name"
+                >
                   {{ template.name }}
                 </span>
                 <span class="text-xs text-slate-400 font-medium mt-0.5">{{ template.id }}</span>
               </div>
             </TableCell>
             <TableCell>
-              <span class="text-sm text-slate-600 line-clamp-1" :title="template.description">
+              <span
+                class="text-sm text-slate-600 line-clamp-1"
+                :title="template.description"
+              >
                 {{ template.description || '-' }}
               </span>
             </TableCell>
@@ -194,24 +214,36 @@ const getStatusBadge = (status: string) => {
             </TableCell>
             <TableCell class="text-right">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" class="h-8 w-8 p-0">
+                <DropdownMenuTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    class="h-8 w-8 p-0"
+                  >
                     <span class="sr-only">打开菜单</span>
                     <MoreHorizontal class="h-4 w-4 text-slate-500" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" class="w-[160px]">
+                <DropdownMenuContent
+                  align="end"
+                  class="w-[160px]"
+                >
                   <RouterLink :to="`/template/builder?id=${template.id}`">
                     <DropdownMenuItem class="cursor-pointer">
                       <FileEdit class="mr-2 h-4 w-4 text-blue-600" />
                       <span class="text-slate-700">编辑模板配置</span>
                     </DropdownMenuItem>
                   </RouterLink>
-                  <DropdownMenuItem v-if="template.status === 'published'" class="cursor-pointer">
+                  <DropdownMenuItem
+                    v-if="template.status === 'published'"
+                    class="cursor-pointer"
+                  >
                     <PowerOff class="mr-2 h-4 w-4 text-amber-600" />
                     <span class="text-slate-700">暂停/停用</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem v-else class="cursor-pointer">
+                  <DropdownMenuItem
+                    v-else
+                    class="cursor-pointer"
+                  >
                     <Power class="mr-2 h-4 w-4 text-emerald-600" />
                     <span class="text-slate-700">发布启用</span>
                   </DropdownMenuItem>
@@ -224,7 +256,10 @@ const getStatusBadge = (status: string) => {
             </TableCell>
           </TableRow>
           <TableRow v-if="filteredTemplates.length === 0">
-            <TableCell colSpan="7" class="h-24 text-center text-slate-500">
+            <TableCell
+              col-span="7"
+              class="h-24 text-center text-slate-500"
+            >
               未找到匹配的模板
             </TableCell>
           </TableRow>

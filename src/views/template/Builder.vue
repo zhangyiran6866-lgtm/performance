@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   ArrowLeft,
   Save,
@@ -14,24 +14,24 @@ import {
   ArrowRight,
   Calculator,
   ChevronRight,
-} from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+} from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import IndicatorSelectorModal from '@/components/template/IndicatorSelectorModal.vue'
-import DailyReportPreviewModal from '@/components/template/DailyReportPreviewModal.vue'
+} from '@/components/ui/select';
+import IndicatorSelectorModal from '@/components/template/IndicatorSelectorModal.vue';
+import DailyReportPreviewModal from '@/components/template/DailyReportPreviewModal.vue';
 
-const router = useRouter()
+const router = useRouter();
 
 // Mock data for initial selected indicators
 const initialSelectedIndicators = [
@@ -65,22 +65,22 @@ const initialSelectedIndicators = [
     dataSourceType: 'api',
     dataSourceValue: 'api_return_rate',
   },
-]
+];
 
 const templateInfo = ref({
   name: '',
   description: '',
   applyTo: 'all',
   period: 'month',
-})
+});
 
-const indicators = ref(initialSelectedIndicators)
-const isModalOpen = ref(false)
-const isPreviewOpen = ref(false)
-const hasPreviewed = ref(false)
+const indicators = ref(initialSelectedIndicators);
+const isModalOpen = ref(false);
+const isPreviewOpen = ref(false);
+const hasPreviewed = ref(false);
 
 const handleAddIndicators = (selected: any[]) => {
-  const existingIds = indicators.value.map((ind) => ind.id)
+  const existingIds = indicators.value.map((ind) => ind.id);
   const newIndicators = selected
     .filter((ind) => !existingIds.includes(ind.id))
     .map((ind) => ({
@@ -92,40 +92,40 @@ const handleAddIndicators = (selected: any[]) => {
       weight: 0,
       dataSourceType: 'api',
       dataSourceValue: '',
-    }))
+    }));
 
-  indicators.value = [...indicators.value, ...newIndicators]
-}
+  indicators.value = [...indicators.value, ...newIndicators];
+};
 
 const totalWeight = computed(() =>
-  indicators.value.reduce((sum, ind) => sum + (ind.weight || 0), 0)
-)
-const isWeightValid = computed(() => totalWeight.value === 100)
+  indicators.value.reduce((sum, ind) => sum + (ind.weight || 0), 0),
+);
+const isWeightValid = computed(() => totalWeight.value === 100);
 
 const handleWeightChange = (id: string, newWeight: string) => {
-  const weight = parseInt(newWeight) || 0
+  const weight = parseInt(newWeight) || 0;
   indicators.value = indicators.value.map((ind) =>
-    ind.id === id ? { ...ind, weight } : ind
-  )
-}
+    ind.id === id ? { ...ind, weight } : ind,
+  );
+};
 
 const handleSourceTypeChange = (id: string, type: string) => {
   indicators.value = indicators.value.map((ind) =>
-    ind.id === id ? { ...ind, dataSourceType: type, dataSourceValue: '' } : ind
-  )
-}
+    ind.id === id ? { ...ind, dataSourceType: type, dataSourceValue: '' } : ind,
+  );
+};
 
 const handleSourceValueChange = (id: string, value: string) => {
   indicators.value = indicators.value.map((ind) =>
-    ind.id === id ? { ...ind, dataSourceValue: value } : ind
-  )
-}
+    ind.id === id ? { ...ind, dataSourceValue: value } : ind,
+  );
+};
 
 const removeIndicator = (id: string) => {
-  indicators.value = indicators.value.filter((ind) => ind.id !== id)
-}
+  indicators.value = indicators.value.filter((ind) => ind.id !== id);
+};
 
-const goBack = () => router.push('/template')
+const goBack = () => router.push('/template');
 
 const colors = [
   'bg-blue-500',
@@ -133,38 +133,38 @@ const colors = [
   'bg-amber-500',
   'bg-purple-500',
   'bg-pink-500',
-]
+];
 const lightColors = [
   'bg-blue-50 text-blue-600',
   'bg-emerald-50 text-emerald-600',
   'bg-amber-50 text-amber-600',
   'bg-purple-50 text-purple-600',
   'bg-pink-50 text-pink-600',
-]
+];
 const textColors = [
   'text-blue-600',
   'text-emerald-600',
   'text-amber-600',
   'text-purple-600',
   'text-pink-600',
-]
+];
 
 const handleConfirmPreview = () => {
-  isPreviewOpen.value = false
-  hasPreviewed.value = true
-}
+  isPreviewOpen.value = false;
+  hasPreviewed.value = true;
+};
 
 const handlePublish = () => {
   if (!isWeightValid.value) {
-    alert('请先确保权重合计为100%!')
-    return
+    alert('请先确保权重合计为100%!');
+    return;
   }
   if (!hasPreviewed.value) {
-    alert('请先点击【日报界面预览】确认最终下发到员工的界面无误!')
-    return
+    alert('请先点击【日报界面预览】确认最终下发到员工的界面无误!');
+    return;
   }
-  alert('发布成功！')
-}
+  alert('发布成功！');
+};
 </script>
 
 <template>
@@ -183,7 +183,9 @@ const handlePublish = () => {
           <ArrowLeft class="h-4 w-4" />
         </Button>
         <div>
-          <h1 class="text-xl font-bold tracking-tight text-slate-900">新建考核模板</h1>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900">
+            新建考核模板
+          </h1>
           <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
             <Badge
               variant="outline"
@@ -208,7 +210,10 @@ const handlePublish = () => {
             class="absolute -top-1 -right-1 flex h-3 w-3 rounded-full bg-red-500 animate-pulse border-2 border-white"
           />
         </Button>
-        <Button variant="outline" class="bg-white hover:bg-slate-50 text-slate-700">
+        <Button
+          variant="outline"
+          class="bg-white hover:bg-slate-50 text-slate-700"
+        >
           <Save class="mr-2 h-4 w-4" />
           保存草稿
         </Button>
@@ -233,25 +238,33 @@ const handlePublish = () => {
         <!-- Basic Info Card -->
         <Card class="shadow-sm border-slate-200">
           <CardHeader class="pb-4">
-            <CardTitle class="text-base font-semibold">1. 基础信息配置</CardTitle>
+            <CardTitle class="text-base font-semibold">
+              1. 基础信息配置
+            </CardTitle>
             <CardDescription>设置该模板的基本定义和适用范围。</CardDescription>
           </CardHeader>
           <CardContent class="space-y-4">
             <div class="space-y-2">
-              <Label for="tpl-name" class="text-slate-700 font-semibold">模板名称 <span class="text-red-500">*</span></Label>
+              <Label
+                for="tpl-name"
+                class="text-slate-700 font-semibold"
+              >模板名称 <span class="text-red-500">*</span></Label>
               <Input
                 id="tpl-name"
-                placeholder="输入如: 2025年业务一部区域经理月度考核版"
                 v-model="templateInfo.name"
+                placeholder="输入如: 2025年业务一部区域经理月度考核版"
               />
             </div>
             <div class="space-y-2">
-              <Label for="tpl-desc" class="text-slate-700 font-semibold">摘要说明</Label>
+              <Label
+                for="tpl-desc"
+                class="text-slate-700 font-semibold"
+              >摘要说明</Label>
               <Textarea
                 id="tpl-desc"
+                v-model="templateInfo.description"
                 placeholder="简要描述该模板的考核重点与适用人群..."
                 class="resize-none h-20"
-                v-model="templateInfo.description"
               />
             </div>
             <div class="grid grid-cols-2 gap-4">
@@ -262,10 +275,18 @@ const handlePublish = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="month">按月度考核</SelectItem>
-                    <SelectItem value="quarter">按季度考核</SelectItem>
-                    <SelectItem value="half_year">按半年度考核</SelectItem>
-                    <SelectItem value="year">按年度考核</SelectItem>
+                    <SelectItem value="month">
+                      按月度考核
+                    </SelectItem>
+                    <SelectItem value="quarter">
+                      按季度考核
+                    </SelectItem>
+                    <SelectItem value="half_year">
+                      按半年度考核
+                    </SelectItem>
+                    <SelectItem value="year">
+                      按年度考核
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -276,10 +297,18 @@ const handlePublish = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全公司通用</SelectItem>
-                    <SelectItem value="dept_sales">仅限销售部门</SelectItem>
-                    <SelectItem value="dept_func">仅限职能部门</SelectItem>
-                    <SelectItem value="level_manager">管理层专用</SelectItem>
+                    <SelectItem value="all">
+                      全公司通用
+                    </SelectItem>
+                    <SelectItem value="dept_sales">
+                      仅限销售部门
+                    </SelectItem>
+                    <SelectItem value="dept_func">
+                      仅限职能部门
+                    </SelectItem>
+                    <SelectItem value="level_manager">
+                      管理层专用
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -315,7 +344,9 @@ const handlePublish = () => {
                 class="flex flex-col items-center justify-center p-8 text-slate-500 border border-dashed border-slate-200 rounded-lg bg-slate-50/50"
               >
                 <Calendar class="h-8 w-8 mb-3 text-slate-300" />
-                <p class="text-sm">尚未添加任何指标</p>
+                <p class="text-sm">
+                  尚未添加任何指标
+                </p>
                 <Button
                   size="sm"
                   variant="link"
@@ -326,8 +357,8 @@ const handlePublish = () => {
                 </Button>
               </div>
               <div
-                v-else
                 v-for="(ind, index) in indicators"
+                v-else
                 :key="ind.id"
                 class="relative bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden group"
               >
@@ -347,7 +378,9 @@ const handlePublish = () => {
                         <TrendingUp class="h-5 w-5" />
                       </div>
                       <div>
-                        <h3 class="text-lg font-bold text-slate-900">{{ ind.name }}</h3>
+                        <h3 class="text-lg font-bold text-slate-900">
+                          {{ ind.name }}
+                        </h3>
                         <div
                           class="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500 font-medium"
                         >
@@ -371,8 +404,8 @@ const handlePublish = () => {
                         <Input
                           type="number"
                           :model-value="ind.weight"
-                          @update:model-value="(v) => handleWeightChange(ind.id, String(v))"
                           class="h-9 w-20 text-center font-semibold pr-6 rounded-r-none border-r-0 focus-visible:z-10 bg-slate-50/50"
+                          @update:model-value="(v) => handleWeightChange(ind.id, String(v))"
                         />
                         <div
                           class="h-9 px-3 flex items-center bg-slate-50 border border-slate-200 rounded-r-md text-slate-500 text-sm"
@@ -411,42 +444,61 @@ const handlePublish = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="api">通过系统接口预置</SelectItem>
-                            <SelectItem value="manual">员工手动逐日填报</SelectItem>
+                            <SelectItem value="api">
+                              通过系统接口预置
+                            </SelectItem>
+                            <SelectItem value="manual">
+                              员工手动逐日填报
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div class="h-[52px] flex flex-col justify-end">
-                        <Select v-if="ind.dataSourceType === 'manual'" default-value="sum">
+                        <Select
+                          v-if="ind.dataSourceType === 'manual'"
+                          default-value="sum"
+                        >
                           <SelectTrigger
                             class="bg-white border-slate-200 shadow-sm font-medium h-9 text-xs"
                           >
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="sum">月度累加 (SUM)</SelectItem>
-                            <SelectItem value="avg">月度单项平均 (AVG)</SelectItem>
-                            <SelectItem value="latest">按最后一次填报值计算</SelectItem>
+                            <SelectItem value="sum">
+                              月度累加 (SUM)
+                            </SelectItem>
+                            <SelectItem value="avg">
+                              月度单项平均 (AVG)
+                            </SelectItem>
+                            <SelectItem value="latest">
+                              按最后一次填报值计算
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <div
                           v-else
                           class="bg-slate-100/70 border border-slate-200/50 rounded-md p-2.5 text-[11px] text-slate-500 text-center font-medium mx-auto w-full"
                         >
-                          接口直连最终数据<br />无需配置加和方式
+                          接口直连最终数据<br>无需配置加和方式
                         </div>
                       </div>
                       <div class="mt-3 pt-3 border-t border-slate-200 space-y-2">
                         <div class="text-xs text-slate-400 leading-relaxed">
-                          <div v-if="ind.dataSourceType === 'manual'" class="flex items-center gap-1.5 mt-1.5">
+                          <div
+                            v-if="ind.dataSourceType === 'manual'"
+                            class="flex items-center gap-1.5 mt-1.5"
+                          >
                             <Input
                               placeholder="填写呈现给员工的字段指导文字..."
                               :model-value="ind.dataSourceValue"
-                              @update:model-value="(v) => handleSourceValueChange(ind.id, String(v))"
                               class="h-7 text-xs flex-1 border-slate-200 focus-visible:ring-1"
+                              @update:model-value="(v) => handleSourceValueChange(ind.id, String(v))"
                             />
                           </div>
-                          <div v-else class="flex items-center gap-1.5 mt-1.5">
+                          <div
+                            v-else
+                            class="flex items-center gap-1.5 mt-1.5"
+                          >
                             <Select
                               :model-value="ind.dataSourceValue"
                               @update:model-value="(v) => handleSourceValueChange(ind.id, String(v))"
@@ -455,9 +507,15 @@ const handlePublish = () => {
                                 <SelectValue placeholder="系统接口标识..." />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="api_act_sales">ERP实际营业额</SelectItem>
-                                <SelectItem value="api_act_big_item_sales">ERP大单品销售额</SelectItem>
-                                <SelectItem value="api_sys_profit">财务核定毛利额</SelectItem>
+                                <SelectItem value="api_act_sales">
+                                  ERP实际营业额
+                                </SelectItem>
+                                <SelectItem value="api_act_big_item_sales">
+                                  ERP大单品销售额
+                                </SelectItem>
+                                <SelectItem value="api_sys_profit">
+                                  财务核定毛利额
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -566,7 +624,7 @@ const handlePublish = () => {
                 ]"
               >
                 ⚠️ {{ totalWeight > 100 ? `权重超标 ${totalWeight - 100}%` : `权重不足 100% (还差 ${100 - totalWeight}%)` }}
-                <br />请调整左侧表单中的各项权重，确保准确累加至100%后方可发布。
+                <br>请调整左侧表单中的各项权重，确保准确累加至100%后方可发布。
               </div>
 
               <div class="space-y-3">
@@ -588,7 +646,10 @@ const handlePublish = () => {
                     :key="ind.id"
                     class="flex justify-between items-center text-xs"
                   >
-                    <span class="text-slate-600 truncate max-w-[180px]" :title="ind.name">
+                    <span
+                      class="text-slate-600 truncate max-w-[180px]"
+                      :title="ind.name"
+                    >
                       {{ i + 1 }}. {{ ind.name }}
                     </span>
                     <span class="font-semibold text-slate-700">{{ ind.weight }}%</span>
@@ -599,7 +660,7 @@ const handlePublish = () => {
           </Card>
 
           <div class="text-xs text-slate-400 text-center px-4 leading-relaxed">
-            所有的考核表单将会基于本模板动态生成。<br />每日数据将自动聚合以计算月底总评。
+            所有的考核表单将会基于本模板动态生成。<br>每日数据将自动聚合以计算月底总评。
           </div>
         </div>
       </div>

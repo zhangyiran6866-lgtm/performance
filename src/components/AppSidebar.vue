@@ -3,10 +3,10 @@ import {
   Setting,
   Aim,
   Calendar,
-} from '@element-plus/icons-vue'
-import { useRoute } from 'vue-router'
+} from '@element-plus/icons-vue';
+import { useRoute } from 'vue-router';
 
-const route = useRoute()
+const route = useRoute();
 
 const items = [
   {
@@ -24,13 +24,15 @@ const items = [
     url: '/assessment/cycle',
     icon: Calendar,
   },
-]
+];
 </script>
 
 <template>
   <div class="custom-sidebar h-full flex flex-col bg-white border-r">
     <div class="p-4 py-6">
-      <h2 class="text-sm font-bold text-blue-600 truncate">卓希集团绩效管理</h2>
+      <h2 class="text-sm font-bold text-blue-600 truncate">
+        卓希集团绩效管理
+      </h2>
     </div>
     
     <el-menu
@@ -38,7 +40,12 @@ const items = [
       class="border-none flex-1"
       router
     >
-      <el-menu-item v-for="item in items" :key="item.url" :index="item.url" class="custom-menu-item">
+      <el-menu-item
+        v-for="item in items"
+        :key="item.url"
+        :index="item.url"
+        class="custom-menu-item"
+      >
         <el-icon><component :is="item.icon" /></el-icon>
         <template #title>
           <span>{{ item.title }}</span>

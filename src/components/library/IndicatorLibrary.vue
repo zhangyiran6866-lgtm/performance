@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue'
-import IndicatorWizard from '@/components/library/IndicatorWizard.vue'
+import { ref, computed } from 'vue';
+import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue';
+import IndicatorWizard from '@/components/library/IndicatorWizard.vue';
 
 const initialIndicators: IndicatorData[] = [
   {
@@ -64,53 +64,57 @@ const initialIndicators: IndicatorData[] = [
     mapField: 'manager_eval_score',
     period: 'month',
   },
-]
+];
 
-const search = ref('')
-const dimensionFilter = ref('all')
-const indicators = ref<IndicatorData[]>(initialIndicators)
-const isWizardOpen = ref(false)
-const editingIndicator = ref<IndicatorData | null>(null)
+const search = ref('');
+const dimensionFilter = ref('all');
+const indicators = ref<IndicatorData[]>(initialIndicators);
+const isWizardOpen = ref(false);
+const editingIndicator = ref<IndicatorData | null>(null);
 
 const filtered = computed(() => {
   return indicators.value.filter((ind) => {
-    const matchSearch = ind.name.includes(search.value)
-    const matchDimension = dimensionFilter.value === 'all' || ind.dimension === dimensionFilter.value
-    return matchSearch && matchDimension
-  })
-})
+    const matchSearch = ind.name.includes(search.value);
+    const matchDimension = dimensionFilter.value === 'all' || ind.dimension === dimensionFilter.value;
+    return matchSearch && matchDimension;
+  });
+});
 
 const handleEdit = (indicator: IndicatorData) => {
-  editingIndicator.value = indicator
-  isWizardOpen.value = true
-}
+  editingIndicator.value = indicator;
+  isWizardOpen.value = true;
+};
 
 const handleAddNew = () => {
-  editingIndicator.value = null
-  isWizardOpen.value = true
-}
+  editingIndicator.value = null;
+  isWizardOpen.value = true;
+};
 
 const handleSave = (newInd: IndicatorData) => {
   if (editingIndicator.value) {
     indicators.value = indicators.value.map((i) =>
-      i.id === newInd.id ? newInd : i
-    )
+      i.id === newInd.id ? newInd : i,
+    );
   } else {
     indicators.value = [
       { ...newInd, id: Date.now().toString() },
       ...indicators.value,
-    ]
+    ];
   }
-  isWizardOpen.value = false
-}
+  isWizardOpen.value = false;
+};
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight text-slate-900 border-l-4 border-blue-600 pl-3">企业指标元数据库</h2>
-        <p class="text-sm text-slate-500 mt-1 pl-4">管理维护全公司所有业务及职能部门的考核考分元数据标准。</p>
+        <h2 class="text-2xl font-bold tracking-tight text-slate-900 border-l-4 border-blue-600 pl-3">
+          企业指标元数据库
+        </h2>
+        <p class="text-sm text-slate-500 mt-1 pl-4">
+          管理维护全公司所有业务及职能部门的考核考分元数据标准。
+        </p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <div class="relative w-full md:w-48 lg:w-56">
@@ -125,19 +129,53 @@ const handleSave = (newInd: IndicatorData) => {
           </el-input>
         </div>
 
-        <el-select v-model="dimensionFilter" placeholder="全部分类" class="w-[120px] custom-select">
-          <el-option label="全部分类" value="all" />
-          <el-option label="销售业绩" value="销售业绩" />
-          <el-option label="产品力" value="产品力" />
-          <el-option label="市场指标" value="市场指标" />
-          <el-option label="渠道力" value="渠道力" />
-          <el-option label="费用管理" value="费用管理" />
-          <el-option label="组织力" value="组织力" />
-          <el-option label="行动计划" value="行动计划" />
+        <el-select
+          v-model="dimensionFilter"
+          placeholder="全部分类"
+          class="w-[120px] custom-select"
+        >
+          <el-option
+            label="全部分类"
+            value="all"
+          />
+          <el-option
+            label="销售业绩"
+            value="销售业绩"
+          />
+          <el-option
+            label="产品力"
+            value="产品力"
+          />
+          <el-option
+            label="市场指标"
+            value="市场指标"
+          />
+          <el-option
+            label="渠道力"
+            value="渠道力"
+          />
+          <el-option
+            label="费用管理"
+            value="费用管理"
+          />
+          <el-option
+            label="组织力"
+            value="组织力"
+          />
+          <el-option
+            label="行动计划"
+            value="行动计划"
+          />
         </el-select>
 
-        <el-button type="primary" @click="handleAddNew" class="custom-button px-6">
-          <el-icon class="mr-1.5"><Plus /></el-icon>
+        <el-button
+          type="primary"
+          class="custom-button px-6"
+          @click="handleAddNew"
+        >
+          <el-icon class="mr-1.5">
+            <Plus />
+          </el-icon>
           <span class="text-base">新建指标</span>
         </el-button>
       </div>
@@ -155,7 +193,9 @@ const handleSave = (newInd: IndicatorData) => {
         v-if="filtered.length === 0"
         class="col-span-full flex flex-col items-center justify-center p-12 text-slate-500 border border-dashed rounded-lg bg-white"
       >
-        <el-icon class="text-4xl mb-4 text-slate-300"><Document /></el-icon>
+        <el-icon class="text-4xl mb-4 text-slate-300">
+          <Document />
+        </el-icon>
         <p>未找到符合条件的指标</p>
       </div>
     </div>

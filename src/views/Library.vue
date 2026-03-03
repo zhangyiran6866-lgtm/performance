@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Plus, Search, FileText } from 'lucide-vue-next'
-import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue'
-import IndicatorWizard from '@/components/library/IndicatorWizard.vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { ref, computed } from 'vue';
+import { Plus, Search, FileText } from 'lucide-vue-next';
+import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue';
+import IndicatorWizard from '@/components/library/IndicatorWizard.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from '@/components/ui/select';
 
 const initialIndicators: IndicatorData[] = [
   {
@@ -74,63 +74,67 @@ const initialIndicators: IndicatorData[] = [
     mapField: 'manager_eval_score',
     period: 'month',
   },
-]
+];
 
-const search = ref('')
-const dimensionFilter = ref('all')
-const ruleFilter = ref('all')
-const indicators = ref<IndicatorData[]>(initialIndicators)
-const isWizardOpen = ref(false)
-const editingIndicator = ref<IndicatorData | null>(null)
+const search = ref('');
+const dimensionFilter = ref('all');
+const ruleFilter = ref('all');
+const indicators = ref<IndicatorData[]>(initialIndicators);
+const isWizardOpen = ref(false);
+const editingIndicator = ref<IndicatorData | null>(null);
 
 const filtered = computed(() => {
   return indicators.value.filter((ind) => {
-    const matchSearch = ind.name.includes(search.value)
-    const matchDimension = dimensionFilter.value === 'all' || ind.dimension === dimensionFilter.value
-    const matchRule = ruleFilter.value === 'all' || ind.ruleType.includes(ruleFilter.value)
-    return matchSearch && matchDimension && matchRule
-  })
-})
+    const matchSearch = ind.name.includes(search.value);
+    const matchDimension = dimensionFilter.value === 'all' || ind.dimension === dimensionFilter.value;
+    const matchRule = ruleFilter.value === 'all' || ind.ruleType.includes(ruleFilter.value);
+    return matchSearch && matchDimension && matchRule;
+  });
+});
 
 const handleEdit = (indicator: IndicatorData) => {
-  editingIndicator.value = indicator
-  isWizardOpen.value = true
-}
+  editingIndicator.value = indicator;
+  isWizardOpen.value = true;
+};
 
 const handleAddNew = () => {
-  editingIndicator.value = null
-  isWizardOpen.value = true
-}
+  editingIndicator.value = null;
+  isWizardOpen.value = true;
+};
 
 const handleSave = (newInd: IndicatorData) => {
   if (editingIndicator.value) {
     indicators.value = indicators.value.map((i) =>
-      i.id === newInd.id ? newInd : i
-    )
+      i.id === newInd.id ? newInd : i,
+    );
   } else {
     indicators.value = [
       { ...newInd, id: Date.now().toString() },
       ...indicators.value,
-    ]
+    ];
   }
-  isWizardOpen.value = false
-}
+  isWizardOpen.value = false;
+};
 </script>
 
 <template>
   <div class="space-y-6">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">企业指标元数据库</h1>
-        <p class="text-sm text-slate-500 mt-1">管理维护全公司所有业务及职能部门的考核考分元数据标准。</p>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+          企业指标元数据库
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">
+          管理维护全公司所有业务及职能部门的考核考分元数据标准。
+        </p>
       </div>
       <div class="flex flex-wrap items-center gap-3">
         <div class="relative w-full md:w-56">
           <Search class="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
           <Input
+            v-model="search"
             placeholder="搜索指标名称..."
             class="pl-9 bg-white"
-            v-model="search"
           />
         </div>
 
@@ -139,14 +143,30 @@ const handleSave = (newInd: IndicatorData) => {
             <SelectValue placeholder="全部分类" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">全部分类</SelectItem>
-            <SelectItem value="销售业绩">销售业绩</SelectItem>
-            <SelectItem value="产品力">产品力</SelectItem>
-            <SelectItem value="市场指标">市场指标</SelectItem>
-            <SelectItem value="渠道力">渠道力</SelectItem>
-            <SelectItem value="费用管理">费用管理</SelectItem>
-            <SelectItem value="组织力">组织力</SelectItem>
-            <SelectItem value="行动计划">行动计划</SelectItem>
+            <SelectItem value="all">
+              全部分类
+            </SelectItem>
+            <SelectItem value="销售业绩">
+              销售业绩
+            </SelectItem>
+            <SelectItem value="产品力">
+              产品力
+            </SelectItem>
+            <SelectItem value="市场指标">
+              市场指标
+            </SelectItem>
+            <SelectItem value="渠道力">
+              渠道力
+            </SelectItem>
+            <SelectItem value="费用管理">
+              费用管理
+            </SelectItem>
+            <SelectItem value="组织力">
+              组织力
+            </SelectItem>
+            <SelectItem value="行动计划">
+              行动计划
+            </SelectItem>
           </SelectContent>
         </Select>
 
@@ -155,15 +175,28 @@ const handleSave = (newInd: IndicatorData) => {
             <SelectValue placeholder="全部计分规则" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">全部计分规则</SelectItem>
-            <SelectItem value="阶梯制">阶梯制</SelectItem>
-            <SelectItem value="控制">预算扣分</SelectItem>
-            <SelectItem value="二元">节点二元</SelectItem>
-            <SelectItem value="定性">主观打分</SelectItem>
+            <SelectItem value="all">
+              全部计分规则
+            </SelectItem>
+            <SelectItem value="阶梯制">
+              阶梯制
+            </SelectItem>
+            <SelectItem value="控制">
+              预算扣分
+            </SelectItem>
+            <SelectItem value="二元">
+              节点二元
+            </SelectItem>
+            <SelectItem value="定性">
+              主观打分
+            </SelectItem>
           </SelectContent>
         </Select>
 
-        <Button @click="handleAddNew" class="shrink-0">
+        <Button
+          class="shrink-0"
+          @click="handleAddNew"
+        >
           <Plus class="mr-1.5 h-4 w-4" />
           <span>新建指标</span>
         </Button>

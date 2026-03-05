@@ -107,8 +107,8 @@ const handleSave = (newInd: IndicatorData) => {
 
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
+    <div class="flex flex-wrap items-center justify-between gap-6">
+      <div class="min-w-[300px] flex-shrink-0">
         <h2 class="text-2xl font-bold tracking-tight text-slate-900 border-l-4 border-blue-600 pl-3">
           企业指标元数据库
         </h2>
@@ -116,23 +116,25 @@ const handleSave = (newInd: IndicatorData) => {
           管理维护全公司所有业务及职能部门的考核考分元数据标准。
         </p>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="relative w-full md:w-48 lg:w-56">
-          <el-input
-            v-model="search"
-            placeholder="搜索指标名称..."
-            class="custom-input"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </div>
+      <div class="flex flex-nowrap items-center gap-4 flex-shrink-0 overflow-x-auto">
+        <el-input
+          v-model="search"
+          placeholder="搜索指标名称..."
+          class="custom-input"
+          style="width: 320px; flex-shrink: 0;"
+          size="large"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
 
         <el-select
           v-model="dimensionFilter"
           placeholder="全部分类"
-          class="w-[120px] custom-select"
+          class="custom-select"
+          style="width: 320px; flex-shrink: 0;"
+          size="large"
         >
           <el-option
             label="全部分类"

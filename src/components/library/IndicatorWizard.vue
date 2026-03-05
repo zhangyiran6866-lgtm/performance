@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import type { IndicatorData } from './IndicatorCard.vue';
+import { getDictOptions } from '@/utils/dict';
+
+/**
+ * @author Zyr
+ * @date 2026-03-05 14:04:00
+ * @description 引入字典获取维度配置数据
+ * @lines 10
+ */
 
 const props = defineProps<{
   isOpen: boolean
@@ -25,6 +33,9 @@ const formData = ref({
 
 const previewValue = ref(85);
 const deductValue = ref(0);
+
+// 获取维度分类字典项
+const dimensionOptions = computed(() => getDictOptions('classification_performance_indicators_type'));
 
 const internalOpen = computed({
   get: () => props.isOpen,
@@ -178,32 +189,10 @@ const onRuleChange = (v: any) => {
               class="w-full custom-select-h10"
             >
               <el-option
-                label="销售业绩"
-                value="销售业绩"
-              />
-              <el-option
-                label="产品力"
-                value="产品力"
-              />
-              <el-option
-                label="渠道力"
-                value="渠道力"
-              />
-              <el-option
-                label="市场指标"
-                value="市场指标"
-              />
-              <el-option
-                label="费用管理"
-                value="费用管理"
-              />
-              <el-option
-                label="组织力"
-                value="组织力"
-              />
-              <el-option
-                label="行动计划"
-                value="行动计划"
+                v-for="dict in dimensionOptions"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
               />
             </el-select>
           </div>

@@ -1,8 +1,15 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { removeToken } from './auth';
 
-// 配置环境的基础URL
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+export const isRelogin = { show: false };
+
+let isRefreshToken = false;
+let requestList: any[] = [];
+
+// 仿照 c-center: base_url = target url + api preffix
+const baseURL = (import.meta.env.VITE_API_TARGET_URL || '') + (import.meta.env.VITE_API_BASE_URL || '/api');
+
 
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
@@ -13,17 +20,38 @@ const service: AxiosInstance = axios.create({
   }
 });
 
+import { getToken, getTenantId } from './auth';
+
+// 请求白名单，无须 token 的接口
+const whiteList: string[] = ['/login', '/system/auth/refresh-token'];
+
 // 请求拦截器
 service.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // 每次发送请求之前，可以在此进行相关配置
-    // 例如：携带 token
-    // const token = localStorage.getItem('token');
-    // if (token && config.headers) {
-    //   config.headers['Authorization'] = `Bearer ${token}`;
-    // }
+    // 白名单内不注入 token
+    let isToken = true;
+    if (config.url) {
+      isToken = !whiteList.some((v) => config.url!.includes(v));
+    }
     
-    // 如果不考虑登录问题，这里的逻辑先留空作为占位即可
+    // 每次发送请求之前，在此进行相关配置
+    const token = getToken();
+    const tenantId = getTenantId();
+
+    if (token && isToken && config.headers) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    // 参照 c-center 行为：可能由于临时限制或者业务写死，这里强制传递临时租户ID '1'
+    config.headers['tenant-id'] = tenantId || '1';
+    
+    // 如果有环境 tag 也带上
+    const serviceTag = import.meta.env.VITE_APP_SERVICE_TAG;
+    if (serviceTag && config.headers) {
+       config.headers['tag'] = serviceTag;
+    }
+    
+    // get 参数或 post query 参数确保传递
     return config;
   },
   (error: any) => {
@@ -33,25 +61,89 @@ service.interceptors.request.use(
   }
 );
 
+const handleAuthorized = (msg: string = '登录状态已过期，您可以继续留在该页面，或者重新登录') => {
+  if (!isRelogin.show) {
+    if (window.location.href.includes('login?redirect=')) return Promise.reject(msg);
+    isRelogin.show = true;
+    ElMessageBox.confirm(msg, '系统提示', {
+      confirmButtonText: '重新登录',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      isRelogin.show = false;
+      removeToken();
+      location.href = '/login';
+    }).catch(() => {
+      isRelogin.show = false;
+    });
+  }
+  return Promise.reject(msg);
+};
+
+const executeRefreshToken = async () => {
+  const { getRefreshToken } = await import('./auth');
+  const tenantId = getTenantId();
+  // 注意，我们要跳过拦截器，使用新的原生 axios 发送，否则会死锁
+  return await axios.post(baseURL + '/system/auth/refresh-token?refreshToken=' + getRefreshToken() + '&clientId=taojin-sso-demo-by-password', {}, {
+      headers: {
+        'tenant-id': tenantId || '1'
+      }
+  });
+};
+
 // 响应拦截器
 service.interceptors.response.use(
-  (response: AxiosResponse) => {
+  async (response: AxiosResponse) => {
     // 成功收到响应
     const res = response.data;
+    const config = response.config;
     
     // 假设后端规范返回格式为 { code: Number, data: any, message: string }
-    // 这里可以根据实际情况进行解构或者校验，如果直接返回 response，业务代码就需要自己去解一层 .data
-    // TODO: 根据实际后端的接口规范调整这里的逻辑判断
-    // 比如：
-    // if (res.code !== 200 && res.code !== 0) {
-    //   ElMessage.error(res.message || 'Error Request');
-    //   return Promise.reject(new Error(res.message || 'Error'));
-    // }
+    const code = res.code || 0;
+    const msg = res.msg || 'Error Request';
+
+    if (code === 401) {
+      if (!isRefreshToken) {
+        isRefreshToken = true;
+        const { getRefreshToken, setToken } = await import('./auth');
+        if (!getRefreshToken()) {
+           return handleAuthorized();
+        }
+        try {
+           const refreshTokenRes = await executeRefreshToken();
+           if (refreshTokenRes.data.code === 400 || refreshTokenRes.data.code === 401) {
+              return handleAuthorized('刷新令牌已过期，请重新登录');
+           }
+           setToken(refreshTokenRes.data.data || refreshTokenRes.data);
+           config.headers!['Authorization'] = `Bearer ${getToken()}`;
+           requestList.forEach((cb: any) => cb());
+           requestList = [];
+           return service(config);
+        } catch (e) {
+           requestList.forEach((cb: any) => cb());
+           return handleAuthorized();
+        } finally {
+           requestList = [];
+           isRefreshToken = false;
+        }
+      } else {
+        // 如果正在刷新 token，将所有发来的请求排入队列挂起
+        return new Promise((resolve) => {
+           requestList.push(() => {
+             config.headers!['Authorization'] = `Bearer ${getToken()}`;
+             resolve(service(config));
+           });
+        });
+      }
+    } else if (code === 500) {
+       ElMessage.error(msg);
+       return Promise.reject(new Error(msg));
+    }
     
     // 这里暂时直接将 axios 拆包后的数据抛给业务层调用方
     return res;
   },
-  (error: any) => {
+  async (error: any) => {
     // 统一处理报错信息
     let message = '';
     
@@ -61,9 +153,37 @@ service.interceptors.response.use(
           message = '请求错误(400)';
           break;
         case 401:
-          message = '未授权，请重新登录(401)';
-          // 此处可以加入跳转到登录页的逻辑
-          break;
+          if (!isRefreshToken) {
+            isRefreshToken = true;
+            const { getRefreshToken, setToken } = await import('./auth');
+            if (!getRefreshToken()) {
+               return handleAuthorized();
+            }
+            try {
+               const refreshTokenRes = await executeRefreshToken();
+               if (refreshTokenRes.data.code === 400 || refreshTokenRes.data.code === 401) {
+                  return handleAuthorized('刷新令牌已过期，请重新登录');
+               }
+               setToken(refreshTokenRes.data.data || refreshTokenRes.data);
+               error.response.config.headers['Authorization'] = `Bearer ${getToken()}`;
+               requestList.forEach((cb: any) => cb());
+               requestList = [];
+               return service(error.response.config);
+            } catch (e) {
+               requestList.forEach((cb: any) => cb());
+               return handleAuthorized();
+            } finally {
+               requestList = [];
+               isRefreshToken = false;
+            }
+          } else {
+            return new Promise((resolve) => {
+               requestList.push(() => {
+                 error.response.config.headers['Authorization'] = `Bearer ${getToken()}`;
+                 resolve(service(error.response.config));
+               });
+            });
+          }
         case 403:
           message = '拒绝访问(403)';
           break;

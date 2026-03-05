@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue';
 import IndicatorWizard from '@/components/library/IndicatorWizard.vue';
+import { getDictOptions } from '@/utils/dict';
 
 const initialIndicators: IndicatorData[] = [
   {
@@ -141,32 +142,10 @@ const handleSave = (newInd: IndicatorData) => {
             value="all"
           />
           <el-option
-            label="销售业绩"
-            value="销售业绩"
-          />
-          <el-option
-            label="产品力"
-            value="产品力"
-          />
-          <el-option
-            label="市场指标"
-            value="市场指标"
-          />
-          <el-option
-            label="渠道力"
-            value="渠道力"
-          />
-          <el-option
-            label="费用管理"
-            value="费用管理"
-          />
-          <el-option
-            label="组织力"
-            value="组织力"
-          />
-          <el-option
-            label="行动计划"
-            value="行动计划"
+            v-for="dict in getDictOptions('classification_performance_indicators_type')"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.label"
           />
         </el-select>
 

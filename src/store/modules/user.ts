@@ -35,8 +35,8 @@ export const useUserStore = defineStore('admin-user', {
       username: '',
       deptId: 0,
       deptName: '',
-      openidQw: ''
-    }
+      openidQw: '',
+    },
   }),
   getters: {
     getPermissions(): string[] {
@@ -50,7 +50,7 @@ export const useUserStore = defineStore('admin-user', {
     },
     getUser(): UserVO {
       return this.user;
-    }
+    },
   },
   actions: {
     async setUserInfoAction() {
@@ -94,10 +94,10 @@ export const useUserStore = defineStore('admin-user', {
         deptId: 0,
         deptName: '',
         username: '',
-        openidQw: ''
+        openidQw: '',
       };
-    }
-  }
+    },
+  },
 });
 
 export const useUserStoreWithOut = () => {

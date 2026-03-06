@@ -14,7 +14,7 @@ export interface DictState {
 export const useDictStore = defineStore('dict', {
   state: (): DictState => ({
     dictMap: new Map<string, any>(),
-    isSetDict: false
+    isSetDict: false,
   }),
   getters: {
     getDictMap(): Record<string, any> {
@@ -26,7 +26,7 @@ export const useDictStore = defineStore('dict', {
     },
     getIsSetDict(): boolean {
       return this.isSetDict;
-    }
+    },
   },
   actions: {
     async setDictMap() {
@@ -51,7 +51,7 @@ export const useDictStore = defineStore('dict', {
             value: dictData.value,
             label: dictData.label,
             colorType: dictData.colorType,
-            cssClass: dictData.cssClass
+            cssClass: dictData.cssClass,
           });
         });
         this.dictMap = dictDataMap as unknown as Map<string, any>;
@@ -64,8 +64,8 @@ export const useDictStore = defineStore('dict', {
         this.setDictMap();
       }
       return (this.dictMap as unknown as Record<string, any>)[type];
-    }
-  }
+    },
+  },
 });
 
 export const useDictStoreWithOut = () => {

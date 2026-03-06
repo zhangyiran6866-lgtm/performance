@@ -10,6 +10,6 @@ import request from '@/utils/request';
 export function getScoreRuleList() {
   return request({
     url: '/human/performance-indicator-rule/list',
-    method: 'get'
+    method: 'get',
   });
 }

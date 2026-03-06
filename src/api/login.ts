@@ -5,7 +5,7 @@ export const getTenantIdByName = (name: string) => {
   return request({
     url: '/system/tenant/get-id-by-name',
     method: 'get',
-    params: { name }
+    params: { name },
   });
 };
 
@@ -13,7 +13,7 @@ export const getTenantIdByName = (name: string) => {
 export const socialAuthRedirect = (type: number, redirectUri: string) => {
   return request({
     url: '/system/auth/social-auth-redirect?type=' + type + '&redirectUri=' + redirectUri,
-    method: 'get'
+    method: 'get',
   });
 };
 
@@ -22,7 +22,7 @@ export const loginByPassword = (data: any) => {
   return request({
     url: '/system/oauth2/token',
     method: 'post',
-    params: data 
+    params: data, 
   });
 };
 
@@ -30,6 +30,6 @@ export const loginByPassword = (data: any) => {
 export const getInfo = () => {
   return request({
     url: '/system/auth/get-permission-info',
-    method: 'get'
+    method: 'get',
   });
 };

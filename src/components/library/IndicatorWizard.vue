@@ -384,7 +384,9 @@ const onRuleChange = (v: number) => {
           v-else-if="isQualitativeGrade"
           class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 shadow-sm"
         >
-          <p class="text-sm font-semibold text-slate-700 mb-3">定性分级预设</p>
+          <p class="text-sm font-semibold text-slate-700 mb-3">
+            定性分级预设
+          </p>
           <div class="grid grid-cols-2 gap-2">
             <div
               v-for="grade in (parsedExpression.grades || [])"
@@ -392,7 +394,13 @@ const onRuleChange = (v: number) => {
               class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-100"
             >
               <span class="text-sm font-medium text-slate-700">{{ grade.name }}</span>
-              <el-tag size="small" effect="plain" class="font-bold">{{ grade.score }} 分</el-tag>
+              <el-tag
+                size="small"
+                effect="plain"
+                class="font-bold"
+              >
+                {{ grade.score }} 分
+              </el-tag>
             </div>
           </div>
         </div>

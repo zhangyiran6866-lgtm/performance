@@ -168,16 +168,15 @@ const handlePublish = () => {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-7xl mx-auto px-4 xl:px-8 pb-20">
+  <div class="h-full flex flex-col w-full bg-slate-50/20">
     <!-- Header / Action Bar -->
-    <div
-      class="flex flex-col md:flex-row md:items-center justify-between gap-4 sticky top-0 z-10 bg-slate-50/80 backdrop-blur-md pb-4 pt-2 -mt-2"
-    >
-      <div class="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          class="h-8 w-8 text-slate-500 hover:text-slate-900"
+    <div class="shrink-0 bg-white/70 backdrop-blur-md border-b border-slate-200/80 px-4 xl:px-8 py-3.5 z-50">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full mx-auto">
+        <div class="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-8 w-8 text-slate-500 hover:text-slate-900"
           @click="goBack"
         >
           <ArrowLeft class="h-4 w-4" />
@@ -229,11 +228,15 @@ const handlePublish = () => {
           <Send class="mr-2 h-4 w-4" />
           正式发布并启用
         </Button>
+        </div>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
-      <!-- Left Column: Editor -->
+    <!-- Scrollable content -->
+    <div class="flex-1 overflow-y-auto w-full custom-scrollbar ">
+      <div class="w-full mx-auto py-6 pb-20 space-y-6">
+        <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <!-- Left Column: Editor -->
       <div class="xl:col-span-3 space-y-6">
         <!-- Basic Info Card -->
         <Card class="shadow-sm border-slate-200">
@@ -600,7 +603,7 @@ const handlePublish = () => {
 
       <!-- Right Column: Status Summary -->
       <div class="lg:col-span-1">
-        <div class="sticky top-24 space-y-4">
+        <div class="sticky top6 space-y-4">
           <Card class="shadow-sm border-slate-200">
             <CardHeader class="pb-3 bg-slate-50/50 border-b">
               <CardTitle class="text-sm font-semibold flex items-center justify-between">
@@ -665,6 +668,8 @@ const handlePublish = () => {
         </div>
       </div>
     </div>
+      </div>
+    </div>
 
     <IndicatorSelectorModal
       v-model:is-open="isModalOpen"
@@ -680,3 +685,22 @@ const handlePublish = () => {
     />
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+</style>

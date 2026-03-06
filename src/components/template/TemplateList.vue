@@ -5,7 +5,7 @@
  * @lines ~10
 -->
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { Plus, Search, FileEdit, Trash2, PowerOff, Power, MoreHorizontal } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
@@ -83,6 +83,60 @@ const mockTemplates = [
     status: 'disabled',
     updatedAt: '2024-12-30 18:00',
   },
+  {
+    id: 'TPL-2025-006',
+    name: '华东区大区经理绩效模板',
+    description: '适用于华东区各省分公司大区经理的月度考核。',
+    indicatorCount: 5,
+    totalWeightStr: '100%',
+    status: 'published',
+    updatedAt: '2025-05-10 09:30',
+  },
+  {
+    id: 'TPL-2025-007',
+    name: '线上电商运营专员考核',
+    description: '主要考量GMV、ROI以及店铺转化率等电商关键指标。',
+    indicatorCount: 7,
+    totalWeightStr: '100%',
+    status: 'draft',
+    updatedAt: '2025-05-15 11:20',
+  },
+  {
+    id: 'TPL-2025-008',
+    name: '客服团队年度绩效模板',
+    description: '关注客诉率、满意度与响应时效的综合评估。',
+    indicatorCount: 6,
+    totalWeightStr: '100%',
+    status: 'published',
+    updatedAt: '2025-05-18 14:00',
+  },
+  {
+    id: 'TPL-2025-009',
+    name: '产品研发部项目奖金模板',
+    description: '针对项目里程碑达成、代码质量和Bug率的团队考核。',
+    indicatorCount: 8,
+    totalWeightStr: '100%',
+    status: 'published',
+    updatedAt: '2025-06-01 10:45',
+  },
+  {
+    id: 'TPL-2025-010',
+    name: '人力资源部BP绩效考核',
+    description: '重点考核人才招聘周期、员工离职率以及组织氛围建设。',
+    indicatorCount: 5,
+    totalWeightStr: '100%',
+    status: 'draft',
+    updatedAt: '2025-06-05 16:30',
+  },
+  {
+    id: 'TPL-2025-011',
+    name: '供应链仓储物流考核模板',
+    description: '评估发货准时率、库存周转及损耗管控的专项考核。',
+    indicatorCount: 9,
+    totalWeightStr: '100%',
+    status: 'published',
+    updatedAt: '2025-06-10 08:15',
+  },
 ];
 
 const search = ref('');
@@ -92,6 +146,19 @@ const filteredTemplates = computed(() => {
   return templates.value.filter(
     (t) => t.name.includes(search.value) || t.id.includes(search.value),
   );
+});
+
+const currentPage = ref(1);
+const pageSize = ref(10);
+
+const paginatedTemplates = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  const end = start + pageSize.value;
+  return filteredTemplates.value.slice(start, end);
+});
+
+watch(search, () => {
+  currentPage.value = 1;
 });
 
 const getStatusBadge = (status: string) => {
@@ -109,7 +176,7 @@ const getStatusBadge = (status: string) => {
 </script>
 
 <template>
-  <div class="flex-1 flex flex-col space-y-6 min-h-0">
+  <div class="flex-1 flex flex-col space-y-6 min-h-0 w-full lg:max-w-none">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h2 class="text-xl font-bold tracking-tight text-slate-900 border-l-4 border-purple-600 pl-3">
@@ -140,11 +207,11 @@ const getStatusBadge = (status: string) => {
       </div>
     </div>
 
-    <Card class="border-slate-200 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+    <Card class="border-slate-200 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm w-full mx-auto" style="min-width: 1000px;">
       <Table>
         <TableHeader class="bg-slate-50/50">
           <TableRow>
-            <TableHead class="w-[300px]">
+            <TableHead class="w-[300px] pl-8">
               模板名称 & 编号
             </TableHead>
             <TableHead>说明摘要</TableHead>
@@ -160,18 +227,18 @@ const getStatusBadge = (status: string) => {
             <TableHead class="text-right">
               最后修改时间
             </TableHead>
-            <TableHead class="w-[80px] text-right">
+            <TableHead class="w-[80px] text-right pr-8">
               操作
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <TableRow
-            v-for="template in filteredTemplates"
+            v-for="template in paginatedTemplates"
             :key="template.id"
             class="hover:bg-slate-50/50 transition-colors"
           >
-            <TableCell>
+            <TableCell class="pl-8">
               <div class="flex flex-col">
                 <span
                   class="font-semibold text-slate-800 line-clamp-1 text-sm"
@@ -179,12 +246,12 @@ const getStatusBadge = (status: string) => {
                 >
                   {{ template.name }}
                 </span>
-                <span class="text-[10px] text-slate-400 font-medium mt-0.5">{{ template.id }}</span>
+                <span class="text-xs text-slate-400 font-medium mt-0.5">{{ template.id }}</span>
               </div>
             </TableCell>
             <TableCell>
               <span
-                class="text-xs text-slate-600 line-clamp-1"
+                class="text-sm text-slate-600 line-clamp-1"
                 :title="template.description"
               >
                 {{ template.description || '-' }}
@@ -192,7 +259,7 @@ const getStatusBadge = (status: string) => {
             </TableCell>
             <TableCell class="text-center">
               <span
-                class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-[10px] font-semibold text-slate-700"
+                class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-xs font-semibold text-slate-700"
               >
                 {{ template.indicatorCount }}
               </span>
@@ -200,7 +267,7 @@ const getStatusBadge = (status: string) => {
             <TableCell class="text-center">
               <span
                 :class="[
-                  'text-xs font-medium',
+                  'text-sm font-medium',
                   template.totalWeightStr === '100%' ? 'text-emerald-600' : 'text-amber-500',
                 ]"
               >
@@ -208,14 +275,14 @@ const getStatusBadge = (status: string) => {
               </span>
             </TableCell>
             <TableCell class="text-center">
-              <Badge :class="[getStatusBadge(template.status).class, 'text-[10px] whitespace-nowrap']">
+              <Badge :class="[getStatusBadge(template.status).class, 'text-xs whitespace-nowrap px-2 py-0.5']">
                 {{ getStatusBadge(template.status).text }}
               </Badge>
             </TableCell>
-            <TableCell class="text-right text-[10px] text-slate-500">
+            <TableCell class="text-right text-xs text-slate-500">
               {{ template.updatedAt }}
             </TableCell>
-            <TableCell class="text-right">
+            <TableCell class="text-right pr-8">
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                   <Button
@@ -269,5 +336,15 @@ const getStatusBadge = (status: string) => {
         </TableBody>
       </Table>
     </Card>
+
+    <div class="flex justify-center my-4 pb-4">
+      <el-pagination
+        v-model:current-page="currentPage"
+        v-model:page-size="pageSize"
+        :total="filteredTemplates.length"
+        background
+        layout="prev, pager, next"
+      />
+    </div>
   </div>
 </template>

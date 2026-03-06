@@ -27,7 +27,7 @@ const filtered = computed(() => {
   return indicators.value.filter((ind) => {
     const matchSearch = ind.name.includes(search.value);
     const matchDimension = dimensionFilter.value === 'all' || ind.category === dimensionFilter.value;
-    const matchRule = ruleFilter.value === 'all' || ind.ruleType.includes(ruleFilter.value);
+    const matchRule = ruleFilter.value === 'all' || ind.ruleType?.includes(ruleFilter.value);
     return matchSearch && matchDimension && matchRule;
   });
 });

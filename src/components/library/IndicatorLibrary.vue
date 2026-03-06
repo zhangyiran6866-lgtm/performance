@@ -9,7 +9,8 @@ import { ref, onMounted, watch } from 'vue';
 import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue';
 import IndicatorWizard from '@/components/library/IndicatorWizard.vue';
 import { getDictOptions } from '@/utils/dict';
-import { getIndicatorPage } from '@/api/library';
+import { getIndicatorPage, deleteIndicator } from '@/api/library';
+import { ElMessageBox } from 'element-plus';
 import { ElMessage } from 'element-plus';
 
 const search = ref('');
@@ -70,6 +71,35 @@ const handleSave = () => {
   // 保存成功后刷新列表
   fetchIndicators();
   isWizardOpen.value = false;
+};
+
+const handleDelete = (indicator: IndicatorData) => {
+  ElMessageBox.confirm(
+    `确定要删除指标 "${indicator.name}" 吗？该操作不可恢复。`,
+    '删除确认',
+    {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(async () => {
+    try {
+      const res: any = await deleteIndicator(Number(indicator.id));
+      if (res.code === 0) {
+        ElMessage.success('指标删除成功');
+        fetchIndicators();
+      } else {
+        ElMessage.error(res.msg || '删除失败，请重试');
+      }
+    } catch (error: any) {
+      console.error('Delete indicator err:', error);
+      if (error && error.message) {
+        ElMessage.error(error.message);
+      }
+    }
+  }).catch(() => {
+    // catch cancel
+  });
 };
 </script>
 
@@ -144,6 +174,7 @@ const handleSave = () => {
           :key="ind.id"
           :data="ind"
           @click="handleEdit(ind)"
+          @delete="handleDelete"
         />
         
         <div

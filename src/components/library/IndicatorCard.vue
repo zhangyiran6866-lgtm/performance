@@ -14,6 +14,7 @@ import {
   Histogram,
   Clock,
   Money,
+  Delete,
 } from '@element-plus/icons-vue';
 
 export interface IndicatorData {
@@ -37,7 +38,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'click'): void
+  (e: 'click'): void;
+  (e: 'delete', data: IndicatorData): void;
 }>();
 
 const getDimensionIcon = (category: string) => {
@@ -91,6 +93,17 @@ const getDimensionColor = (category: string) => {
   >
     <!-- 左侧装饰条：默认淡灰，悬浮变蓝 -->
     <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-100 group-hover:bg-blue-600 transition-all duration-300" />
+    
+    <!-- 右上角悬浮删除按钮 -->
+    <el-button
+      type="danger"
+      circle
+      class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-sm z-10 hover:scale-110"
+      @click.stop="emit('delete', data)"
+      plain
+    >
+      <el-icon><Delete /></el-icon>
+    </el-button>
     
     <div class="h-full flex flex-col pl-2">
       <!-- 头部：极简分类 Tag -->

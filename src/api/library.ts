@@ -51,3 +51,21 @@ export function createIndicator(data: IndicatorVO) {
     data,
   });
 }
+
+// 编辑绩效指标
+export function editIndicator(data: IndicatorVO) {
+  return request({
+    url: '/human/performance-indicator/update',
+    method: 'put',
+    data,
+  });
+}
+
+// 删除绩效指标
+export function deleteIndicator(id: number) {
+  return request({
+    url: `/human/performance-indicator/delete?id=${id}`,
+    method: 'delete',
+  });
+}
+

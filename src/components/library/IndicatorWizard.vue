@@ -8,7 +8,7 @@
 import { ref, computed, watch } from 'vue';
 import type { IndicatorData } from './IndicatorCard.vue';
 import { getDictOptions } from '@/utils/dict';
-import { getScoreRuleList, createIndicator } from '@/api/library';
+import { getScoreRuleList, createIndicator, editIndicator } from '@/api/library';
 import { ElMessage } from 'element-plus';
 
 /**
@@ -194,7 +194,7 @@ const handleSave = async () => {
   const ruleType = getRuleTypeLabel(rule);
   const ruleDesc = rule?.description || '';
 
-  const payload = {
+  const payload: any = {
     name: formData.value.name,
     category: formData.value.category,
     evaluationCycle: formData.value.evaluationCycle,
@@ -202,14 +202,18 @@ const handleSave = async () => {
     description: ruleDesc,
   };
 
+  if (props.initialData?.id) {
+    payload.id = props.initialData.id;
+  }
+
   try {
     saveLoading.value = true;
-    const res: any = await createIndicator(payload);
+    const isEdit = !!props.initialData?.id;
+    const res: any = isEdit ? await editIndicator(payload) : await createIndicator(payload);
     if (res.code === 0) {
       ElMessage.success('指标元数据保存成功！');
-      
       const resultData: IndicatorData = {
-        id: res.data || props.initialData?.id || Date.now().toString(),
+        id: res.data || props.initialData?.id || undefined,
         ...formData.value,
         ruleType,
         ruleDesc,

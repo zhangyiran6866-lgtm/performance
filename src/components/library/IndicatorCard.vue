@@ -1,3 +1,9 @@
+<!--
+ * @author Zyr
+ * @date 2026-03-06 15:25:00
+ * @description 优化指标卡片样式：压缩高度、单行标题 Tooltip、样式精细化。
+ * @lines ~50
+-->
 <script setup lang="ts">
 import {
   Setting,
@@ -11,15 +17,19 @@ import {
 } from '@element-plus/icons-vue';
 
 export interface IndicatorData {
-  id: string
-  name: string
-  dimension: string
-  ruleType: string
-  ruleDesc: string
-  ruleCode?: number | string
-  expression?: string
-  mapField?: string
-  period?: string
+  id: string | number;
+  name: string;
+  category: string;
+  ruleType?: string;
+  ruleDesc?: string;
+  ruleId?: number | string;
+  expression?: string;
+  mapField?: string;
+  evaluationCycle?: string;
+  indicatorRuleName?: string;
+  indicatorRuleDescription?: string;
+  nature?: number;
+  unit?: string;
 }
 
 const props = defineProps<{
@@ -30,8 +40,8 @@ const emit = defineEmits<{
   (e: 'click'): void
 }>();
 
-const getDimensionIcon = (dimension: string) => {
-  switch (dimension) {
+const getDimensionIcon = (category: string) => {
+  switch (category) {
   case '销售业绩':
     return TrendCharts;
   case '产品力':
@@ -51,84 +61,127 @@ const getDimensionIcon = (dimension: string) => {
   }
 };
 
-const getDimensionColor = (dimension: string) => {
-  switch (dimension) {
+const getDimensionColor = (category: string) => {
+  switch (category) {
   case '销售业绩':
-    return 'bg-red-50 text-red-600 border-red-100';
+    return 'bg-red-50 text-red-500';
   case '产品力':
-    return 'bg-orange-50 text-orange-600 border-orange-100';
+    return 'bg-orange-50 text-orange-500';
   case '市场指标':
-    return 'bg-blue-50 text-blue-600 border-blue-100';
+    return 'bg-blue-50 text-blue-500';
   case '渠道力':
-    return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+    return 'bg-indigo-50 text-indigo-500';
   case '费用管理':
-    return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+    return 'bg-emerald-50 text-emerald-500';
   case '组织力':
-    return 'bg-purple-50 text-purple-600 border-purple-100';
+    return 'bg-purple-50 text-purple-500';
   case '行动计划':
-    return 'bg-cyan-50 text-cyan-600 border-cyan-100';
+    return 'bg-cyan-50 text-cyan-500';
   default:
-    return 'bg-slate-50 text-slate-600 border-slate-100';
+    return 'bg-slate-50 text-slate-500';
   }
 };
 </script>
 
 <template>
   <el-card
-    class="custom-card group relative cursor-pointer transition-all duration-300 border-slate-200 hover:border-blue-300"
+    class="custom-card group relative cursor-pointer transition-all duration-300 border-slate-100 hover:border-blue-200 hover:shadow-lg"
     shadow="never"
     @click="emit('click')"
   >
-    <div class="absolute top-0 left-0 w-1 h-full bg-slate-200 group-hover:bg-blue-500 transition-colors duration-300" />
-    <div class="pb-1 px-1 pt-0 flex flex-col items-start gap-1.5">
-      <el-tag
-        effect="plain"
-        size="default"
-        :class="['font-bold px-3 py-1 text-xs border !h-6', getDimensionColor(data.dimension)]"
-      >
-        <div class="flex items-center">
-          <el-icon class="w-3.5 h-3.5 mr-1.5">
-            <component :is="getDimensionIcon(data.dimension)" />
+    <!-- 左侧装饰条：默认淡灰，悬浮变蓝 -->
+    <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-100 group-hover:bg-blue-600 transition-all duration-300" />
+    
+    <div class="h-full flex flex-col pl-2">
+      <!-- 头部：极简分类 Tag -->
+      <div class="flex flex-col items-start gap-3 mb-2">
+        <div
+          :class="['flex items-center px-4 py-1 rounded-full font-bold text-[14px] transition-all shadow-sm', getDimensionColor(data.category)]"
+        >
+          <el-icon class="mr-2 text-[16px]">
+            <component :is="getDimensionIcon(data.category)" />
           </el-icon>
-          {{ data.dimension }}
+          <span>{{ data.category }}</span>
         </div>
-      </el-tag>
-      <h3
-        class="text-base font-bold text-slate-800 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2 mt-2"
-        :title="data.name"
-      >
-        {{ data.name }}
-      </h3>
-    </div>
-    <div class="px-2 pb-0 pt-2">
-      <div class="flex items-center gap-1.5 mb-1.5">
-        <el-icon class="h-4 w-4 text-slate-400 shrink-0">
-          <Setting />
-        </el-icon>
-        <span class="text-sm font-medium text-slate-600 truncate">{{ data.ruleType }}</span>
+        
+        <el-tooltip
+          effect="dark"
+          :content="data.name"
+          placement="top-start"
+          :show-after="500"
+        >
+          <h3
+            class="text-lg font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors truncate w-full"
+          >
+            {{ data.name }}
+          </h3>
+        </el-tooltip>
       </div>
-      <p
-        class="text-xs text-slate-500 italic leading-relaxed line-clamp-2"
-        :title="data.ruleDesc"
+
+      <!-- 中部：规则信息 -->
+      <div class="flex-grow space-y-2 mt-1">
+        <div class="flex items-start gap-2">
+          <el-icon class="h-4 w-4 text-slate-400 mt-0.5 shrink-0">
+            <Operation />
+          </el-icon>
+          <span class="text-sm font-semibold text-slate-600 truncate">
+            {{ data.indicatorRuleName || data.ruleType || '未关联计分规则' }}
+          </span>
+        </div>
+        
+        <p
+          class="text-sm text-slate-400 italic leading-relaxed line-clamp-2"
+          :title="data.indicatorRuleDescription || data.ruleDesc"
+        >
+          {{ data.indicatorRuleDescription || data.ruleDesc || '暂无规则描述' }}
+        </p>
+      </div>
+
+      <!-- 底部：单位 -->
+      <div
+        v-if="data.unit"
+        class="mt-3 pt-3 border-t border-slate-50"
       >
-        {{ data.ruleDesc }}
-      </p>
+        <div class="flex items-center gap-1.5">
+          <span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">UNIT</span>
+          <span class="text-sm font-bold text-slate-600">{{ data.unit }}</span>
+        </div>
+      </div>
     </div>
   </el-card>
 </template>
 
 <style scoped>
 .custom-card {
-  --el-card-padding: 16px;
+  --el-card-padding: 16px 18px;
   border-radius: 1rem;
+  height: 192px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: white;
 }
 
 .custom-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
 
-:deep(.el-tag) {
-  border-radius: 0.5rem;
+:deep(.el-card__body) {
+  height: 100%;
+  padding: var(--el-card-padding);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 </style>

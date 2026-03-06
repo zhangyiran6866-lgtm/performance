@@ -1,3 +1,9 @@
+<!--
+ * @author Zyr
+ * @date 2026-03-06 15:25:00
+ * @description 修正布局框架，支持内滚动。
+ * @lines ~10
+-->
 <script setup lang="ts">
 import { ArrowRight } from '@element-plus/icons-vue';
 import AppSidebar from '@/components/AppSidebar.vue';
@@ -30,7 +36,7 @@ import { RouterView } from 'vue-router';
         </el-breadcrumb>
       </header>
 
-      <main class="flex-1 overflow-y-auto px-5 md:px-10 py-8 pb-12 w-full max-w-[1520px] mx-auto relative z-10 transition-all duration-300">
+      <main class="flex-1 flex flex-col overflow-hidden px-5 md:px-10 py-8 w-full max-w-[1520px] mx-auto relative z-10 transition-all duration-300">
         <RouterView />
       </main>
     </div>

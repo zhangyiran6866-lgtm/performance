@@ -1,3 +1,9 @@
+<!--
+ * @author Zyr
+ * @date 2026-03-06 15:25:00
+ * @description 调优表格列表弹性布局容器。
+ * @lines ~10
+-->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -103,7 +109,7 @@ const getStatusBadge = (status: string) => {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="flex-1 flex flex-col space-y-6 min-h-0">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div>
         <h2 class="text-xl font-bold tracking-tight text-slate-900 border-l-4 border-purple-600 pl-3">

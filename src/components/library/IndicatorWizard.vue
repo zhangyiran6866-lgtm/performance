@@ -1,8 +1,15 @@
+<!--
+ * @author Zyr
+ * @date 2026-03-06 15:25:00
+ * @description 接入字典动态获取考核周期，修正指标分类存储字段。
+ * @lines ~20
+-->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import type { IndicatorData } from './IndicatorCard.vue';
 import { getDictOptions } from '@/utils/dict';
-import { getScoreRuleList } from '@/api/library';
+import { getScoreRuleList, createIndicator } from '@/api/library';
+import { ElMessage } from 'element-plus';
 
 /**
  * @author Zyr
@@ -23,6 +30,7 @@ const emit = defineEmits<{
 }>();
 
 const step = ref(1);
+const saveLoading = ref(false); // 保存状态
 
 /** 后端返回的规则项类型 */
 interface RuleItem {
@@ -48,10 +56,10 @@ const ruleLoading = ref(false);
 
 const formData = ref({
   name: '',
-  dimension: '销售业绩',
+  category: '销售业绩',
   mapField: '',
-  period: 'month',
-  ruleCode: 0 as number,
+  evaluationCycle: 'month',
+  ruleId: 0 as number,
 });
 
 const previewValue = ref(85);
@@ -62,7 +70,7 @@ const dimensionOptions = computed(() => getDictOptions('classification_performan
 
 /** 当前选中规则的完整数据 */
 const currentRule = computed(() => {
-  return ruleOptions.value.find((r) => r.id === formData.value.ruleCode) || null;
+  return ruleOptions.value.find((r) => r.id === formData.value.ruleId) || null;
 });
 
 /** 解析当前选中规则的 expression */
@@ -106,8 +114,8 @@ const fetchRules = async () => {
     if (res.code === 0 && Array.isArray(res.data)) {
       ruleOptions.value = res.data;
       // 如果当前没有选中规则，默认选第一个
-      if (!formData.value.ruleCode && ruleOptions.value.length > 0) {
-        formData.value.ruleCode = ruleOptions.value[0].id;
+      if (!formData.value.ruleId && ruleOptions.value.length > 0) {
+        formData.value.ruleId = ruleOptions.value[0].id;
       }
     }
   } catch (e) {
@@ -117,7 +125,22 @@ const fetchRules = async () => {
   }
 };
 
-
+/** 获取规则类型标签 */
+const getRuleTypeLabel = (rule: RuleItem | null) => {
+  if (!rule) return '';
+  switch (rule.type) {
+  case 'STEP_SCORE':
+    return '阶梯计分';
+  case 'DIRECT_RATIO':
+    return '预算控制';
+  case 'RANGE_SCORE':
+    return '任务节点';
+  case 'QUALITATIVE_GRADE':
+    return '定性分级';
+  default:
+    return '通用计分';
+  }
+};
 
 const internalOpen = computed({
   get: () => props.isOpen,
@@ -131,26 +154,27 @@ watch(
   () => props.isOpen,
   (newVal) => {
     if (newVal) {
+      step.value = 1;
       if (props.initialData) {
         formData.value = {
           name: props.initialData.name || '',
-          dimension: props.initialData.dimension || '销售业绩',
+          category: props.initialData.category || '销售业绩',
           mapField: props.initialData.mapField || '',
-          period: props.initialData.period || 'month',
-          ruleCode: (props.initialData.ruleCode as number) || (ruleOptions.value[0]?.id ?? 0),
+          evaluationCycle: props.initialData.evaluationCycle || 'month',
+          ruleId: Number(props.initialData.ruleId) || (ruleOptions.value[0]?.id ?? 0),
         };
       } else {
         formData.value = {
           name: '',
-          dimension: '销售业绩',
+          category: '销售业绩',
           mapField: '',
-          period: 'month',
-          ruleCode: ruleOptions.value[0]?.id ?? 0,
+          evaluationCycle: 'month',
+          ruleId: ruleOptions.value[0]?.id ?? 0,
         };
       }
-      step.value = 1;
     }
   },
+  { immediate: true },
 );
 
 const handleNext = async () => {
@@ -162,20 +186,47 @@ const handleBack = () => {
   step.value = 1;
 };
 
-const handleSave = () => {
+/** 保存并提交 */
+const handleSave = async () => {
+  if (saveLoading.value) return;
+
   const rule = currentRule.value;
-  const ruleType = rule?.name || '';
+  const ruleType = getRuleTypeLabel(rule);
   const ruleDesc = rule?.description || '';
 
-  const resultData: IndicatorData = {
-    id: props.initialData?.id || Date.now().toString(),
-    ...formData.value,
-    ruleType,
-    ruleDesc,
-    expression: rule?.expression || '',
+  const payload = {
+    name: formData.value.name,
+    category: formData.value.category,
+    evaluationCycle: formData.value.evaluationCycle,
+    ruleId: formData.value.ruleId,
+    description: ruleDesc,
   };
 
-  emit('save', resultData);
+  try {
+    saveLoading.value = true;
+    const res: any = await createIndicator(payload);
+    if (res.code === 0) {
+      ElMessage.success('指标元数据保存成功！');
+      
+      const resultData: IndicatorData = {
+        id: res.data || props.initialData?.id || Date.now().toString(),
+        ...formData.value,
+        ruleType,
+        ruleDesc,
+        expression: rule?.expression || '',
+      };
+
+      emit('save', resultData);
+      internalOpen.value = false;
+    } else {
+      ElMessage.error(res.msg || '保存失败，请稍后重试');
+    }
+  } catch (error) {
+    console.error('Save failed:', error);
+    ElMessage.error('保存失败，请稍后重试');
+  } finally {
+    saveLoading.value = false;
+  }
 };
 
 /** 阶梯制得分：根据 expression 中的 fullScore（满分线）和 baseline（底线）动态计算 */
@@ -195,7 +246,7 @@ const budgetScore = computed(() => {
 });
 
 const onRuleChange = (v: number) => {
-  formData.value.ruleCode = v;
+  formData.value.ruleId = v;
   previewValue.value = 85;
   deductValue.value = 0;
 };
@@ -205,7 +256,7 @@ const onRuleChange = (v: number) => {
   <el-dialog
     v-model="internalOpen"
     :title="initialData ? '编辑指标配置元数据' : '新增指标配置元数据'"
-    width="700px"
+    width="650px"
     class="custom-wizard-dialog"
     destroy-on-close
   >
@@ -238,36 +289,32 @@ const onRuleChange = (v: number) => {
           <div class="space-y-2">
             <label class="text-slate-700 font-semibold text-sm">所属维度分类</label>
             <el-select
-              v-model="formData.dimension"
+              v-model="formData.category"
               placeholder="选择所属维度"
               class="w-full custom-select-h10"
+              size="large"
             >
               <el-option
                 v-for="dict in dimensionOptions"
                 :key="dict.value"
                 :label="dict.label"
-                :value="dict.value"
+                :value="dict.label"
               />
             </el-select>
           </div>
           <div class="space-y-2">
             <label class="text-slate-700 font-semibold text-sm">考核周期</label>
             <el-select
-              v-model="formData.period"
+              v-model="formData.evaluationCycle"
               placeholder="选择考核周期"
               class="w-full custom-select-h10"
+              size="large"
             >
               <el-option
-                label="月度"
-                value="month"
-              />
-              <el-option
-                label="季度"
-                value="quarter"
-              />
-              <el-option
-                label="年度"
-                value="year"
+                v-for="dict in getDictOptions('performance_evaluation_cycle')"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
               />
             </el-select>
           </div>
@@ -281,10 +328,11 @@ const onRuleChange = (v: number) => {
         <div class="space-y-2">
           <label class="text-slate-700 font-semibold text-sm">考核记分规则</label>
           <el-select
-            v-model="formData.ruleCode"
+            v-model="formData.ruleId"
             placeholder="选择预设的记分逻辑"
             class="w-full custom-rule-select"
             :loading="ruleLoading"
+            size="large"
             @change="onRuleChange"
           >
             <el-option
@@ -440,7 +488,7 @@ const onRuleChange = (v: number) => {
           <el-button
             v-if="step === 1"
             type="primary"
-            :disabled="!formData.name || !formData.dimension"
+            :disabled="!formData.name || !formData.category"
             @click="handleNext"
           >
             下一步，配置记分规则
@@ -448,10 +496,11 @@ const onRuleChange = (v: number) => {
           <el-button
             v-else
             type="primary"
-            class="px-6"
+            class="custom-wizard-btn bg-blue-600 border-none px-6"
+            :loading="saveLoading"
             @click="handleSave"
           >
-            完成配置并保存
+            完成并提交
           </el-button>
         </div>
       </div>

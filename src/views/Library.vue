@@ -14,68 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-const initialIndicators: IndicatorData[] = [
-  {
-    id: '1',
-    name: '主推大单品销售目标达成率',
-    dimension: '产品力',
-    ruleType: '90/70阶梯制(标准型)',
-    ruleDesc: '低于70%得0分，70%-90%线性得分，90%以上得满分。',
-    ruleCode: 'STEP_90_70',
-    mapField: 'api_act_big_item_sales',
-    period: 'month',
-  },
-  {
-    id: '2',
-    name: '新客户开发目标达成率',
-    dimension: '市场指标',
-    ruleType: '100/70阶梯制(严格型)',
-    ruleDesc: '低于70%得0分，70%-100%线性得分，100%以上得满分甚至奖励。',
-    ruleCode: 'STEP_100_70',
-    mapField: 'input_new_customer_count',
-    period: 'month',
-  },
-  {
-    id: '3',
-    name: '月度OT合格店打造积分达成率',
-    dimension: '渠道力',
-    ruleType: '80/70阶梯制(宽限型)',
-    ruleDesc: '低于70%得0分，70%-80%线性得分，80%即可得满分。',
-    ruleCode: 'STEP_80_70',
-    mapField: 'api_ot_store_points',
-    period: 'month',
-  },
-  {
-    id: '4',
-    name: 'TP费用预算达标率',
-    dimension: '费用管理',
-    ruleType: '预算控制(扣分型)',
-    ruleDesc: '预算费用超出部分按比例倒扣分，封底为0。',
-    ruleCode: 'BUDGET_DEDUCT',
-    mapField: 'api_tp_budget_rate',
-    period: 'month',
-  },
-  {
-    id: '5',
-    name: '月度1+3行动计划通知达标率',
-    dimension: '行动计划',
-    ruleType: '任务节点(二元型)',
-    ruleDesc: '按期发布得满分，逾期或未发布得0分。',
-    ruleCode: 'BINARY_TASK',
-    mapField: 'manual_plan_push',
-    period: 'month',
-  },
-  {
-    id: '6',
-    name: '跨部门协作评价',
-    dimension: '组织力',
-    ruleType: '定性测定(直接打分)',
-    ruleDesc: '由相关部门主管直接主观打分，0-100分。',
-    ruleCode: 'QUALITATIVE_100',
-    mapField: 'manager_eval_score',
-    period: 'month',
-  },
-];
+const initialIndicators: IndicatorData[] = [];
 
 const search = ref('');
 const dimensionFilter = ref('all');
@@ -87,7 +26,7 @@ const editingIndicator = ref<IndicatorData | null>(null);
 const filtered = computed(() => {
   return indicators.value.filter((ind) => {
     const matchSearch = ind.name.includes(search.value);
-    const matchDimension = dimensionFilter.value === 'all' || ind.dimension === dimensionFilter.value;
+    const matchDimension = dimensionFilter.value === 'all' || ind.category === dimensionFilter.value;
     const matchRule = ruleFilter.value === 'all' || ind.ruleType.includes(ruleFilter.value);
     return matchSearch && matchDimension && matchRule;
   });

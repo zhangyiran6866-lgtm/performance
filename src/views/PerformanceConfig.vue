@@ -1,3 +1,9 @@
+<!--
+ * @author Zyr
+ * @date 2026-03-06 15:25:00
+ * @description 修复绩效配置中心 Tab 切换显示问题及弹性高度方案。
+ * @lines ~30
+-->
 <script setup lang="ts">
 import { ref } from 'vue';
 import IndicatorLibrary from '@/components/library/IndicatorLibrary.vue';
@@ -7,8 +13,8 @@ const activeTab = ref('library');
 </script>
 
 <template>
-  <div class="space-y-6 animate-in fade-in duration-500">
-    <div class="flex items-center justify-between">
+  <div class="h-full flex flex-col space-y-6 animate-in fade-in duration-500 overflow-hidden">
+    <div class="flex items-center justify-between shrink-0">
       <div class="flex items-center gap-3">
         <div class="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center">
           <el-icon class="text-xl text-white">
@@ -26,12 +32,15 @@ const activeTab = ref('library');
       </div>
     </div>
 
-    <div class="custom-tabs-container">
+    <div class="custom-tabs-container flex-1 min-h-0 flex flex-col">
       <el-tabs
         v-model="activeTab"
-        class="custom-tabs"
+        class="custom-tabs flex-1 flex flex-col min-h-0"
       >
-        <el-tab-pane name="library">
+        <el-tab-pane
+          name="library"
+          class="h-full"
+        >
           <template #label>
             <div class="flex items-center py-2 px-1">
               <el-icon class="mr-2 text-blue-600">
@@ -40,12 +49,15 @@ const activeTab = ref('library');
               <span>指标元数据库</span>
             </div>
           </template>
-          <div class="mt-8">
+          <div class="h-full pt-4 flex flex-col overflow-hidden">
             <IndicatorLibrary />
           </div>
         </el-tab-pane>
         
-        <el-tab-pane name="template">
+        <el-tab-pane
+          name="template"
+          class="h-full"
+        >
           <template #label>
             <div class="flex items-center py-2 px-1">
               <el-icon class="mr-2 text-purple-600">
@@ -54,7 +66,7 @@ const activeTab = ref('library');
               <span>考核模板管理</span>
             </div>
           </template>
-          <div class="mt-8">
+          <div class="h-full pt-4 flex flex-col overflow-hidden">
             <TemplateList />
           </div>
         </el-tab-pane>
@@ -117,5 +129,27 @@ const activeTab = ref('library');
 
 :deep(.custom-tabs .el-tabs__active-bar) {
   display: none;
+}
+
+:deep(.custom-tabs) {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+:deep(.custom-tabs .el-tabs__content) {
+  flex: 1 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+:deep(.custom-tabs .el-tab-pane) {
+  height: 100%;
+}
+
+/* 仅对当前可见的 Pane 启用弹性布局，以保留原生隐藏逻辑 */
+:deep(.custom-tabs .el-tab-pane:not([style*="display: none"])) {
+  display: flex !important;
+  flex-direction: column;
 }
 </style>

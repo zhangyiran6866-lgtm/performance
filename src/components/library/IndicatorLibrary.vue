@@ -1,90 +1,59 @@
+<!--
+ * @author Zyr
+ * @date 2026-03-06 15:25:00
+ * @description 优化指标库列表页高度适应逻辑及内滚。
+ * @lines ~40
+-->
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue';
 import IndicatorWizard from '@/components/library/IndicatorWizard.vue';
 import { getDictOptions } from '@/utils/dict';
-
-const initialIndicators: IndicatorData[] = [
-  {
-    id: '1',
-    name: '主推大单品销售目标达成率',
-    dimension: '产品力',
-    ruleType: '90/70阶梯制(满分90%,底线70%)',
-    ruleDesc: '低于70%得0分，70%-90%线性得分，90%以上得满分。',
-    ruleCode: 1,
-    expression: '{"fullScore": 90, "baseline": 70, "type": "step"}',
-    mapField: 'api_act_big_item_sales',
-    period: 'month',
-  },
-  {
-    id: '2',
-    name: '新客户开发目标达成率',
-    dimension: '市场指标',
-    ruleType: '100/70阶梯制(满分80%,底线70%)',
-    ruleDesc: '低于70%得0分，70%-100%线性得分，100%以上得满分甚至奖励。',
-    ruleCode: 3,
-    expression: '{"fullScore": 100, "baseline": 70, "type": "step"}',
-    mapField: 'input_new_customer_count',
-    period: 'month',
-  },
-  {
-    id: '3',
-    name: '月度OT合格店打造积分达成率',
-    dimension: '渠道力',
-    ruleType: '80/70阶梯制(满分80%,底线70%)',
-    ruleDesc: '低于70%得0分，70%-80%线性得分，80%即可得满分。',
-    ruleCode: 2,
-    expression: '{"fullScore": 80, "baseline": 70, "type": "step"}',
-    mapField: 'api_ot_store_points',
-    period: 'month',
-  },
-  {
-    id: '4',
-    name: 'TP费用预算达标率',
-    dimension: '费用管理',
-    ruleType: '预算控制(超出扣分型)',
-    ruleDesc: '预算费用超出部分按比例倒扣分，封底为0。',
-    ruleCode: 4,
-    expression: '{"deductionPerUnit": 0.5, "maxDeduction": 10}',
-    mapField: 'api_tp_budget_rate',
-    period: 'month',
-  },
-  {
-    id: '5',
-    name: '月度1+3行动计划通知达标率',
-    dimension: '行动计划',
-    ruleType: '任务节点(完成即满分,逾期0分)',
-    ruleDesc: '按期发布得满分，逾期或未发布得0分。',
-    ruleCode: 6,
-    expression: '{"timeType": "relative", "deadlineRule": "当月最后一天", "fullScore": 100, "graceDays": 0, "deductionType": "all_or_nothing"}',
-    mapField: 'manual_plan_push',
-    period: 'month',
-  },
-  {
-    id: '6',
-    name: '跨部门协作评价',
-    dimension: '组织力',
-    ruleType: '定性测定(直接打分)',
-    ruleDesc: '由相关部门主管直接主观打分，0-100分。',
-    ruleCode: 5,
-    expression: '{"fullScore": 90, "baseline": 70, "type": "step"}',
-    mapField: 'manager_eval_score',
-    period: 'month',
-  },
-];
+import { getIndicatorPage } from '@/api/library';
+import { ElMessage } from 'element-plus';
 
 const search = ref('');
 const dimensionFilter = ref('all');
-const indicators = ref<IndicatorData[]>(initialIndicators);
+const indicators = ref<IndicatorData[]>([]);
+const total = ref(0);
+const pageNo = ref(1);
+const pageSize = ref(12);
+const loading = ref(false);
+
 const isWizardOpen = ref(false);
 const editingIndicator = ref<IndicatorData | null>(null);
 
-const filtered = computed(() => {
-  return indicators.value.filter((ind) => {
-    const matchSearch = ind.name.includes(search.value);
-    const matchDimension = dimensionFilter.value === 'all' || ind.dimension === dimensionFilter.value;
-    return matchSearch && matchDimension;
-  });
+/** 获取分页列表数据 */
+const fetchIndicators = async () => {
+  try {
+    loading.value = true;
+    const params = {
+      pageNo: pageNo.value,
+      pageSize: pageSize.value,
+      name: search.value || undefined,
+      category: dimensionFilter.value === 'all' ? undefined : dimensionFilter.value,
+    };
+    const res: any = await getIndicatorPage(params);
+    if (res.code === 0 && res.data) {
+      indicators.value = res.data.list || [];
+      total.value = res.data.total || 0;
+    }
+  } catch (error) {
+    console.error('Fetch failed:', error);
+    ElMessage.error('获取指标库数据失败');
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchIndicators();
+});
+
+// 监听搜索和过滤
+watch([search, dimensionFilter], () => {
+  pageNo.value = 1;
+  fetchIndicators();
 });
 
 const handleEdit = (indicator: IndicatorData) => {
@@ -97,23 +66,18 @@ const handleAddNew = () => {
   isWizardOpen.value = true;
 };
 
-const handleSave = (newInd: IndicatorData) => {
-  if (editingIndicator.value) {
-    indicators.value = indicators.value.map((i) =>
-      i.id === newInd.id ? newInd : i,
-    );
-  } else {
-    indicators.value = [
-      { ...newInd, id: Date.now().toString() },
-      ...indicators.value,
-    ];
-  }
+const handleSave = () => {
+  // 保存成功后刷新列表
+  fetchIndicators();
   isWizardOpen.value = false;
 };
 </script>
 
 <template>
-  <div class="space-y-6">
+  <!-- 主容器：灵活高度撑满整个工作区并处理内部溢出 -->
+  <div 
+    class="flex-1 flex flex-col space-y-6 min-h-0"
+  >
     <div class="flex flex-wrap items-center justify-between gap-6">
       <div class="min-w-[300px] flex-shrink-0">
         <h2 class="text-2xl font-bold tracking-tight text-slate-900 border-l-4 border-blue-600 pl-3">
@@ -168,23 +132,44 @@ const handleSave = (newInd: IndicatorData) => {
       </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-      <IndicatorCard
-        v-for="ind in filtered"
-        :key="ind.id"
-        :data="ind"
-        @click="handleEdit(ind)"
-      />
-      
-      <div
-        v-if="filtered.length === 0"
-        class="col-span-full flex flex-col items-center justify-center p-12 text-slate-500 border border-dashed rounded-lg bg-white"
-      >
-        <el-icon class="text-4xl mb-4 text-slate-300">
-          <Document />
-        </el-icon>
-        <p>未找到符合条件的指标</p>
+    <!-- 滚动区域：包含卡片网格，自适应剩余高度 -->
+    <div 
+      v-loading="loading"
+      class="flex-1 overflow-y-auto pr-3 custom-scrollbar"
+      style="min-height: 0;"
+    >
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-1">
+        <IndicatorCard
+          v-for="ind in indicators"
+          :key="ind.id"
+          :data="ind"
+          @click="handleEdit(ind)"
+        />
+        
+        <div
+          v-if="!loading && indicators.length === 0"
+          class="col-span-full flex flex-col items-center justify-center p-12 text-slate-500 border border-dashed rounded-lg bg-white"
+        >
+          <el-icon class="text-4xl mb-4 text-slate-300">
+            <Document />
+          </el-icon>
+          <p>未找到符合条件的指标</p>
+        </div>
       </div>
+    </div>
+    
+    <div
+      v-if="total > pageSize"
+      class="flex justify-end mt-8"
+    >
+      <el-pagination
+        v-model:current-page="pageNo"
+        v-model:page-size="pageSize"
+        :total="total"
+        background
+        layout="prev, pager, next"
+        @current-change="fetchIndicators"
+      />
     </div>
 
     <IndicatorWizard
@@ -222,5 +207,23 @@ const handleSave = (newInd: IndicatorData) => {
 .custom-button:hover {
   background-color: #1d4ed8;
   border-color: #1d4ed8;
+}
+
+/* 隐藏外层主容器的滚动条逻辑 */
+:deep(.custom-scrollbar::-webkit-scrollbar) {
+  width: 6px;
+}
+
+:deep(.custom-scrollbar::-webkit-scrollbar-track) {
+  background: transparent;
+}
+
+:deep(.custom-scrollbar::-webkit-scrollbar-thumb) {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+:deep(.custom-scrollbar::-webkit-scrollbar-thumb:hover) {
+  background: #cbd5e1;
 }
 </style>

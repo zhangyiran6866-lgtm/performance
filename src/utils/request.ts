@@ -16,8 +16,8 @@ const service: AxiosInstance = axios.create({
   baseURL, // 请求的基础统一路径前缀
   timeout: 10000, // 请求超时时间：10秒
   headers: {
-    'Content-Type': 'application/json;charset=utf-8'
-  }
+    'Content-Type': 'application/json;charset=utf-8',
+  },
 });
 
 import { getToken, getTenantId } from './auth';
@@ -48,7 +48,7 @@ service.interceptors.request.use(
     // 如果有环境 tag 也带上
     const serviceTag = import.meta.env.VITE_APP_SERVICE_TAG;
     if (serviceTag && config.headers) {
-       config.headers['tag'] = serviceTag;
+      config.headers['tag'] = serviceTag;
     }
     
     // get 参数或 post query 参数确保传递
@@ -58,7 +58,7 @@ service.interceptors.request.use(
     // 处理请求错误
     console.error('Request Error:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 const handleAuthorized = (msg: string = '登录状态已过期，您可以继续留在该页面，或者重新登录') => {
@@ -68,7 +68,7 @@ const handleAuthorized = (msg: string = '登录状态已过期，您可以继续
     ElMessageBox.confirm(msg, '系统提示', {
       confirmButtonText: '重新登录',
       cancelButtonText: '取消',
-      type: 'warning'
+      type: 'warning',
     }).then(() => {
       isRelogin.show = false;
       removeToken();
@@ -85,9 +85,9 @@ const executeRefreshToken = async () => {
   const tenantId = getTenantId();
   // 注意，我们要跳过拦截器，使用新的原生 axios 发送，否则会死锁
   return await axios.post(baseURL + '/system/auth/refresh-token?refreshToken=' + getRefreshToken() + '&clientId=taojin-sso-demo-by-password', {}, {
-      headers: {
-        'tenant-id': tenantId || '1'
-      }
+    headers: {
+      'tenant-id': tenantId || '1',
+    },
   });
 };
 
@@ -107,37 +107,37 @@ service.interceptors.response.use(
         isRefreshToken = true;
         const { getRefreshToken, setToken } = await import('./auth');
         if (!getRefreshToken()) {
-           return handleAuthorized();
+          return handleAuthorized();
         }
         try {
-           const refreshTokenRes = await executeRefreshToken();
-           if (refreshTokenRes.data.code === 400 || refreshTokenRes.data.code === 401) {
-              return handleAuthorized('刷新令牌已过期，请重新登录');
-           }
-           setToken(refreshTokenRes.data.data || refreshTokenRes.data);
+          const refreshTokenRes = await executeRefreshToken();
+          if (refreshTokenRes.data.code === 400 || refreshTokenRes.data.code === 401) {
+            return handleAuthorized('刷新令牌已过期，请重新登录');
+          }
+          setToken(refreshTokenRes.data.data || refreshTokenRes.data);
            config.headers!['Authorization'] = `Bearer ${getToken()}`;
            requestList.forEach((cb: any) => cb());
            requestList = [];
            return service(config);
         } catch (e) {
-           requestList.forEach((cb: any) => cb());
-           return handleAuthorized();
+          requestList.forEach((cb: any) => cb());
+          return handleAuthorized();
         } finally {
-           requestList = [];
-           isRefreshToken = false;
+          requestList = [];
+          isRefreshToken = false;
         }
       } else {
         // 如果正在刷新 token，将所有发来的请求排入队列挂起
         return new Promise((resolve) => {
-           requestList.push(() => {
+          requestList.push(() => {
              config.headers!['Authorization'] = `Bearer ${getToken()}`;
              resolve(service(config));
-           });
+          });
         });
       }
     } else if (code === 500) {
-       ElMessage.error(msg);
-       return Promise.reject(new Error(msg));
+      ElMessage.error(msg);
+      return Promise.reject(new Error(msg));
     }
     
     // 这里暂时直接将 axios 拆包后的数据抛给业务层调用方
@@ -149,70 +149,72 @@ service.interceptors.response.use(
     
     if (error && error.response) {
       switch (error.response.status) {
-        case 400:
-          message = '请求错误(400)';
-          break;
-        case 401:
-          if (!isRefreshToken) {
-            isRefreshToken = true;
-            const { getRefreshToken, setToken } = await import('./auth');
-            if (!getRefreshToken()) {
-               return handleAuthorized();
-            }
-            try {
-               const refreshTokenRes = await executeRefreshToken();
-               if (refreshTokenRes.data.code === 400 || refreshTokenRes.data.code === 401) {
-                  return handleAuthorized('刷新令牌已过期，请重新登录');
-               }
-               setToken(refreshTokenRes.data.data || refreshTokenRes.data);
-               error.response.config.headers['Authorization'] = `Bearer ${getToken()}`;
-               requestList.forEach((cb: any) => cb());
-               requestList = [];
-               return service(error.response.config);
-            } catch (e) {
-               requestList.forEach((cb: any) => cb());
-               return handleAuthorized();
-            } finally {
-               requestList = [];
-               isRefreshToken = false;
-            }
-          } else {
-            return new Promise((resolve) => {
-               requestList.push(() => {
-                 error.response.config.headers['Authorization'] = `Bearer ${getToken()}`;
-                 resolve(service(error.response.config));
-               });
-            });
+      case 400:
+        message = '请求错误(400)';
+        break;
+      case 401:
+        if (!isRefreshToken) {
+          isRefreshToken = true;
+          const { getRefreshToken, setToken } = await import('./auth');
+          if (!getRefreshToken()) {
+            return handleAuthorized();
           }
-        case 403:
-          message = '拒绝访问(403)';
-          break;
-        case 404:
-          message = `请求地址出错: ${error.response.config.url}`;
-          break;
-        case 408:
-          message = '请求超时(408)';
-          break;
-        case 500:
-          message = '服务器内部错误(500)';
-          break;
-        case 501:
-          message = '服务未实现(501)';
-          break;
-        case 502:
-          message = '网关错误(502)';
-          break;
-        case 503:
-          message = '服务不可用(503)';
-          break;
-        case 504:
-          message = '网关超时(504)';
-          break;
-        case 505:
-          message = 'HTTP版本不受支持(505)';
-          break;
-        default:
-          message = `连接出错(${error.response.status})!`;
+          try {
+            const refreshTokenRes = await executeRefreshToken();
+            if (refreshTokenRes.data.code === 400 || refreshTokenRes.data.code === 401) {
+              return handleAuthorized('刷新令牌已过期，请重新登录');
+            }
+            setToken(refreshTokenRes.data.data || refreshTokenRes.data);
+            error.response.config.headers['Authorization'] = `Bearer ${getToken()}`;
+            requestList.forEach((cb: any) => cb());
+            requestList = [];
+            return service(error.response.config);
+          } catch (e) {
+            requestList.forEach((cb: any) => cb());
+            return handleAuthorized();
+          } finally {
+            requestList = [];
+            isRefreshToken = false;
+          }
+        } else {
+          return new Promise((resolve) => {
+            requestList.push(() => {
+              error.response.config.headers['Authorization'] = `Bearer ${getToken()}`;
+              resolve(service(error.response.config));
+            });
+          });
+        }
+        // eslint-disable-next-line no-fallthrough
+        break;
+      case 403:
+        message = '拒绝访问(403)';
+        break;
+      case 404:
+        message = `请求地址出错: ${error.response.config.url}`;
+        break;
+      case 408:
+        message = '请求超时(408)';
+        break;
+      case 500:
+        message = '服务器内部错误(500)';
+        break;
+      case 501:
+        message = '服务未实现(501)';
+        break;
+      case 502:
+        message = '网关错误(502)';
+        break;
+      case 503:
+        message = '服务不可用(503)';
+        break;
+      case 504:
+        message = '网关超时(504)';
+        break;
+      case 505:
+        message = 'HTTP版本不受支持(505)';
+        break;
+      default:
+        message = `连接出错(${error.response.status})!`;
       }
     } else {
       // 网络超时或无网络状态
@@ -227,11 +229,11 @@ service.interceptors.response.use(
     ElMessage({
       message,
       type: 'error',
-      duration: 3000
+      duration: 3000,
     });
     
     return Promise.reject(error);
-  }
+  },
 );
 
 // 封装通用的核心请求方法

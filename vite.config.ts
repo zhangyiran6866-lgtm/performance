@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => {
       },
     },
     server: {
+      port: Number(env.VITE_PORT) || 81, // 端口号
+      host: '0.0.0.0',
+      open: env.VITE_OPEN === 'true', // 运行 npm run dev 时自动打开浏览器
       // 由于后端服务已经支持服务端跨域，此处不再需要本地反向代理配置
       // proxy: {
       //   '/admin-api': {
@@ -23,3 +26,4 @@ export default defineConfig(({ mode }) => {
     },
   };
 });
+

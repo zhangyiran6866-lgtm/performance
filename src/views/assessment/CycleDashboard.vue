@@ -180,7 +180,6 @@ const goBack = () => router.push('/assessment/cycle');
       <div class="flex items-center gap-2 shrink-0">
         <el-button
           class="custom-header-button"
-          @click=""
         >
           <el-icon class="mr-2">
             <Printer />
@@ -188,7 +187,6 @@ const goBack = () => router.push('/assessment/cycle');
         </el-button>
         <el-button
           class="custom-header-button"
-          @click=""
         >
           <el-icon class="mr-2">
             <Download />

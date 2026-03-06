@@ -37,7 +37,7 @@ const loadSocialLogin = async () => {
     }
 
     // 复刻 c-center 线上回调地址
-    const encodedParams = encodeURIComponent(`type=30&redirect=/configuration`);
+    const encodedParams = encodeURIComponent('type=30&redirect=/configuration');
     const redirectUri = 'https://www.zhuoxi.group/social-login?' + encodedParams;
     
     // 发起带租户信息的社交授权请求
@@ -97,11 +97,11 @@ const handlePasswordLogin = async () => {
       // 保存表单信息（记住密码）
       if (loginForm.rememberMe) {
         import('@/utils/auth').then((authUtil) => {
-           authUtil.setLoginForm(loginForm);
+          authUtil.setLoginForm(loginForm);
         });
       } else {
         import('@/utils/auth').then((authUtil) => {
-           authUtil.removeLoginForm();
+          authUtil.removeLoginForm();
         });
       }
 
@@ -139,34 +139,52 @@ const handlePasswordLogin = async () => {
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-lg">
       <div class="bg-white py-8 px-4 shadow-xl sm:rounded-2xl sm:px-10 border border-slate-100 relative overflow-hidden">
-        
         <!-- Toggle Tabs -->
         <div class="flex border-b border-slate-200 mb-6">
           <button 
-            @click="isQrLogin = true"
             :class="isQrLogin ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-            class="w-1/2 py-4 px-1 text-center border-b-2 font-medium text-16px transition-colors duration-200">
+            class="w-1/2 py-4 px-1 text-center border-b-2 font-medium text-16px transition-colors duration-200"
+            @click="isQrLogin = true"
+          >
             企业微信扫码
           </button>
           <button 
-            @click="isQrLogin = false"
             :class="!isQrLogin ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
-            class="w-1/2 py-4 px-1 text-center border-b-2 font-medium text-16px transition-colors duration-200">
+            class="w-1/2 py-4 px-1 text-center border-b-2 font-medium text-16px transition-colors duration-200"
+            @click="isQrLogin = false"
+          >
             账号密码登录
           </button>
         </div>
 
         <!-- QR Code Login -->
-        <div v-if="isQrLogin" class="flex flex-col items-center justify-center min-h-[450px]">
-          <iframe v-if="iframeUrl" :src="iframeUrl" class="w-[450px] h-[450px]" frameborder="0" scrolling="no"></iframe>
-          <div v-else class="text-slate-400 flex flex-col items-center">
-            <el-icon class="text-4xl animate-spin mb-4"><Loading /></el-icon>
+        <div
+          v-if="isQrLogin"
+          class="flex flex-col items-center justify-center min-h-[450px]"
+        >
+          <iframe
+            v-if="iframeUrl"
+            :src="iframeUrl"
+            class="w-[450px] h-[450px]"
+            frameborder="0"
+            scrolling="no"
+          />
+          <div
+            v-else
+            class="text-slate-400 flex flex-col items-center"
+          >
+            <el-icon class="text-4xl animate-spin mb-4">
+              <Loading />
+            </el-icon>
             加载二维码中...
           </div>
         </div>
 
         <!-- Password Login -->
-        <div v-else class="space-y-5 animate-fade-in min-h-[300px]">
+        <div
+          v-else
+          class="space-y-5 animate-fade-in min-h-[300px]"
+        >
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">账号/手机号</label>
             <el-input 
@@ -199,8 +217,16 @@ const handlePasswordLogin = async () => {
           </div>
 
           <div class="flex items-center justify-between pt-2">
-            <el-checkbox v-model="loginForm.rememberMe" class="text-slate-600">30天内免登录</el-checkbox>
-            <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors">忘记密码?</a>
+            <el-checkbox
+              v-model="loginForm.rememberMe"
+              class="text-slate-600"
+            >
+              30天内免登录
+            </el-checkbox>
+            <a
+              href="#"
+              class="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            >忘记密码?</a>
           </div>
 
           <div class="pt-4">
@@ -214,7 +240,6 @@ const handlePasswordLogin = async () => {
             </el-button>
           </div>
         </div>
-
       </div>
     </div>
   </div>

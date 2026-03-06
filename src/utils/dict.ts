@@ -38,7 +38,7 @@ export const getIntDictOptions = (dictType: string): NumberDictDataType[] => {
   dictOptions.forEach((dict: DictDataType) => {
     dictOption.push({
       ...dict,
-      value: parseInt(dict.value + '', 10)
+      value: parseInt(dict.value + '', 10),
     });
   });
   return dictOption;
@@ -50,7 +50,7 @@ export const getStrDictOptions = (dictType: string): StringDictDataType[] => {
   dictOptions.forEach((dict: DictDataType) => {
     dictOption.push({
       ...dict,
-      value: dict.value + ''
+      value: dict.value + '',
     });
   });
   return dictOption;
@@ -62,7 +62,7 @@ export const getBoolDictOptions = (dictType: string): DictDataType[] => {
   dictOptions.forEach((dict: DictDataType) => {
     dictOption.push({
       ...dict,
-      value: dict.value + '' === 'true'
+      value: dict.value + '' === 'true',
     });
   });
   return dictOption;

@@ -9,6 +9,7 @@ import {
   ChevronRight,
   CheckCircle2,
   Info,
+  BarChart3,
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

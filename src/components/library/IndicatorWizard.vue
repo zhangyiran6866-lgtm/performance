@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import type { IndicatorData } from './IndicatorCard.vue';
+import { getDictOptions } from '@/utils/dict';
+import { getScoreRuleList } from '@/api/library';
+
+/**
+ * @author Zyr
+ * @date 2026-03-05 14:04:00
+ * @description 引入字典获取维度配置数据
+ * @lines 10
+ */
 
 const props = defineProps<{
   isOpen: boolean
@@ -15,16 +24,100 @@ const emit = defineEmits<{
 
 const step = ref(1);
 
+/** 后端返回的规则项类型 */
+interface RuleItem {
+  id: number;
+  name: string;
+  type: string;
+  expression: string;
+  description: string;
+  createTime: number;
+}
+
+/** 解析后的 expression 缓存 */
+interface ParsedExpression {
+  fullScore?: number;
+  baseline?: number;
+  type?: string;
+  [key: string]: any;
+}
+
+/** 从 API 获取的规则列表 */
+const ruleOptions = ref<RuleItem[]>([]);
+const ruleLoading = ref(false);
+
 const formData = ref({
   name: '',
   dimension: '销售业绩',
   mapField: '',
   period: 'month',
-  ruleCode: 'STEP_90_70',
+  ruleCode: 0 as number,
 });
 
 const previewValue = ref(85);
 const deductValue = ref(0);
+
+// 获取维度分类字典项
+const dimensionOptions = computed(() => getDictOptions('classification_performance_indicators_type'));
+
+/** 当前选中规则的完整数据 */
+const currentRule = computed(() => {
+  return ruleOptions.value.find((r) => r.id === formData.value.ruleCode) || null;
+});
+
+/** 解析当前选中规则的 expression */
+const parsedExpression = computed<ParsedExpression>(() => {
+  if (!currentRule.value?.expression) return {};
+  try {
+    // 后端有些 expression 含有 JS 注释，需要清理
+    const cleaned = currentRule.value.expression.replace(/\/\/[^\n]*/g, '');
+    return JSON.parse(cleaned);
+  } catch {
+    return {};
+  }
+});
+
+/** 判断当前规则是否为阶梯制（通过 expression 中的 type === 'step' 判断） */
+const isStepRule = computed(() => parsedExpression.value.type === 'step');
+
+/** 判断当前规则是否为预算控制（扣分型） */
+const isBudgetRule = computed(() => {
+  if (!currentRule.value) return false;
+  return currentRule.value.type === 'DIRECT_RATIO';
+});
+
+/** 判断当前规则是否为任务节点（二元型） */
+const isTaskRule = computed(() => {
+  if (!currentRule.value) return false;
+  return currentRule.value.type === 'RANGE_SCORE';
+});
+
+/** 判断当前规则是否为定性分级 */
+const isQualitativeGrade = computed(() => {
+  if (!currentRule.value) return false;
+  return currentRule.value.type === 'QUALITATIVE_GRADE';
+});
+
+/** 加载规则列表 */
+const fetchRules = async () => {
+  ruleLoading.value = true;
+  try {
+    const res: any = await getScoreRuleList();
+    if (res.code === 0 && Array.isArray(res.data)) {
+      ruleOptions.value = res.data;
+      // 如果当前没有选中规则，默认选第一个
+      if (!formData.value.ruleCode && ruleOptions.value.length > 0) {
+        formData.value.ruleCode = ruleOptions.value[0].id;
+      }
+    }
+  } catch (e) {
+    console.error('获取计分规则列表失败', e);
+  } finally {
+    ruleLoading.value = false;
+  }
+};
+
+
 
 const internalOpen = computed({
   get: () => props.isOpen,
@@ -44,7 +137,7 @@ watch(
           dimension: props.initialData.dimension || '销售业绩',
           mapField: props.initialData.mapField || '',
           period: props.initialData.period || 'month',
-          ruleCode: props.initialData.ruleCode || 'STEP_90_70',
+          ruleCode: (props.initialData.ruleCode as number) || (ruleOptions.value[0]?.id ?? 0),
         };
       } else {
         formData.value = {
@@ -52,7 +145,7 @@ watch(
           dimension: '销售业绩',
           mapField: '',
           period: 'month',
-          ruleCode: 'STEP_90_70',
+          ruleCode: ruleOptions.value[0]?.id ?? 0,
         };
       }
       step.value = 1;
@@ -60,7 +153,8 @@ watch(
   },
 );
 
-const handleNext = () => {
+const handleNext = async () => {
+  await fetchRules();
   step.value = 2;
 };
 
@@ -69,55 +163,26 @@ const handleBack = () => {
 };
 
 const handleSave = () => {
-  let ruleType = '';
-  let ruleDesc = '';
-  switch (formData.value.ruleCode) {
-  case 'STEP_90_70':
-    ruleType = '90/70阶梯制(标准型)';
-    ruleDesc = '低于70%得0分，70%-90%线性得分，90%以上得满分。';
-    break;
-  case 'STEP_80_70':
-    ruleType = '80/70阶梯制(宽限型)';
-    ruleDesc = '低于70%得0分，70%-80%线性得分，80%即可得满分。';
-    break;
-  case 'STEP_100_70':
-    ruleType = '100/70阶梯制(严格型)';
-    ruleDesc = '低于70%得0分，70%-100%线性得分，100%以上得满分。';
-    break;
-  case 'BUDGET_DEDUCT':
-    ruleType = '预算控制(扣分型)';
-    ruleDesc = 'X≤0%得满分，X＞0%每多1%扣罚1分，扣完为止。';
-    break;
-  case 'BINARY_TASK':
-    ruleType = '任务节点(二元型)';
-    ruleDesc = '按期发布得满分，逾期或未发布得0分。';
-    break;
-  case 'QUALITATIVE_100':
-    ruleType = '定性测定(直接打分)';
-    ruleDesc = '由主管主观打分，0-100分。';
-    break;
-  case 'QUALITATIVE_LEVEL':
-    ruleType = '定性分级';
-    ruleDesc = '评定为：优秀、良好、普通、不合格。';
-    break;
-  }
+  const rule = currentRule.value;
+  const ruleType = rule?.name || '';
+  const ruleDesc = rule?.description || '';
 
   const resultData: IndicatorData = {
     id: props.initialData?.id || Date.now().toString(),
     ...formData.value,
     ruleType,
     ruleDesc,
+    expression: rule?.expression || '',
   };
 
   emit('save', resultData);
 };
 
+/** 阶梯制得分：根据 expression 中的 fullScore（满分线）和 baseline（底线）动态计算 */
 const stepScore = computed(() => {
-  const code = formData.value.ruleCode;
-  let min = 70;
-  let max = 90;
-  if (code === 'STEP_80_70') max = 80;
-  if (code === 'STEP_100_70') max = 100;
+  const expr = parsedExpression.value;
+  const min = expr.baseline ?? 70;
+  const max = expr.fullScore ?? 90;
 
   const val = previewValue.value;
   if (val < min) return 0;
@@ -129,7 +194,7 @@ const budgetScore = computed(() => {
   return Math.max(0, 100 - deductValue.value);
 });
 
-const onRuleChange = (v: any) => {
+const onRuleChange = (v: number) => {
   formData.value.ruleCode = v;
   previewValue.value = 85;
   deductValue.value = 0;
@@ -140,7 +205,7 @@ const onRuleChange = (v: any) => {
   <el-dialog
     v-model="internalOpen"
     :title="initialData ? '编辑指标配置元数据' : '新增指标配置元数据'"
-    width="620px"
+    width="700px"
     class="custom-wizard-dialog"
     destroy-on-close
   >
@@ -178,32 +243,10 @@ const onRuleChange = (v: any) => {
               class="w-full custom-select-h10"
             >
               <el-option
-                label="销售业绩"
-                value="销售业绩"
-              />
-              <el-option
-                label="产品力"
-                value="产品力"
-              />
-              <el-option
-                label="渠道力"
-                value="渠道力"
-              />
-              <el-option
-                label="市场指标"
-                value="市场指标"
-              />
-              <el-option
-                label="费用管理"
-                value="费用管理"
-              />
-              <el-option
-                label="组织力"
-                value="组织力"
-              />
-              <el-option
-                label="行动计划"
-                value="行动计划"
+                v-for="dict in dimensionOptions"
+                :key="dict.value"
+                :label="dict.label"
+                :value="dict.value"
               />
             </el-select>
           </div>
@@ -241,45 +284,24 @@ const onRuleChange = (v: any) => {
             v-model="formData.ruleCode"
             placeholder="选择预设的记分逻辑"
             class="w-full custom-rule-select"
+            :loading="ruleLoading"
             @change="onRuleChange"
           >
             <el-option
-              label="90/70阶梯制 (满分90%，底线70%)"
-              value="STEP_90_70"
-            />
-            <el-option
-              label="80/70阶梯制 (满分80%，底线70%)"
-              value="STEP_80_70"
-            />
-            <el-option
-              label="100/70阶梯制 (满分100%，底线70%)"
-              value="STEP_100_70"
-            />
-            <el-option
-              label="预算控制 (超出扣分型)"
-              value="BUDGET_DEDUCT"
-            />
-            <el-option
-              label="任务节点 (完成即满分，逾期0分)"
-              value="BINARY_TASK"
-            />
-            <el-option
-              label="定性测定 (直接打分)"
-              value="QUALITATIVE_100"
-            />
-            <el-option
-              label="定性分级 (优秀/良好/普通/不合格)"
-              value="QUALITATIVE_LEVEL"
+              v-for="rule in ruleOptions"
+              :key="rule.id"
+              :label="rule.name"
+              :value="rule.id"
             />
           </el-select>
           <p class="text-xs text-slate-500 ml-1 mt-1.5 leading-relaxed">
-            该规则决定了该指标在月末是如何将“实际业务数值”自动转化成“绩效考分”的。
+            {{ currentRule?.description || '该规则决定了该指标在月末是如何将"实际业务数值"自动转化成"绩效考分"的。' }}
           </p>
         </div>
 
-        <!-- Step rules preview -->
+        <!-- Step rules preview (阶梯制) -->
         <div
-          v-if="formData.ruleCode.startsWith('STEP_')"
+          v-if="isStepRule"
           class="space-y-6 mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden"
         >
           <div class="flex justify-between items-center mb-2">
@@ -301,28 +323,28 @@ const onRuleChange = (v: any) => {
           <div class="relative w-full h-8 mt-2">
             <span class="absolute left-0 text-xs text-slate-400 font-medium -translate-x-1/2">0%</span>
             <span
-              class="absolute text-xs text-slate-500 font-bold -translate-x-1/2 flex flex-col items-center"
-              :style="{ left: `${(70 / 120) * 100}%` }"
+              class="absolute text-xs text-slate-500 font-bold -translate-x-full flex flex-col items-end"
+              :style="{ left: `${((parsedExpression.baseline ?? 70) / 120) * 100}%` }"
             >
               <span class="h-2 w-px bg-slate-400 mb-1" />
-              70% (零分线)
+              {{ parsedExpression.baseline ?? 70 }}% (零分线)
             </span>
             <span
-              class="absolute text-xs text-blue-600 font-bold -translate-x-1/2 flex flex-col items-center"
+              class="absolute text-xs text-blue-600 font-bold flex flex-col items-start"
               :style="{
-                left: `${(formData.ruleCode === 'STEP_80_70' ? 80 : formData.ruleCode === 'STEP_100_70' ? 100 : 90) / 120 * 100}%`,
+                left: `${((parsedExpression.fullScore ?? 90) / 120) * 100}%`,
               }"
             >
               <span class="h-2 w-px bg-blue-300 mb-1" />
-              {{ formData.ruleCode === 'STEP_80_70' ? 80 : formData.ruleCode === 'STEP_100_70' ? 100 : 90 }}% (满分线)
+              {{ parsedExpression.fullScore ?? 90 }}% (满分线)
             </span>
             <span class="absolute right-0 text-xs text-slate-400 font-medium translate-x-1/2">120%</span>
           </div>
         </div>
 
-        <!-- Budget rule preview -->
+        <!-- Budget rule preview (预算控制扣分型) -->
         <div
-          v-else-if="formData.ruleCode === 'BUDGET_DEDUCT'"
+          v-else-if="isBudgetRule"
           class="space-y-6 mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden"
         >
           <div class="flex justify-between items-center mb-2">
@@ -342,7 +364,7 @@ const onRuleChange = (v: any) => {
             class="custom-slider orange"
           />
           <div class="relative w-full h-8 mt-2">
-            <span class="absolute left-0 text-xs text-emerald-600 font-bold -translate-x-1/2 flex flex-col items-center">
+            <span class="absolute left-0 text-xs text-emerald-600 font-bold flex flex-col items-start">
               <span class="h-2 w-px bg-emerald-300 mb-1" />
               ≤0% (满分线)
             </span>
@@ -357,6 +379,33 @@ const onRuleChange = (v: any) => {
           </div>
         </div>
 
+        <!-- Qualitative grade preview (定性分级) -->
+        <div
+          v-else-if="isQualitativeGrade"
+          class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 shadow-sm"
+        >
+          <p class="text-sm font-semibold text-slate-700 mb-3">定性分级预设</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div
+              v-for="grade in (parsedExpression.grades || [])"
+              :key="grade.name"
+              class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-100"
+            >
+              <span class="text-sm font-medium text-slate-700">{{ grade.name }}</span>
+              <el-tag size="small" effect="plain" class="font-bold">{{ grade.score }} 分</el-tag>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task node preview (任务节点二元型) -->
+        <div
+          v-else-if="isTaskRule"
+          class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center text-sm text-slate-500 min-h-[100px] shadow-sm"
+        >
+          按期完成得满分 ({{ parsedExpression.fullScore ?? 100 }} 分)，逾期或未完成得 0 分。
+        </div>
+
+        <!-- Generic fallback -->
         <div
           v-else
           class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center text-sm text-slate-500 min-h-[100px] shadow-sm"

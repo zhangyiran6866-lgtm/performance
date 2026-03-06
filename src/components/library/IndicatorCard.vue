@@ -16,7 +16,8 @@ export interface IndicatorData {
   dimension: string
   ruleType: string
   ruleDesc: string
-  ruleCode?: string
+  ruleCode?: number | string
+  expression?: string
   mapField?: string
   period?: string
 }

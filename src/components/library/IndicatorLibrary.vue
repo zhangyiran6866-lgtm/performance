@@ -2,15 +2,17 @@
 import { ref, computed } from 'vue';
 import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue';
 import IndicatorWizard from '@/components/library/IndicatorWizard.vue';
+import { getDictOptions } from '@/utils/dict';
 
 const initialIndicators: IndicatorData[] = [
   {
     id: '1',
     name: '主推大单品销售目标达成率',
     dimension: '产品力',
-    ruleType: '90/70阶梯制(标准型)',
+    ruleType: '90/70阶梯制(满分90%,底线70%)',
     ruleDesc: '低于70%得0分，70%-90%线性得分，90%以上得满分。',
-    ruleCode: 'STEP_90_70',
+    ruleCode: 1,
+    expression: '{"fullScore": 90, "baseline": 70, "type": "step"}',
     mapField: 'api_act_big_item_sales',
     period: 'month',
   },
@@ -18,9 +20,10 @@ const initialIndicators: IndicatorData[] = [
     id: '2',
     name: '新客户开发目标达成率',
     dimension: '市场指标',
-    ruleType: '100/70阶梯制(严格型)',
+    ruleType: '100/70阶梯制(满分80%,底线70%)',
     ruleDesc: '低于70%得0分，70%-100%线性得分，100%以上得满分甚至奖励。',
-    ruleCode: 'STEP_100_70',
+    ruleCode: 3,
+    expression: '{"fullScore": 100, "baseline": 70, "type": "step"}',
     mapField: 'input_new_customer_count',
     period: 'month',
   },
@@ -28,9 +31,10 @@ const initialIndicators: IndicatorData[] = [
     id: '3',
     name: '月度OT合格店打造积分达成率',
     dimension: '渠道力',
-    ruleType: '80/70阶梯制(宽限型)',
+    ruleType: '80/70阶梯制(满分80%,底线70%)',
     ruleDesc: '低于70%得0分，70%-80%线性得分，80%即可得满分。',
-    ruleCode: 'STEP_80_70',
+    ruleCode: 2,
+    expression: '{"fullScore": 80, "baseline": 70, "type": "step"}',
     mapField: 'api_ot_store_points',
     period: 'month',
   },
@@ -38,9 +42,10 @@ const initialIndicators: IndicatorData[] = [
     id: '4',
     name: 'TP费用预算达标率',
     dimension: '费用管理',
-    ruleType: '预算控制(扣分型)',
+    ruleType: '预算控制(超出扣分型)',
     ruleDesc: '预算费用超出部分按比例倒扣分，封底为0。',
-    ruleCode: 'BUDGET_DEDUCT',
+    ruleCode: 4,
+    expression: '{"deductionPerUnit": 0.5, "maxDeduction": 10}',
     mapField: 'api_tp_budget_rate',
     period: 'month',
   },
@@ -48,9 +53,10 @@ const initialIndicators: IndicatorData[] = [
     id: '5',
     name: '月度1+3行动计划通知达标率',
     dimension: '行动计划',
-    ruleType: '任务节点(二元型)',
+    ruleType: '任务节点(完成即满分,逾期0分)',
     ruleDesc: '按期发布得满分，逾期或未发布得0分。',
-    ruleCode: 'BINARY_TASK',
+    ruleCode: 6,
+    expression: '{"timeType": "relative", "deadlineRule": "当月最后一天", "fullScore": 100, "graceDays": 0, "deductionType": "all_or_nothing"}',
     mapField: 'manual_plan_push',
     period: 'month',
   },
@@ -60,7 +66,8 @@ const initialIndicators: IndicatorData[] = [
     dimension: '组织力',
     ruleType: '定性测定(直接打分)',
     ruleDesc: '由相关部门主管直接主观打分，0-100分。',
-    ruleCode: 'QUALITATIVE_100',
+    ruleCode: 5,
+    expression: '{"fullScore": 90, "baseline": 70, "type": "step"}',
     mapField: 'manager_eval_score',
     period: 'month',
   },
@@ -107,8 +114,8 @@ const handleSave = (newInd: IndicatorData) => {
 
 <template>
   <div class="space-y-6">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-      <div>
+    <div class="flex flex-wrap items-center justify-between gap-6">
+      <div class="min-w-[300px] flex-shrink-0">
         <h2 class="text-2xl font-bold tracking-tight text-slate-900 border-l-4 border-blue-600 pl-3">
           企业指标元数据库
         </h2>
@@ -116,55 +123,35 @@ const handleSave = (newInd: IndicatorData) => {
           管理维护全公司所有业务及职能部门的考核考分元数据标准。
         </p>
       </div>
-      <div class="flex flex-wrap items-center gap-3">
-        <div class="relative w-full md:w-48 lg:w-56">
-          <el-input
-            v-model="search"
-            placeholder="搜索指标名称..."
-            class="custom-input"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </div>
+      <div class="flex flex-nowrap items-center gap-4 flex-shrink-0 overflow-x-auto">
+        <el-input
+          v-model="search"
+          placeholder="搜索指标名称..."
+          class="custom-input"
+          style="width: 320px; flex-shrink: 0;"
+          size="large"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
 
         <el-select
           v-model="dimensionFilter"
           placeholder="全部分类"
-          class="w-[120px] custom-select"
+          class="custom-select"
+          style="width: 320px; flex-shrink: 0;"
+          size="large"
         >
           <el-option
             label="全部分类"
             value="all"
           />
           <el-option
-            label="销售业绩"
-            value="销售业绩"
-          />
-          <el-option
-            label="产品力"
-            value="产品力"
-          />
-          <el-option
-            label="市场指标"
-            value="市场指标"
-          />
-          <el-option
-            label="渠道力"
-            value="渠道力"
-          />
-          <el-option
-            label="费用管理"
-            value="费用管理"
-          />
-          <el-option
-            label="组织力"
-            value="组织力"
-          />
-          <el-option
-            label="行动计划"
-            value="行动计划"
+            v-for="dict in getDictOptions('classification_performance_indicators_type')"
+            :key="dict.value"
+            :label="dict.label"
+            :value="dict.label"
           />
         </el-select>
 

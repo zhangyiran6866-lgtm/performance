@@ -7,7 +7,11 @@ import App from './App.vue';
 import router from './router';
 import './assets/index.css';
 
+import { setupStore } from './store';
+
 const app = createApp(App);
+
+setupStore(app);
 
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component);

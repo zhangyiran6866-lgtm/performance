@@ -5,6 +5,7 @@ import IndicatorCard, { type IndicatorData } from '@/components/library/Indicato
 import IndicatorWizard from '@/components/library/IndicatorWizard.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { getDictOptions } from '@/utils/dict';
 import {
   Select,
   SelectContent,
@@ -146,26 +147,12 @@ const handleSave = (newInd: IndicatorData) => {
             <SelectItem value="all">
               全部分类
             </SelectItem>
-            <SelectItem value="销售业绩">
-              销售业绩
-            </SelectItem>
-            <SelectItem value="产品力">
-              产品力
-            </SelectItem>
-            <SelectItem value="市场指标">
-              市场指标
-            </SelectItem>
-            <SelectItem value="渠道力">
-              渠道力
-            </SelectItem>
-            <SelectItem value="费用管理">
-              费用管理
-            </SelectItem>
-            <SelectItem value="组织力">
-              组织力
-            </SelectItem>
-            <SelectItem value="行动计划">
-              行动计划
+            <SelectItem
+              v-for="dict in getDictOptions('classification_performance_indicators_type')"
+              :key="String(dict.value)"
+              :value="dict.label"
+            >
+              {{ dict.label }}
             </SelectItem>
           </SelectContent>
         </Select>

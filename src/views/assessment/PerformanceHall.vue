@@ -1,3 +1,9 @@
+<!--
+  @author: Zyr
+  @date: 2026-03-07 17:15:00
+  @description: 绩效工作台 Tab 导航栏高度调整与全局内容区域间距对齐优化。
+  @lines: +5, -5
+-->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import {
@@ -143,7 +149,7 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
         >
           <el-tab-pane name="my_performance">
             <template #label>
-              <div class="flex items-center gap-2 h-14">
+              <div class="flex items-center gap-2 h-13">
                 <el-icon :size="20">
                   <UserCircle />
                 </el-icon>
@@ -157,14 +163,14 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
             name="team_goals"
           >
             <template #label>
-              <div class="flex items-center gap-2 h-14 relative group">
+              <div class="flex items-center gap-2 h-13 relative group">
                 <el-icon
                   :size="20"
                   :class="isGoalSettingLocked ? 'text-slate-300' : 'text-slate-400 group-[.is-active]:text-indigo-600'"
                 >
                   <Target />
                 </el-icon>
-                <span :class="isGoalSettingLocked ? 'text-slate-300' : 'text-slate-500 group-[.is-active]:text-indigo-600'">团队目标设定</span>
+                <span class="text-slate-500 group-[.is-active]:text-indigo-600">团队目标设定</span>
                 <el-icon
                   v-if="isGoalSettingLocked"
                   class="ml-1 text-slate-300"
@@ -180,7 +186,7 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
             name="team_rating"
           >
             <template #label>
-              <div class="flex items-center gap-2 h-14 relative group">
+              <div class="flex items-center gap-2 h-13 relative group">
                 <el-icon
                   :size="20"
                   :class="isRatingLocked ? 'text-slate-300' : 'text-slate-400 group-[.is-active]:text-indigo-600'"
@@ -274,9 +280,11 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
 }
 
 :deep(.custom-nav-tabs .el-tabs__item) {
-  padding: 0 2rem;
+  padding: 0 1.75rem;
+  height: 52px;
+  line-height: 52px;
   font-weight: 900;
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #94a3b8;
   transition: all 0.3s;
 }

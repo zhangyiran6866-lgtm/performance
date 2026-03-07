@@ -1,3 +1,9 @@
+<!--
+  @author: Zyr
+  @date: 2026-03-07 17:15:00
+  @description: 我的绩效列表布局紧凑化：缩小标题字体、缩减各项间距及卡片内边距。
+  @lines: +10, -10
+-->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import {
@@ -213,12 +219,12 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
   <div class="h-full flex flex-col bg-slate-50/30 overflow-hidden">
     <!-- Cycle List View -->
     <template v-if="!selectedCycle">
-      <div class="px-8 py-10 space-y-8 overflow-y-auto custom-scrollbar">
+      <div class="p-8 space-y-6 overflow-y-auto custom-scrollbar">
         <div class="animate-in fade-in slide-in-from-bottom-2 duration-500">
-          <h2 class="text-3xl font-black tracking-tight text-slate-900">
+          <h2 class="text-2xl font-black tracking-tight text-slate-900">
             我的考核目标与结果
           </h2>
-          <p class="text-base text-slate-500 mt-2">
+          <p class="text-sm text-slate-500 mt-1">
             李小明 (工号: 00192) · 查阅您参与的所有考核周期的目标与最终评价结果。
           </p>
         </div>
@@ -388,7 +394,7 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                   <el-icon><Aim /></el-icon>考核指标设定 (目标)
                 </span>
               </template>
-              <div class="mt-4 space-y-8 pb-10">
+              <div class="mt-8 space-y-12 pb-10">
                 <div
                   v-if="selectedCycle.status === 'pending_confirm' && currentStatus === 'pending_confirm'"
                   class="bg-red-50 border-l-4 border-l-red-500 border-y border-r border-y-red-100 border-r-red-100 p-6 rounded-r-2xl shadow-sm flex items-start gap-5 animate-in slide-in-from-top-4 duration-500 active-notice"
@@ -445,7 +451,7 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                     </el-icon>
                     本期考核指标明细
                   </h4>
-                  <div class="grid gap-4">
+                  <div class="grid gap-6">
                     <el-card
                       v-for="(ind, index) in personalIndicators"
                       :key="ind.id"
@@ -460,7 +466,7 @@ const qualitativeResults = computed(() => resultIndicators.filter((i) => i.natur
                             : 'bg-amber-400',
                         ]"
                       />
-                      <div class="p-2 flex flex-col md:flex-row gap-8 items-center">
+                      <div class="p-4 flex flex-col md:flex-row gap-6 items-center">
                         <div class="flex-1 space-y-4 w-full">
                           <div class="flex items-center gap-4">
                             <el-tag

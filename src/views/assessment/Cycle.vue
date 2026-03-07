@@ -3,13 +3,17 @@ import { ref } from 'vue';
 import {
   CalendarDays,
   Clock,
-  Users,
   PlayCircle,
   Eye,
   ChevronRight,
   CheckCircle2,
   Info,
   BarChart3,
+  CalendarClock,
+  AlertTriangle,
+  Rocket,
+  TrendingUp,
+  Archive,
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -20,10 +24,20 @@ import { Badge } from '@/components/ui/badge';
 // Cycles data
 const initialCycles = [
   {
+    id: 'cyc-202604',
+    name: '2026年4月份全公司月度绩效考核',
+    period: '2026/04/01 - 2026/04/30',
+    stage: 'unknown',
+    templateNames: ['大客KA中心通用考核模板'],
+    totalEmployees: 45,
+    targetSetCount: 0,
+    targetConfirmedCount: 0,
+  },
+  {
     id: 'cyc-202603',
     name: '2026年3月份全公司月度绩效考核',
     period: '2026/03/01 - 2026/03/31',
-    stage: 'goal_setting', // goal_setting | goal_confirming | ongoing | evaluating | finished
+    stage: 'goal_setting',
     templateNames: [
       '大客KA中心通用考核模板',
       '餐饮中心业务专员月度考核表',
@@ -70,8 +84,54 @@ const getStageBadge = (stage: string) => {
     return { text: '结果评估与打分中', class: 'bg-purple-50 text-purple-600 border-purple-200' };
   case 'finished':
     return { text: '已归档结案', class: 'bg-slate-50 text-slate-500 border-slate-200' };
+  case 'unknown':
+    return { text: '未开启', class: 'bg-slate-50 text-slate-500 border-slate-200' };
   default:
-    return { text: '未知状态', class: '' };
+    return { text: '状态异常', class: 'bg-red-50 text-red-500 border-red-200' };
+  }
+};
+
+const showGoalDialog = ref(false);
+const showEvalDialog = ref(false);
+const showFinishDialog = ref(false);
+const pendingCycleId = ref('');
+
+const openGoalDialog = (id: string) => {
+  pendingCycleId.value = id;
+  showGoalDialog.value = true;
+};
+
+const confirmGoalStage = () => {
+  if (pendingCycleId.value) {
+    handlePushStage(pendingCycleId.value, 'goal_setting');
+    showGoalDialog.value = false;
+    pendingCycleId.value = '';
+  }
+};
+
+const openEvalDialog = (id: string) => {
+  pendingCycleId.value = id;
+  showEvalDialog.value = true;
+};
+
+const confirmEvalStage = () => {
+  if (pendingCycleId.value) {
+    handlePushStage(pendingCycleId.value, 'evaluating');
+    showEvalDialog.value = false;
+    pendingCycleId.value = '';
+  }
+};
+
+const openFinishDialog = (id: string) => {
+  pendingCycleId.value = id;
+  showFinishDialog.value = true;
+};
+
+const confirmFinishStage = () => {
+  if (pendingCycleId.value) {
+    handlePushStage(pendingCycleId.value, 'finished');
+    showFinishDialog.value = false;
+    pendingCycleId.value = '';
   }
 };
 
@@ -81,23 +141,26 @@ const handlePushStage = (id: string, newStage: string) => {
 </script>
 
 <template>
-  <div class="space-y-6 max-w-7xl mx-auto px-4 xl:px-8 pb-20">
-    <!-- Header -->
-    <div
-      class="flex flex-col md:flex-row md:items-end justify-between gap-4 sticky top-0 z-10 bg-slate-50/80 backdrop-blur-md pb-4 pt-2 -mt-2"
-    >
-      <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
-          绩效考核周期管理
-        </h1>
-        <p class="text-slate-500 mt-1">
-          HR 工作台：在此处向组织派发新的考核模板并开启一个考评周期。
-        </p>
+  <div class="h-full flex flex-col space-y-6 overflow-hidden">
+    <!-- Header: 去掉滚动、毛玻璃和背景 -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 shrink-0">
+      <div class="flex items-center gap-4">
+        <div class="bg-indigo-50 p-3 rounded-2xl shadow-sm border border-indigo-100 flex items-center justify-center">
+          <CalendarClock class="h-6 w-6 text-indigo-600" />
+        </div>
+        <div>
+          <h1 class="text-3xl font-black tracking-tight text-slate-900">
+            绩效考核周期管理
+          </h1>
+          <p class="text-base text-slate-500">
+            HR 工作台：在此处向组织派发新的考核模板并开启一个考评周期
+          </p>
+        </div>
       </div>
     </div>
 
-    <!-- Section: 周期实例 -->
-    <div>
+    <!-- Scrollable Content Area: 仅滚动下方内容 -->
+    <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-20">
       <div class="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-4">
         <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
           <CalendarDays class="w-5 h-5 text-emerald-500" />
@@ -124,7 +187,7 @@ const handlePushStage = (id: string, newStage: string) => {
           <CardContent class="p-0">
             <div class="flex flex-col lg:flex-row">
               <!-- Left Main Info -->
-              <div class="flex-1 p-6 border-b lg:border-b-0 lg:border-r border-slate-100">
+              <div class="flex-1 py-4 px-6 border-b lg:border-b-0 lg:border-r border-slate-100">
                 <div class="flex justify-between items-start mb-4">
                   <div>
                     <h3
@@ -190,82 +253,65 @@ const handlePushStage = (id: string, newStage: string) => {
 
               <!-- Right Actions Area -->
               <div
-                class="w-full lg:w-48 bg-slate-50/50 p-6 flex flex-row lg:flex-col items-center justify-center gap-3"
+                class="w-full lg:w-48 bg-slate-50/50 py-4 px-6 flex flex-row lg:flex-col items-center justify-center gap-3"
               >
-                <template v-if="cycle.stage === 'goal_setting'">
-                  <Button
-                    variant="outline"
-                    class="w-full bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
-                    as-child
-                  >
-                    <RouterLink to="/assessment/team">
-                      <Users class="mr-2 h-4 w-4 text-blue-500" />
-                      追踪宣发情况
-                    </RouterLink>
-                  </Button>
-                  <Button
-                    class="w-full bg-purple-600 hover:bg-purple-700 text-white shadow-sm"
-                    @click="handlePushStage(cycle.id, 'evaluating')"
-                  >
-                    <PlayCircle class="mr-2 h-4 w-4" />
-                    转入评分阶段
-                  </Button>
-                </template>
-                <template v-else-if="cycle.stage === 'evaluating'">
-                  <Button
-                    variant="outline"
-                    class="w-full bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
-                    as-child
-                  >
-                    <RouterLink to="/assessment/rating">
-                      <Eye class="mr-2 h-4 w-4 text-purple-600" />
-                      追踪打分情况
-                    </RouterLink>
-                  </Button>
+                <!-- 非已归档状态才显示“查看周期详情”按钮 -->
+                <template v-if="cycle.stage !== 'finished'">
                   <Button
                     variant="outline"
                     class="w-full bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
                     as-child
                   >
                     <RouterLink :to="`/assessment/cycle/${cycle.id}/stats`">
-                      <BarChart3 class="mr-2 h-4 w-4 text-amber-500" />
-                      查看绩效大盘
+                      <Eye class="mr-2 h-4 w-4 text-slate-400" />
+                      查看周期详情
                     </RouterLink>
                   </Button>
+                </template>
+
+                <template v-if="cycle.stage === 'unknown'">
                   <Button
-                    class="w-full bg-slate-800 hover:bg-slate-900 text-white shadow-sm"
-                    @click="handlePushStage(cycle.id, 'finished')"
+                    variant="outline"
+                    class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-100 shadow-sm"
+                    @click="openGoalDialog(cycle.id)"
                   >
-                    <CheckCircle2 class="mr-2 h-4 w-4" />
-                    结案并归档
+                    <Rocket class="mr-2 h-4 w-4" />
+                    开启目标设定
                   </Button>
                 </template>
+
+                <template v-else-if="cycle.stage === 'goal_setting'">
+                  <Button
+                    variant="outline"
+                    class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-100 shadow-sm"
+                    @click="openEvalDialog(cycle.id)"
+                  >
+                    <TrendingUp class="mr-2 h-4 w-4" />
+                    开启绩效打分
+                  </Button>
+                </template>
+
+                <template v-else-if="cycle.stage === 'evaluating'">
+                  <Button
+                    variant="outline"
+                    class="w-full bg-amber-50 hover:bg-amber-100 text-amber-600 border-amber-100 shadow-sm"
+                    @click="openFinishDialog(cycle.id)"
+                  >
+                    <Archive class="mr-2 h-4 w-4" />
+                    关闭本周期
+                  </Button>
+                </template>
+
                 <template v-else-if="cycle.stage === 'finished'">
                   <Button
                     variant="outline"
-                    class="w-full bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
+                    class="w-full bg-white hover:bg-slate-50 text-emerald-600 border-emerald-100 shadow-sm"
                     as-child
                   >
                     <RouterLink :to="`/assessment/cycle/${cycle.id}/stats`">
                       <BarChart3 class="mr-2 h-4 w-4 text-emerald-500" />
-                      查看历史大盘
+                      查看绩效结果
                     </RouterLink>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    class="w-full text-slate-500 hover:text-slate-900 flex justify-between group"
-                  >
-                    进入工作台
-                    <ChevronRight class="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                  </Button>
-                </template>
-                <template v-else>
-                  <Button
-                    variant="ghost"
-                    class="w-full text-slate-500 hover:text-slate-900 flex justify-between group"
-                  >
-                    进入工作台
-                    <ChevronRight class="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
                   </Button>
                 </template>
               </div>
@@ -274,5 +320,157 @@ const handlePushStage = (id: string, newStage: string) => {
         </Card>
       </div>
     </div>
+
+    <!-- 确认开启目标设定弹窗 -->
+    <el-dialog
+      v-model="showGoalDialog"
+      title="开启目标设定"
+      width="480px"
+      append-to-body
+      class="custom-dialog"
+      :show-close="true"
+      align-center
+    >
+      <div class="flex items-start gap-4 py-2">
+        <div class="bg-amber-100 p-2.5 rounded-full shrink-0 mt-1">
+          <AlertTriangle class="h-6 w-6 text-amber-600" />
+        </div>
+        <div>
+          <p class="text-[15px] text-slate-600 leading-relaxed font-medium">
+            确定要进入目标设定阶段吗？开启后，各级主管将收到通知并开始为下属设定本月指标及权重。
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-2">
+          <Button
+            variant="outline"
+            class="rounded-full px-8 bg-blue-50/50 text-blue-600 border-blue-100 hover:bg-blue-100 hover:text-blue-700"
+            @click="showGoalDialog = false"
+          >
+            取消
+          </Button>
+          <Button
+            class="rounded-full px-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100"
+            @click="confirmGoalStage"
+          >
+            立即开启
+          </Button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 确认开启绩效打分弹窗 -->
+    <el-dialog
+      v-model="showEvalDialog"
+      title="开启绩效打分"
+      width="480px"
+      append-to-body
+      class="custom-dialog"
+      :show-close="true"
+      align-center
+    >
+      <div class="flex items-start gap-4 py-2">
+        <div class="bg-emerald-100 p-2.5 rounded-full shrink-0 mt-1">
+          <CheckCircle2 class="h-6 w-6 text-emerald-600" />
+        </div>
+        <div>
+          <p class="text-[15px] text-slate-600 leading-relaxed font-medium">
+            确定要进入绩效打分阶段吗？开启后，系统将正式根据业务数据初算得分，并开放主管主观评价入口。
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-2">
+          <Button
+            variant="outline"
+            class="rounded-full px-8 bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-700"
+            @click="showEvalDialog = false"
+          >
+            取消
+          </Button>
+          <Button
+            class="rounded-full px-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100"
+            @click="confirmEvalStage"
+          >
+            进入考核
+          </Button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 确认关闭本周期弹窗 -->
+    <el-dialog
+      v-model="showFinishDialog"
+      title="关闭本周期"
+      width="480px"
+      append-to-body
+      class="custom-dialog"
+      :show-close="true"
+      align-center
+    >
+      <div class="flex items-start gap-4 py-2">
+        <div class="bg-slate-100 p-2.5 rounded-full shrink-0 mt-1">
+          <Info class="h-6 w-6 text-slate-500" />
+        </div>
+        <div>
+          <p class="text-[15px] text-slate-600 leading-relaxed font-medium">
+            确定要关闭并归档本考核周期吗？关闭后，所有评分将正式锁定，不可再进行修改，仅供后续查阅。
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-2">
+          <Button
+            variant="outline"
+            class="rounded-full px-8 bg-blue-50/50 text-blue-600 border-blue-100 hover:bg-blue-100 hover:text-blue-700"
+            @click="showFinishDialog = false"
+          >
+            取消
+          </Button>
+          <Button
+            class="rounded-full px-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100"
+            @click="confirmFinishStage"
+          >
+            确认归档
+          </Button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+
+:deep(.custom-dialog) {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+:deep(.custom-dialog .el-dialog__header) {
+  margin-right: 0;
+  padding-bottom: 0;
+}
+
+:deep(.custom-dialog .el-dialog__title) {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+</style>

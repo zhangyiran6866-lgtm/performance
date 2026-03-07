@@ -1,4 +1,5 @@
 <!--
+<!--
  * @author Zyr
  * @date 2026-03-06 15:25:00
  * @description 修复绩效配置中心 Tab 切换显示问题及弹性高度方案。
@@ -6,6 +7,7 @@
 -->
 <script setup lang="ts">
 import { ref } from 'vue';
+import { Briefcase } from 'lucide-vue-next';
 import IndicatorLibrary from '@/components/library/IndicatorLibrary.vue';
 import TemplateList from '@/components/template/TemplateList.vue';
 
@@ -15,11 +17,9 @@ const activeTab = ref('library');
 <template>
   <div class="h-full flex flex-col space-y-6 animate-in fade-in duration-500 overflow-hidden">
     <div class="flex items-center justify-between shrink-0">
-      <div class="flex items-center gap-3">
-        <div class="bg-blue-600 p-2.5 rounded-2xl shadow-lg shadow-blue-100 flex items-center justify-center">
-          <el-icon class="text-xl text-white">
-            <Setting />
-          </el-icon>
+      <div class="flex items-center gap-4">
+        <div class="bg-indigo-50 p-3 rounded-2xl shadow-sm border border-indigo-100 flex items-center justify-center">
+          <Briefcase class="h-6 w-6 text-indigo-600" />
         </div>
         <div>
           <h1 class="text-3xl font-black tracking-tight text-slate-900">

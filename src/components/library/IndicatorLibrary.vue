@@ -81,7 +81,7 @@ const handleDelete = (indicator: IndicatorData) => {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消',
       type: 'warning',
-    }
+    },
   ).then(async () => {
     try {
       const res: any = await deleteIndicator(Number(indicator.id));

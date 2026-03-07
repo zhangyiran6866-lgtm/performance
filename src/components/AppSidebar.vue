@@ -15,14 +15,14 @@ const items = [
     icon: Setting,
   },
   {
+    title: '考核周期管理',
+    url: '/assessment/cycle',
+    icon: Calendar,
+  },
+  {
     title: '绩效工作台',
     url: '/assessment/hall',
     icon: Aim,
-  },
-  {
-    title: '考核周期与发起',
-    url: '/assessment/cycle',
-    icon: Calendar,
   },
 ];
 </script>

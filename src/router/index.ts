@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import DefaultLayout from '@/layouts/default.vue';
+import { getToken } from '@/utils/auth';
+import { ElMessage } from 'element-plus';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,14 +26,6 @@ const router = createRouter({
           component: () => import('@/views/PerformanceConfig.vue'),
         },
         {
-          path: '/library',
-          redirect: '/configuration',
-        },
-        {
-          path: '/template',
-          redirect: '/configuration',
-        },
-        {
           path: '/template/builder',
           name: 'template-builder',
           component: () => import('@/views/template/Builder.vue'),
@@ -47,18 +41,6 @@ const router = createRouter({
           component: () => import('@/views/assessment/PerformanceHall.vue'),
         },
         {
-          path: '/assessment/team',
-          redirect: '/assessment/hall',
-        },
-        {
-          path: '/assessment/rating',
-          redirect: '/assessment/hall',
-        },
-        {
-          path: '/assessment/my',
-          redirect: '/assessment/hall',
-        },
-        {
           path: '/assessment/cycle/:id/stats',
           name: 'assessment-cycle-stats',
           component: () => import('@/views/assessment/CycleDashboard.vue'),
@@ -68,12 +50,8 @@ const router = createRouter({
   ],
 });
 
-import { getToken } from '@/utils/auth';
-
 // 路由白名单，不需要登录即可访问的页面
-const whiteList = ['/login', '/social-login'];
-
-import { ElMessage } from 'element-plus';
+const whiteList = ['/login'];
 
 router.beforeEach((to, _from, next) => {
   const hasToken = getToken();

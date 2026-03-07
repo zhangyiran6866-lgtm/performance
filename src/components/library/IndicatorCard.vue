@@ -99,8 +99,8 @@ const getDimensionColor = (category: string) => {
       type="danger"
       circle
       class="absolute right-3 top-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 shadow-sm z-10 hover:scale-110"
-      @click.stop="emit('delete', data)"
       plain
+      @click.stop="emit('delete', data)"
     >
       <el-icon><Delete /></el-icon>
     </el-button>
@@ -109,9 +109,9 @@ const getDimensionColor = (category: string) => {
       <!-- 头部：极简分类 Tag -->
       <div class="flex flex-col items-start gap-3 mb-2">
         <div
-          :class="['flex items-center px-4 py-1 rounded-full font-bold text-[14px] transition-all shadow-sm', getDimensionColor(data.category)]"
+          :class="['flex items-center px-4 py-1 rounded-full font-bold text-[12px] transition-all shadow-sm', getDimensionColor(data.category)]"
         >
-          <el-icon class="mr-2 text-[16px]">
+          <el-icon class="mr-2 text-[14px]">
             <component :is="getDimensionIcon(data.category)" />
           </el-icon>
           <span>{{ data.category }}</span>
@@ -124,7 +124,7 @@ const getDimensionColor = (category: string) => {
           :show-after="500"
         >
           <h3
-            class="text-lg font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors truncate w-full"
+            class="text-base font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors truncate w-full"
           >
             {{ data.name }}
           </h3>
@@ -137,13 +137,13 @@ const getDimensionColor = (category: string) => {
           <el-icon class="h-4 w-4 text-slate-400 mt-0.5 shrink-0">
             <Operation />
           </el-icon>
-          <span class="text-sm font-semibold text-slate-600 truncate">
+          <span class="text-xs font-semibold text-slate-600 truncate">
             {{ data.indicatorRuleName || data.ruleType || '未关联计分规则' }}
           </span>
         </div>
         
         <p
-          class="text-sm text-slate-400 italic leading-relaxed line-clamp-2"
+          class="text-xs text-slate-400 italic leading-relaxed line-clamp-2"
           :title="data.indicatorRuleDescription || data.ruleDesc"
         >
           {{ data.indicatorRuleDescription || data.ruleDesc || '暂无规则描述' }}
@@ -156,8 +156,8 @@ const getDimensionColor = (category: string) => {
         class="mt-3 pt-3 border-t border-slate-50"
       >
         <div class="flex items-center gap-1.5">
-          <span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">UNIT</span>
-          <span class="text-sm font-bold text-slate-600">{{ data.unit }}</span>
+          <span class="text-[9px] font-bold text-slate-300 uppercase tracking-widest">UNIT</span>
+          <span class="text-xs font-bold text-slate-600">{{ data.unit }}</span>
         </div>
       </div>
     </div>
@@ -168,7 +168,7 @@ const getDimensionColor = (category: string) => {
 .custom-card {
   --el-card-padding: 16px 18px;
   border-radius: 1rem;
-  height: 192px;
+  height: 168px;
   display: flex;
   flex-direction: column;
   overflow: hidden;

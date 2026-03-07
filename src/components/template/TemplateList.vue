@@ -207,7 +207,10 @@ const getStatusBadge = (status: string) => {
       </div>
     </div>
 
-    <Card class="border-slate-200 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm w-full mx-auto" style="min-width: 1000px;">
+    <Card
+      class="border-slate-200 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm w-full mx-auto"
+      style="min-width: 1000px;"
+    >
       <Table>
         <TableHeader class="bg-slate-50/50">
           <TableRow>

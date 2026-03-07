@@ -277,7 +277,7 @@ const getScoreGrade = (score: number) => {
           </div>
 
           <!-- Forms Container - Expanding content -->
-          <div class="flex-1 px-8 py-4 space-y-6 bg-slate-50/20">
+          <div class="flex-1 px-8 py-8 space-y-10 bg-slate-50/20">
             <div
               v-if="props.isLocked"
               class="mb-4"
@@ -290,7 +290,7 @@ const getScoreGrade = (score: number) => {
               </div>
             </div>
             <!-- Indicator List -->
-            <div class="grid gap-6">
+            <div class="grid gap-8">
               <el-card 
                 v-for="(ind, index) in filteredIndicators" 
                 :key="ind.id"

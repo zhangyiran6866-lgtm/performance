@@ -28,3 +28,7 @@ dist-ssr
 .gemini/
 A-skill/
 A-mcp/
+
+# Testing
+coverage/
+src/__tests__/

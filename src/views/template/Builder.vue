@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   ArrowLeft,
   Save,
@@ -30,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import IndicatorSelectorModal from '@/components/template/IndicatorSelectorModal.vue';
 import DailyReportPreviewModal from '@/components/template/DailyReportPreviewModal.vue';
-import { getSimpleDeptList } from '@/api/system/dept/dept';
+import { getSimpleDeptList, getUserByDept } from '@/api/system/dept/dept';
 import { handleTree } from '@/lib/utils';
 import { getStrDictOptions } from '@/utils/dict';
 
@@ -45,7 +46,7 @@ const initialSelectedIndicators = [
     ruleType: '90/70阶梯制(标准型)',
     ruleCode: 'STEP_90_70',
     weight: 30,
-    dataSourceType: 'api', // 'api' or 'manual'
+    dataSourceType: 'system', // 'system' or 'complete'
     dataSourceValue: 'api_act_big_item_sales',
   },
   {
@@ -55,7 +56,7 @@ const initialSelectedIndicators = [
     ruleType: '100/70阶梯制(严格型)',
     ruleCode: 'STEP_100_70',
     weight: 30,
-    dataSourceType: 'manual',
+    dataSourceType: 'system',
     dataSourceValue: 'input_new_customer_count',
   },
   {
@@ -65,7 +66,7 @@ const initialSelectedIndicators = [
     ruleType: '超标扣分制(达标满分)',
     ruleCode: 'DEDUCT_EXCEED',
     weight: 40,
-    dataSourceType: 'api',
+    dataSourceType: 'system',
     dataSourceValue: 'api_return_rate',
   },
 ];
@@ -73,11 +74,63 @@ const initialSelectedIndicators = [
 const templateInfo = ref({
   name: '',
   description: '',
-  applyTo: -1,
+  applyTo: [] as number[],
+  users: [] as number[],
   period: 'month',
 });
 
+const userList = ref<any[]>([]);
 const deptTree = ref<any[]>([]);
+const rootDeptIds = computed(() => deptTree.value.map(node => node.id));
+
+const fetchUsersByDeptIds = async (deptIds: number[]) => {
+  try {
+    // 过滤掉 -1 (全公司适用) 等非真实 ID，如果需要的话
+    const validIds = deptIds.filter(id => id > 0);
+    if (validIds.length === 0) {
+      userList.value = [];
+      return;
+    }
+    const res = await getUserByDept({ deptIds: validIds });
+    // 兼容后端返回格式
+    const list = Array.isArray(res) ? res : (res as any).data;
+    userList.value = Array.isArray(list) ? list : [];
+    
+    // 选取适用范围后，人员选项默认全选
+    if (userList.value.length > 0) {
+      templateInfo.value.users = userList.value.map(user => user.id);
+    } else {
+      templateInfo.value.users = [];
+    }
+  } catch (error) {
+    userList.value = [];
+  }
+};
+
+const isAllUsersSelected = computed(() => {
+  return userList.value.length > 0 && templateInfo.value.users.length === userList.value.length;
+});
+
+const isUsersIndeterminate = computed(() => {
+  return templateInfo.value.users.length > 0 && templateInfo.value.users.length < userList.value.length;
+});
+
+const handleSelectAllUsers = (val: any) => {
+  if (val) {
+    templateInfo.value.users = userList.value.map(user => user.id);
+  } else {
+    templateInfo.value.users = [];
+  }
+};
+
+// 监听适用范围变化，更新人员列表
+watch(
+  () => templateInfo.value.applyTo,
+  (newDeptIds: number[]) => {
+    fetchUsersByDeptIds(newDeptIds);
+  },
+  { deep: true },
+);
 
 onMounted(async () => {
   try {
@@ -87,16 +140,22 @@ onMounted(async () => {
     
     if (list && Array.isArray(list)) {
       const tree = handleTree(list, 'id', 'parentId');
-      deptTree.value = [
-        { id: -1, name: '全公司适用', children: [] },
-        ...tree,
-      ];
+      // 设置第一层级（根节点）为禁用选择状态，仅用于展开查看子部门
+      deptTree.value = tree.map((node: any) => ({
+        ...node,
+        disabled: true
+      }));
     } else {
       console.warn('Backend returned non-array data:', res);
-      deptTree.value = [{ id: -1, name: '全公司适用', children: [] }];
+      deptTree.value = [];
     }
   } catch (error) {
     console.error('Failed to fetch department list:', error);
+  }
+  
+  // 初始加载一次人员列表
+  if (templateInfo.value.applyTo.length > 0) {
+    fetchUsersByDeptIds(templateInfo.value.applyTo);
   }
 });
 
@@ -104,6 +163,22 @@ const indicators = ref(initialSelectedIndicators);
 const isModalOpen = ref(false);
 const isPreviewOpen = ref(false);
 const hasPreviewed = ref(false);
+const hasSaved = ref(false);
+
+// 监听数据变化，若有改动则重置保存状态
+watch(
+  [() => templateInfo.value, () => indicators.value],
+  () => {
+    hasSaved.value = false;
+  },
+  { deep: true },
+);
+
+const handleSave = () => {
+  // 这里未来可以接保存接口
+  hasSaved.value = true;
+  ElMessage.success('草稿保存成功！');
+};
 
 const handleAddIndicators = (selected: any[]) => {
   const existingIds = indicators.value.map((ind) => ind.id);
@@ -116,7 +191,7 @@ const handleAddIndicators = (selected: any[]) => {
       ruleType: ind.ruleType,
       ruleCode: ind.ruleCode,
       weight: 0,
-      dataSourceType: 'api',
+      dataSourceType: 'system',
       dataSourceValue: '',
     }));
 
@@ -182,27 +257,46 @@ const handleConfirmPreview = () => {
 
 const handlePublish = () => {
   if (!isWeightValid.value) {
-    alert('请先确保权重合计为100%!');
+    ElMessage.warning('请先确保权重合计为100%!');
     return;
   }
   if (!hasPreviewed.value) {
-    alert('请先点击【日报界面预览】确认最终下发到员工的界面无误!');
+    ElMessage.warning('请先点击【日报界面预览】确认最终下发到员工的界面无误!');
     return;
   }
-  alert('发布成功！');
+  if (!hasSaved.value) {
+    ElMessage.warning('请先点击【保存草稿】保存您的当前配置!');
+    return;
+  }
+
+  ElMessageBox.confirm(
+    '考核模板发布后将立即下发至相关人员，且在生效周期内将无法再次更改各项指标配置及其权重。请问是否确认现在发布该模板？',
+    '模板发布确认',
+    {
+      confirmButtonText: '确认发布',
+      cancelButtonText: '暂不发布',
+      type: 'warning',
+      customClass: 'publish-confirm-box'
+    }
+  ).then(() => {
+    // 实际下发逻辑可以放这里
+    ElMessage.success('正式发布成功，模板已下发并启用！');
+  }).catch(() => {
+    // 用户取消了发布
+  });
 };
 </script>
 
 <template>
   <div class="h-full flex flex-col w-full bg-slate-50/20">
     <!-- Header / Action Bar -->
-    <div class="shrink-0 bg-white/70 backdrop-blur-md border-b border-slate-200/80 px-4 xl:px-8 py-3.5 z-50">
+    <div class="shrink-0 bg-white/70 backdrop-blur-md border-b border-slate-200/80 px-4 xl:px-6 py-3.5 z-50">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full mx-auto">
         <div class="flex items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
-            class="h-8 w-8 text-slate-500 hover:text-slate-900"
+            class="h-11 w-11 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 transition-colors"
             @click="goBack"
           >
             <ArrowLeft class="h-6 w-6" />
@@ -214,11 +308,14 @@ const handlePublish = () => {
             <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
               <Badge
                 variant="outline"
-                class="font-normal text-[10px] h-4 bg-amber-50 text-amber-600 border-amber-200"
+                :class="[
+                  'font-normal text-[10px] h-4',
+                  hasSaved ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200'
+                ]"
               >
-                草稿中
+                {{ hasSaved ? '已保存' : '草稿中' }}
               </Badge>
-              <span>未保存更改</span>
+              <span>{{ hasSaved ? '所有更改已同步' : '未保存更改' }}</span>
             </div>
           </div>
         </div>
@@ -238,22 +335,23 @@ const handlePublish = () => {
           <Button
             variant="outline"
             class="bg-white hover:bg-slate-50 text-slate-700"
+            @click="handleSave"
           >
             <Save class="mr-2 h-4 w-4" />
             保存草稿
           </Button>
           <Button
             :class="[
-              'shadow-sm',
-              isWeightValid && hasPreviewed
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed',
-            ]"
-            @click="handlePublish"
-          >
-            <Send class="mr-2 h-4 w-4" />
-            正式发布并启用
-          </Button>
+               'shadow-sm',
+               isWeightValid && hasPreviewed && hasSaved
+                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                 : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70'
+             ]"
+             @click="handlePublish"
+           >
+             <Send class="mr-2 h-4 w-4" />
+             正式发布并启用
+           </Button>
         </div>
       </div>
     </div>
@@ -297,7 +395,7 @@ const handlePublish = () => {
                     />
                   </div>
                   <div class="flex flex-wrap gap-4">
-                    <div class="flex-1 min-w-[320px] space-y-2">
+                    <div class="flex-1 min-w-[240px] space-y-2">
                       <Label class="text-slate-700 font-semibold">标准考评频次</Label>
                       <Select v-model:model-value="templateInfo.period">
                         <SelectTrigger class="bg-white w-full">
@@ -314,23 +412,98 @@ const handlePublish = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div class="flex-1 min-w-[320px] space-y-2">
-                      <Label class="text-slate-700 font-semibold">默认适用范围</Label>
+                    <div class="flex-1 min-w-[240px] space-y-2">
+                      <Label class="text-slate-700 font-semibold">适用范围</Label>
                       <el-tree-select
                         v-model="templateInfo.applyTo"
                         :data="deptTree"
                         :props="{ label: 'name', value: 'id', children: 'children' }"
                         placeholder="请选择适用范围"
                         check-strictly
+                        multiple
+                        collapse-tags
+                        collapse-tags-tooltip
+                        check-on-click-node
                         filterable
                         node-key="id"
+                        :default-expanded-keys="rootDeptIds"
                         :expand-on-click-node="false"
                         :fit-input-width="true"
                         class="w-full dept-tree-select"
                         style="width: 100%"
                         popper-class="apply-to-popper"
                         teleport="body"
-                      />
+                        clearable
+                      >
+                        <template #default="{ data }">
+                          <div class="flex items-center justify-between w-full pr-2">
+                            <span>{{ data.name }}</span>
+                            <div
+                              v-if="templateInfo.applyTo.includes(data.id)"
+                              class="flex items-center justify-center text-emerald-500"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                class="lucide lucide-check"
+                              >
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            </div>
+                          </div>
+                        </template>
+                      </el-tree-select>
+                    </div>
+                    <div class="flex-1 min-w-[240px] space-y-2">
+                      <Label class="text-slate-700 font-semibold">选取人员</Label>
+                      <el-select
+                        v-model="templateInfo.users"
+                        multiple
+                        filterable
+                        collapse-tags
+                        collapse-tags-tooltip
+                        placeholder="请选择人员"
+                        class="w-full user-select-custom"
+                        style="width: 100%"
+                        clearable
+                      >
+                        <el-option
+                          v-for="user in userList"
+                          :key="user.id"
+                          :label="user.nickname"
+                          :value="user.id"
+                        >
+                          <div class="flex items-center gap-2">
+                            <el-checkbox
+                              :model-value="templateInfo.users.includes(user.id)"
+                              size="small"
+                              style="pointer-events: none;"
+                            />
+                            <span class="text-slate-700 font-medium">{{ user.nickname }}</span>
+                          </div>
+                        </el-option>
+                        <template #footer>
+                          <div class="px-3 py-2 border-t border-slate-100 flex items-center justify-between bg-white sticky bottom-0 z-10">
+                            <el-checkbox
+                              :model-value="isAllUsersSelected"
+                              :indeterminate="isUsersIndeterminate"
+                              @change="handleSelectAllUsers"
+                            >
+                              <span class="text-xs font-bold text-slate-700">全选当前备选人员</span>
+                            </el-checkbox>
+                            <span class="text-[10px] text-slate-400 font-bold bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                              已选 {{ templateInfo.users.length }}/{{ userList.length }}
+                            </span>
+                          </div>
+                        </template>
+                      </el-select>
                     </div>
                   </div>
                 </CardContent>
@@ -460,14 +633,14 @@ const handlePublish = () => {
                                 :model-value="ind.dataSourceType"
                                 @update:model-value="(v) => handleSourceTypeChange(ind.id, String(v))"
                               >
-                                <SelectTrigger class="bg-white border-slate-200 shadow-sm font-medium h-9 text-xs">
+                                <SelectTrigger class="bg-white border-slate-200 shadow-sm font-semibold h-9 text-xs w-full">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="api">
+                                  <SelectItem value="system">
                                     通过系统接口预置
                                   </SelectItem>
-                                  <SelectItem value="manual">
+                                  <SelectItem value="complete">
                                     员工手动逐日填报
                                   </SelectItem>
                                 </SelectContent>
@@ -475,23 +648,21 @@ const handlePublish = () => {
                             </div>
                             <div class="h-[52px] flex flex-col justify-end">
                               <Select
-                                v-if="ind.dataSourceType === 'manual'"
+                                v-if="ind.dataSourceType === 'complete'"
                                 default-value="sum"
                               >
-                                <SelectTrigger
-                                  class="bg-white border-slate-200 shadow-sm font-medium h-9 text-xs"
-                                >
-                                  <SelectValue />
-                                </SelectTrigger>
+                                 <SelectTrigger
+                                   class="bg-white border-slate-200 shadow-sm font-semibold h-9 text-xs text-slate-900 w-full"
+                                 >
+                                   <SelectValue />
+                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="sum">
-                                    月度累加 (SUM)
-                                  </SelectItem>
-                                  <SelectItem value="avg">
-                                    月度单项平均 (AVG)
-                                  </SelectItem>
-                                  <SelectItem value="latest">
-                                    按最后一次填报值计算
+                                  <SelectItem
+                                    v-for="dict in getStrDictOptions('complete_system_performance_filling_method')"
+                                    :key="dict.value"
+                                    :value="dict.value"
+                                  >
+                                    {{ dict.label }}
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
@@ -505,7 +676,7 @@ const handlePublish = () => {
                             <div class="mt-3 pt-3 border-t border-slate-200 space-y-2">
                               <div class="text-xs text-slate-400 leading-relaxed">
                                 <div
-                                  v-if="ind.dataSourceType === 'manual'"
+                                  v-if="ind.dataSourceType === 'complete'"
                                   class="flex items-center gap-1.5 mt-1.5"
                                 >
                                   <Input
@@ -523,18 +694,16 @@ const handlePublish = () => {
                                     :model-value="ind.dataSourceValue"
                                     @update:model-value="(v) => handleSourceValueChange(ind.id, String(v))"
                                   >
-                                    <SelectTrigger class="h-7 text-xs flex-1 bg-white border-slate-200 focus:ring-0">
+                                    <SelectTrigger class="h-9 text-xs w-full bg-white border-slate-200 focus:ring-0 font-semibold text-slate-900">
                                       <SelectValue placeholder="系统接口标识..." />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      <SelectItem value="api_act_sales">
-                                        ERP实际营业额
-                                      </SelectItem>
-                                      <SelectItem value="api_act_big_item_sales">
-                                        ERP大单品销售额
-                                      </SelectItem>
-                                      <SelectItem value="api_sys_profit">
-                                        财务核定毛利额
+                                      <SelectItem
+                                        v-for="dict in getStrDictOptions('system_performance_filling_method')"
+                                        :key="dict.value"
+                                        :value="dict.value"
+                                      >
+                                        {{ dict.label }}
                                       </SelectItem>
                                     </SelectContent>
                                   </Select>
@@ -567,23 +736,23 @@ const handlePublish = () => {
                                 2. 目标对比 (TARGET)
                               </div>
 
-                              <div class="flex-1 flex items-center justify-center">
-                                <div
-                                  class="bg-white/90 backdrop-blur-sm border border-indigo-100/80 px-6 py-4 rounded-xl shadow-sm w-[90%] md:w-auto relative group-hover:border-indigo-300 transition-colors"
-                                >
-                                  <div
-                                    class="text-center font-bold text-slate-700 text-[13px] pb-2 whitespace-nowrap"
-                                  >
-                                    实际数据总计
-                                  </div>
-                                  <div class="h-0.5 bg-indigo-300/60 w-full mb-2 rounded-full" />
-                                  <div
-                                    class="text-center font-bold text-indigo-600 text-[13px] whitespace-nowrap"
-                                  >
-                                    设定目标基数
-                                  </div>
-                                </div>
-                              </div>
+                               <div class="flex-1 flex items-center justify-center">
+                                 <div
+                                   class="bg-white/100 backdrop-blur-sm border border-indigo-200/80 px-8 py-5 rounded-2xl shadow-md w-[92%] md:w-auto relative group-hover:border-indigo-400 transition-all duration-300 transform group-hover:scale-[1.02]"
+                                 >
+                                   <div
+                                     class="text-center font-extrabold text-slate-800 text-[14px] pb-2 whitespace-nowrap tracking-wide"
+                                   >
+                                     实际业务数值统计
+                                   </div>
+                                   <div class="h-1 bg-gradient-to-r from-indigo-200 via-indigo-400 to-indigo-200 w-full mb-2.5 rounded-full" />
+                                   <div
+                                     class="text-center font-extrabold text-indigo-600 text-[14px] whitespace-nowrap tracking-wide"
+                                   >
+                                     设定考核目标基数
+                                   </div>
+                                 </div>
+                               </div>
                             </div>
                           </div>
 
@@ -606,7 +775,7 @@ const handlePublish = () => {
                               <span class="truncate pr-2">{{ ind.ruleType }}</span>
                               <ChevronRight class="h-4 w-4 text-emerald-400 shrink-0" />
                             </div>
-                            <p class="mt-3 text-[10px] text-slate-500/80 leading-relaxed font-medium">
+                            <p class="mt-3 text-[11px] text-slate-600/90 leading-relaxed font-medium">
                               当前配置为：100%达成得满分，线性浮动，未达标逐级递减的分数转化模型。
                             </p>
                           </div>
@@ -731,74 +900,126 @@ const handlePublish = () => {
    ========================================= */
 
 /* 根元素撑满容器 */
-.dept-tree-select {
+.dept-tree-select,
+.user-select-custom {
   display: block !important;
   width: 100% !important;
 }
 
-/* 触发器外壳：高度、边框、圆角、背景 完全对齐 h-9 的 SelectTrigger */
-.dept-tree-select .el-select__wrapper {
-  width: 100% !important;
-  min-height: 36px !important;
+/* 强制隐藏多选模式下的 checkbox */
+.dept-tree-select .el-checkbox {
+  display: none !important;
+}
+
+/* 调整树节点的选中状态样式：仅保留 hover 态，移除原有的绿色文字和背景，通过插槽内的打钩图标体现选中状态 */
+.apply-to-popper .el-tree-node.is-current > .el-tree-node__content {
+  background-color: transparent !important;
+  color: #0f172a !important; /* 恢复深色文字 */
+  font-weight: 500 !important;
+}
+
+/* 隐藏 el-select 默认自带的蓝色对号按钮 */
+.apply-to-popper .el-select-dropdown__item.is-selected::after,
+.apply-to-popper .el-select__selected-icon {
+  display: none !important;
+}
+
+.apply-to-popper .el-tree-node__content:hover {
+  background-color: #f8fafc !important; /* 极浅灰 hover */
+}
+
+/* 确保节点内容区域铺满 */
+.apply-to-popper .el-tree-node__content {
   height: 36px !important;
-  padding: 0 8px 0 12px !important;
-  border-radius: 6px !important;
+}
+
+/* 触发器外壳：高度、边框、圆角、背景 完全对齐标准 h-10 的 SelectTrigger */
+.dept-tree-select .el-select__wrapper,
+.user-select-custom .el-select__wrapper {
+  width: 100% !important;
+  min-height: 40px !important; /* 对齐 h-10 */
+  height: auto !important; /* 多选模式下高度自适应 */
+  padding: 4px 12px !important;
+  border-radius: 0.5rem !important; /* 对齐 rounded-md */
   background-color: #ffffff !important;
   box-shadow: 0 0 0 1px #e2e8f0 !important;
   font-size: 14px !important;
   line-height: 1.5 !important;
   color: #0f172a !important;
   cursor: pointer !important;
-  transition: box-shadow 0.15s ease !important;
+  transition: all 0.2s ease !important;
 }
 
 /* 强制所有内部文本子元素使用深色（兜底通配符） */
 .dept-tree-select .el-select__wrapper span,
-.dept-tree-select .el-select__wrapper input {
+.dept-tree-select .el-select__wrapper input,
+.user-select-custom .el-select__wrapper span,
+.user-select-custom .el-select__wrapper input {
   color: #0f172a !important;
 }
 
-.dept-tree-select .el-select__wrapper:hover {
+.dept-tree-select .el-select__wrapper:hover,
+.user-select-custom .el-select__wrapper:hover {
   box-shadow: 0 0 0 1px #94a3b8 !important;
 }
 
-.dept-tree-select .el-select__wrapper.is-focused {
+.dept-tree-select .el-select__wrapper.is-focused,
+.user-select-custom .el-select__wrapper.is-focused {
   box-shadow: 0 0 0 2px hsl(221.2 83.2% 53.3%) !important;
 }
 
 /* 选中文本：覆盖所有可能的渲染容器 */
 /* 1. 普通模式: selected-item */
-.dept-tree-select .el-select__selected-item {
+.dept-tree-select .el-select__selected-item,
+.user-select-custom .el-select__selected-item {
   color: #0f172a !important;
   font-size: 14px !important;
 }
 
 /* 2. filterable 模式：选中值渲染在 input 里 */
-.dept-tree-select .el-select__input {
+.dept-tree-select .el-select__input,
+.user-select-custom .el-select__input {
   color: #0f172a !important;
   font-size: 14px !important;
 }
 
-/* 3. tag 模式兜底 */
+/* 3. tag 模式（多选时渲染为 Tag） */
 .dept-tree-select .el-tag,
-.dept-tree-select .el-tag .el-select__tags-text {
-  color: #0f172a !important;
-  font-size: 14px !important;
+.user-select-custom .el-tag {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+  height: 24px !important;
+}
+
+.dept-tree-select .el-tag .el-tag__close,
+.user-select-custom .el-tag .el-tag__close {
+  color: #94a3b8 !important;
+}
+
+.dept-tree-select .el-tag .el-tag__close:hover,
+.user-select-custom .el-tag .el-tag__close:hover {
+  color: #ef4444 !important;
+  background-color: transparent !important;
 }
 
 /* placeholder：单独还原灰色，防止被通配 span 规则覆盖 */
 .dept-tree-select .el-select__wrapper span.el-select__placeholder,
-.dept-tree-select .el-select__placeholder {
+.dept-tree-select .el-select__placeholder,
+.user-select-custom .el-select__wrapper span.el-select__placeholder,
+.user-select-custom .el-select__placeholder {
   color: #94a3b8 !important;
   font-size: 14px !important;
 }
 
-.dept-tree-select .el-select__input::placeholder {
+.dept-tree-select .el-select__input::placeholder,
+.user-select-custom .el-select__input::placeholder {
   color: #94a3b8 !important;
 }
 
 /* 下拉箭头颜色 */
-.dept-tree-select .el-select__caret {
+.dept-tree-select .el-select__caret,
+.user-select-custom .el-select__caret {
   color: #64748b !important;
 }
 
@@ -844,5 +1065,24 @@ const handlePublish = () => {
 /* 搜索框区域 */
 .apply-to-popper .el-select-dropdown__search-field {
   padding: 8px 12px;
+}
+
+/* 隐藏多选模式下的默认 checkmark，因为我们要用自定义 checkbox */
+.user-select-custom + .el-select__popper .el-select-dropdown__item.is-selected::after,
+.user-select-custom-dropdown .el-select-dropdown__item.is-selected::after {
+  display: none !important;
+}
+
+/* 修正 el-option 内部布局 */
+.user-select-custom .el-select-dropdown__item,
+.el-select-dropdown__item {
+  display: flex !important;
+  align-items: center !important;
+}
+
+.user-select-custom .el-checkbox,
+.el-select-dropdown__item .el-checkbox {
+  margin-right: 0 !important;
+  height: auto !important;
 }
 </style>

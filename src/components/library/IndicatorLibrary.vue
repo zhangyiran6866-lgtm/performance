@@ -9,16 +9,13 @@ import { ref, onMounted, watch } from 'vue';
 import IndicatorCard, { type IndicatorData } from '@/components/library/IndicatorCard.vue';
 import IndicatorWizard from '@/components/library/IndicatorWizard.vue';
 import { getDictOptions } from '@/utils/dict';
-import { getIndicatorPage, deleteIndicator } from '@/api/library';
+import { getIndicatorList, deleteIndicator } from '@/api/library';
 import { ElMessageBox } from 'element-plus';
 import { ElMessage } from 'element-plus';
 
 const search = ref('');
 const dimensionFilter = ref('all');
 const indicators = ref<IndicatorData[]>([]);
-const total = ref(0);
-const pageNo = ref(1);
-const pageSize = ref(12);
 const loading = ref(false);
 
 const isWizardOpen = ref(false);
@@ -29,15 +26,12 @@ const fetchIndicators = async () => {
   try {
     loading.value = true;
     const params = {
-      pageNo: pageNo.value,
-      pageSize: pageSize.value,
-      name: search.value || undefined,
-      category: dimensionFilter.value === 'all' ? undefined : dimensionFilter.value,
-    };
-    const res: any = await getIndicatorPage(params);
+      name: search.value,
+      category: dimensionFilter.value === 'all' ? '' : dimensionFilter.value,
+    }
+    const res: any = await getIndicatorList(params);
     if (res.code === 0 && res.data) {
-      indicators.value = res.data.list || [];
-      total.value = res.data.total || 0;
+      indicators.value = res.data || [];
     }
   } catch (error) {
     console.error('Fetch failed:', error);
@@ -53,7 +47,6 @@ onMounted(() => {
 
 // 监听搜索和过滤
 watch([search, dimensionFilter], () => {
-  pageNo.value = 1;
   fetchIndicators();
 });
 
@@ -187,20 +180,6 @@ const handleDelete = (indicator: IndicatorData) => {
           <p>未找到符合条件的指标</p>
         </div>
       </div>
-    </div>
-    
-    <div
-      v-if="total > pageSize"
-      class="flex justify-end mt-8"
-    >
-      <el-pagination
-        v-model:current-page="pageNo"
-        v-model:page-size="pageSize"
-        :total="total"
-        background
-        layout="prev, pager, next"
-        @current-change="fetchIndicators"
-      />
     </div>
 
     <IndicatorWizard

@@ -43,6 +43,15 @@ export function getIndicatorPage(params: PageParam) {
   });
 }
 
+// 获取绩效指标不分页
+export function getIndicatorList(params: any) {
+  return request({
+    url: '/human/performance-indicator/list',
+    method: 'get',
+    params,
+  });
+}
+
 // 创建绩效指标
 export function createIndicator(data: IndicatorVO) {
   return request({

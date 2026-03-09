@@ -16,3 +16,9 @@ export interface DeptVO {
 export const getSimpleDeptList = (): Promise<DeptVO[]> => {
   return  request({ url: '/system/dept/simple-list', method: 'get' });
 };
+
+// 根据所选部门查询人员数据
+export const getUserByDept = (data:any) => {
+  return request({ url: '/system/user/selectUsersByDeptId',method: 'post' , data})
+}
+ 

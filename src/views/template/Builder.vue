@@ -168,10 +168,10 @@ onMounted(async () => {
       const res = await getTemplate(Number(id));
       const data = (res as any)?.data || res;
       if (data) {
-        // 如果模板不是草稿状态且试图编辑，强制切换为查看模式
-        if (data.status !== 1 && pageMode.value === 'edit') {
+        // 已生效的模板不允许编辑，强制切换为查看模式；草稿和已归档允许编辑
+        if (data.status === 2 && pageMode.value === 'edit') {
           router.replace({ query: { ...route.query, mode: 'view' } });
-          ElMessage.info('该模板已生效或已归档，已自动切换为查看模式');
+          ElMessage.info('该模板已处于生效状态，无法直接修改，已切换为预览模式');
         }
 
         templateInfo.value = {
@@ -263,6 +263,7 @@ const handleSave = async () => {
     userId: templateInfo.value.users,
     evaluationFrequency: templateInfo.value.period,
     templateReqVOS: templateReqVOSList,
+    status: 1, // 默认设为草稿状态
   };
 
   saving.value = true;
@@ -280,19 +281,24 @@ const handleSave = async () => {
       }
       hasSaved.value = true;
       ElMessage.success('模板新建并保存草稿成功！');
+      return newId;
     } else if (pageMode.value === 'edit') {
       // 编辑模式：将当前路由中的 id 写入请求体
-      requestData.id = Number(route.query.id);
+      const id = Number(route.query.id);
+      requestData.id = id;
       await updateTemplate(requestData);
       hasSaved.value = true;
       ElMessage.success('模板草稿更新成功！');
+      return id;
     }
   } catch (error: any) {
     console.error('保存草稿失败:', error);
     ElMessage.error(error?.message || '保存草稿失败，请稍后重试！');
+    return null;
   } finally {
     saving.value = false;
   }
+  return null;
 };
 
 const handleAddIndicators = (selected: any[]) => {
@@ -321,8 +327,8 @@ const totalWeight = computed(() =>
 );
 const isWeightValid = computed(() => totalWeight.value === 100);
 
-const handleWeightChange = (id: string, newWeight: string) => {
-  const weight = parseInt(newWeight) || 0;
+const handleWeightChange = (id: string, value: number | null) => {
+  const weight = typeof value === 'number' ? value : 0;
   indicators.value = indicators.value.map((ind) =>
     ind.id === id ? { ...ind, weight } : ind,
   );
@@ -352,7 +358,7 @@ const removeIndicator = (id: string) => {
   indicators.value = indicators.value.filter((ind) => ind.id !== id);
 };
 
-const goBack = () => router.push('/configuration');
+const goBack = () => router.push({ path: '/configuration', query: { tab: 'template' } });
 
 const colors = [
   'bg-blue-500',
@@ -390,10 +396,6 @@ const handlePublish = () => {
     ElMessage.warning('请先点击【日报界面预览】确认最终下发到员工的界面无误!');
     return;
   }
-  if (!hasSaved.value) {
-    ElMessage.warning('请先点击【保存草稿】保存您的当前配置!');
-    return;
-  }
 
   ElMessageBox.confirm(
     '考核模板发布后将立即下发至相关人员，且在生效周期内将无法再次更改各项指标配置及其权重。请问是否确认现在发布该模板？',
@@ -407,7 +409,16 @@ const handlePublish = () => {
   ).then(async () => {
     try {
       saving.value = true;
-      const id = Number(route.query.id);
+      
+      let id = Number(route.query.id);
+      
+      // 如果有改动或者还没有保存过（没有 ID），先执行保存逻辑
+      if (!hasSaved.value || !id) {
+        const savedId = await handleSave();
+        if (!savedId) return; // 保存失败则不继续
+        id = Number(savedId);
+      }
+
       await updateTemplateStatus({ id, status: 2 });
       ElMessage.success('正式发布成功，模板已下发并启用！');
       // 发布成功后延迟跳转回列表页
@@ -742,18 +753,21 @@ const handlePublish = () => {
                           </div>
                           <div class="flex items-center gap-2 shrink-0">
                             <div class="flex items-center">
-                              <Input
-                                type="number"
+                              <el-input-number
                                 :model-value="ind.weight"
+                                :min="0"
+                                :max="100"
+                                :precision="0"
                                 :disabled="pageMode === 'view'"
-                                class="h-9 w-20 text-center font-semibold pr-6 rounded-r-none border-r-0 focus-visible:z-10 bg-slate-50/50"
-                                @update:model-value="(v) => handleWeightChange(ind.id, String(v))"
-                              />
-                              <div
-                                class="h-9 px-3 flex items-center bg-slate-50 border border-slate-200 rounded-r-md text-slate-500 text-sm"
+                                placeholder="权重"
+                                class="weight-input-number"
+                                @change="(val: number | null) => handleWeightChange(ind.id, val)"
                               >
-                                %
-                              </div>
+                              <template #suffix>
+        <span>%</span>
+      </template>
+    </el-input-number>
+                              
                             </div>
                             <Button
                               v-if="pageMode !== 'view'"
@@ -1243,5 +1257,28 @@ const handlePublish = () => {
 .el-select-dropdown__item .el-checkbox {
   margin-right: 0 !important;
   height: auto !important;
+}
+
+/* 权重输入框样式调整 */
+.weight-input-number {
+  width: 150px !important;
+}
+
+.weight-input-number :deep(.el-input__wrapper) {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  height: 36px;
+  background-color: rgb(248 250 252 / 0.5) !important; /* bg-slate-50/50 */
+  box-shadow: 0 0 0 1px #e2e8f0 inset !important; /* border-slate-200 */
+}
+
+.weight-input-number.is-focused :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #3b82f6 inset !important; /* blue-500 focus */
+}
+
+.weight-input-number :deep(.el-input__inner) {
+  text-align: center !important;
+  font-weight: 600 !important;
+  color: #0f172a !important; /* slate-900 */
 }
 </style>

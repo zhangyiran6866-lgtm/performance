@@ -6,12 +6,28 @@
  * @lines ~30
 -->
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { Briefcase } from 'lucide-vue-next';
 import IndicatorLibrary from '@/components/library/IndicatorLibrary.vue';
 import TemplateList from '@/components/template/TemplateList.vue';
 
+const route = useRoute();
 const activeTab = ref('library');
+
+onMounted(() => {
+  if (route.query.tab === 'template') {
+    activeTab.value = 'template';
+  }
+});
+
+watch(() => route.query.tab, (newTab) => {
+  if (newTab === 'template') {
+    activeTab.value = 'template';
+  } else if (newTab === 'library') {
+    activeTab.value = 'library';
+  }
+});
 </script>
 
 <template>

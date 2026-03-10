@@ -2,9 +2,10 @@
  * @author Zyr
  * @date 2026-03-06 15:25:00
  * @description 优化指标卡片样式：压缩高度、单行标题 Tooltip、样式精细化。
- * @lines ~50
+ * @update 2026-03-10 增加根据指标类型动态变色逻辑。
 -->
 <script setup lang="ts">
+import { computed } from 'vue';
 import {
   Setting,
   TrendCharts,
@@ -43,56 +44,54 @@ const emit = defineEmits<{
 }>();
 
 const getDimensionIcon = (category: string) => {
-  switch (category) {
-  case '销售业绩':
-    return TrendCharts;
-  case '产品力':
-    return Goods;
-  case '市场指标':
-    return Operation;
-  case '渠道力':
-    return Histogram;
-  case '费用管理':
-    return Money;
-  case '组织力':
-    return User;
-  case '行动计划':
-    return Clock;
-  default:
-    return Setting;
+  switch (category?.trim()) {
+  case '销售业绩': return TrendCharts;
+  case '产品力': return Goods;
+  case '市场指标': return Operation;
+  case '渠道力': return Histogram;
+  case '费用管理': return Money;
+  case '组织力': return User;
+  case '行动计划': return Clock;
+  default: return Setting;
   }
 };
 
-const getDimensionColor = (category: string) => {
-  switch (category) {
-  case '销售业绩':
-    return 'bg-red-50 text-red-500';
-  case '产品力':
-    return 'bg-orange-50 text-orange-500';
-  case '市场指标':
-    return 'bg-blue-50 text-blue-500';
-  case '渠道力':
-    return 'bg-indigo-50 text-indigo-500';
-  case '费用管理':
-    return 'bg-emerald-50 text-emerald-500';
-  case '组织力':
-    return 'bg-purple-50 text-purple-500';
-  case '行动计划':
-    return 'bg-cyan-50 text-cyan-500';
-  default:
-    return 'bg-slate-50 text-slate-500';
+/** 
+ * 根据分类获取主题色
+ * 使用 CSS 变量以确保 Tailwind 能够正确渲染（绕过动态类名扫描限制）
+ */
+const getCategoryColor = (category: string) => {
+  switch (category?.trim()) {
+  case '销售业绩': return '#f43f5e'; // rose-500
+  case '产品力': return '#f97316';   // orange-500
+  case '市场指标': return '#3b82f6'; // blue-500
+  case '渠道力': return '#6366f1';   // indigo-500
+  case '费用管理': return '#10b981'; // emerald-500
+  case '组织力': return '#a855f7';   // purple-500
+  case '行动计划': return '#06b6d4'; // cyan-500
+  default: return '#64748b';        // slate-500
   }
 };
+
+const cardStyle = computed(() => {
+  const color = getCategoryColor(props.data.category);
+  return {
+    '--theme-color': color,
+    '--theme-color-light': `${color}15`, // 主题色的浅色背景（约 8% 透明度）
+    '--theme-color-hover': `${color}4D`, // 悬浮时的边框色（约 30% 透明度）
+  };
+});
 </script>
 
 <template>
   <el-card
-    class="custom-card group relative cursor-pointer transition-all duration-300 border-slate-100 hover:border-blue-200 hover:shadow-lg"
+    class="custom-card group relative cursor-pointer transition-all duration-300 border-slate-100 hover:shadow-lg"
+    :style="cardStyle"
     shadow="never"
     @click="emit('click')"
   >
-    <!-- 左侧装饰条：默认淡灰，悬浮变蓝 -->
-    <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-100 group-hover:bg-blue-600 transition-all duration-300" />
+    <!-- 左侧装饰条：默认淡灰，悬浮变为主体色 -->
+    <div class="absolute top-0 left-0 w-1.5 h-full bg-slate-100 group-hover:bg-[var(--theme-color)] transition-all duration-300" />
     
     <!-- 右上角悬浮删除按钮 -->
     <el-button
@@ -109,7 +108,7 @@ const getDimensionColor = (category: string) => {
       <!-- 头部：极简分类 Tag -->
       <div class="flex flex-col items-start gap-3 mb-2">
         <div
-          :class="['flex items-center px-4 py-1 rounded-full font-bold text-[12px] transition-all shadow-sm', getDimensionColor(data.category)]"
+          class="flex items-center px-4 py-1 rounded-full font-bold text-[12px] transition-all shadow-sm bg-[var(--theme-color-light)] text-[var(--theme-color)]"
         >
           <el-icon class="mr-2 text-[14px]">
             <component :is="getDimensionIcon(data.category)" />
@@ -124,7 +123,7 @@ const getDimensionColor = (category: string) => {
           :show-after="500"
         >
           <h3
-            class="text-base font-bold text-slate-800 leading-tight group-hover:text-blue-600 transition-colors truncate w-full"
+            class="text-base font-bold text-slate-800 leading-tight group-hover:text-[var(--theme-color)] transition-colors truncate w-full"
           >
             {{ data.name }}
           </h3>
@@ -177,6 +176,8 @@ const getDimensionColor = (category: string) => {
 
 .custom-card:hover {
   transform: translateY(-2px);
+  /* 使用 CSS 变量动态调整边框颜色 */
+  border-color: var(--theme-color-hover) !important;
 }
 
 :deep(.el-card__body) {

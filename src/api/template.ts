@@ -32,6 +32,10 @@ export interface templateReqVOS {
      * 适用用户ID
      */
     userId: number[];
+    /**
+     * 状态 (1:草稿 2:已生效 3:已归档)
+     */
+    status?: number;
     [property: string]: any;
 }
 

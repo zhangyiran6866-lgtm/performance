@@ -11,17 +11,8 @@ import { Plus, Search, FileEdit, Trash2, PowerOff, Power, MoreHorizontal, Eye } 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import dayjs from 'dayjs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -254,94 +245,123 @@ const handleDelete = async (id: number) => {
         </RouterLink>
       </div>
     </div>
-
-    <Card
-      class="border-slate-200 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm w-full mx-auto"
-      style="min-width: 1100px; min-height: 400px;"
-    >
-      <Table class="column-zebra-table">
-        <TableHeader class="bg-slate-100/80">
-          <TableRow class="hover:bg-transparent">
-            <TableHead class="w-[320px] pl-8 font-bold text-slate-700">
-              模板信息
-            </TableHead>
-            <TableHead class="min-w-[180px] font-bold text-slate-700">摘要说明</TableHead>
-            <TableHead class="text-center w-[130px] font-bold text-slate-700">
-              指标/权重
-            </TableHead>
-            <TableHead class="text-center w-[120px] font-bold text-slate-700">
-              当前状态
-            </TableHead>
-            <TableHead class="w-[180px] font-bold text-slate-700">
-              适用范围
-            </TableHead>
-            <TableHead class="text-right w-[160px] font-bold text-slate-700">
-              最后修改时间
-            </TableHead>
-            <TableHead class="w-[80px] text-right pr-8 font-bold text-slate-700">
-              操作
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody v-loading="loading">
-          <TableRow
-            v-for="template in templates"
-            :key="template.id"
-            class="hover:bg-slate-50/50 transition-colors"
-          >
-            <TableCell class="pl-8">
-              <div class="flex flex-col">
-                <span
-                  class="font-semibold text-slate-800 line-clamp-1 text-sm"
-                  :title="template.name"
-                >
-                  {{ template.name }}
-                </span>
-                <span class="text-xs text-slate-400 font-medium mt-0.5">ID: {{ template.no }}</span>
-              </div>
-            </TableCell>
-            <TableCell>
+      <el-table
+        v-loading="loading"
+        :data="templates"
+        stripe
+        class="custom-el-table"
+        header-cell-class-name="custom-table-header"
+      >
+        <!-- 模板信息 -->
+        <el-table-column
+          label="模板信息"
+          width="300"
+        >
+          <template #default="{ row }">
+            <div class="flex flex-col">
               <span
-                class="text-sm text-slate-600 line-clamp-2"
-                :title="template.remark"
+                class="font-bold text-slate-900 line-clamp-1 text-base"
+                :title="row.name"
               >
-                {{ template.remark || '-' }}
+                {{ row.name }}
               </span>
-            </TableCell>
-            <TableCell class="text-center">
-              <div class="flex flex-col items-center justify-center py-1">
-                <div class="text-[13px] font-bold text-slate-700 mb-0.5">
-                  {{ template.indicatorCount || 0 }} 个指标
-                </div>
-                <div 
-                  :class="[
-                    'text-[12px] font-bold border-b-2 px-0.5 leading-tight',
-                    template.totalWeight === 100 
-                      ? 'text-emerald-500 border-emerald-100' 
-                      : 'text-amber-500 border-amber-100'
-                  ]"
-                >
-                  权重 {{ template.totalWeight }}%
-                </div>
+              <span class="text-xs text-slate-400 font-medium mt-0.5 whitespace-nowrap">ID: {{ row.no || '-' }}</span>
+            </div>
+          </template>
+        </el-table-column>
+
+        <!-- 摘要说明 -->
+        <el-table-column
+          label="摘要说明"
+          min-width="160"
+        >
+          <template #default="{ row }">
+            <span
+              class="text-sm text-slate-600 line-clamp-1"
+              :title="row.remark"
+            >
+              {{ row.remark || '-' }}
+            </span>
+          </template>
+        </el-table-column>
+
+        <!-- 指标/权重 -->
+        <el-table-column
+          label="指标/权重"
+          width="130"
+          align="center"
+        >
+          <template #default="{ row }">
+            <div class="flex flex-col items-center justify-center py-1 whitespace-nowrap">
+              <div class="text-[13px] font-bold text-slate-700 mb-0.5">
+                {{ row.indicatorCount || 0 }} 个指标
               </div>
-            </TableCell>
-            <TableCell class="text-center">
-              <Badge :class="[getStatusBadge(template.status).class, 'text-xs whitespace-nowrap px-2 py-0.5']">
-                {{ getStatusBadge(template.status).text }}
-              </Badge>
-            </TableCell>
-            <TableCell>
               <div 
-                class="text-sm text-slate-600 truncate max-w-[160px]" 
-                :title="template.deptName"
+                :class="[
+                  'text-[12px] font-bold border-b-2 px-0.5 leading-tight',
+                  row.totalWeight === 100 
+                    ? 'text-emerald-500 border-emerald-100' 
+                    : 'text-amber-500 border-amber-100'
+                ]"
               >
-                {{ template.deptName || '全公司适用' }}
+                权重 {{ row.totalWeight }}%
               </div>
-            </TableCell>
-            <TableCell class="text-right text-xs text-slate-500 font-medium">
-              {{ formatDate(template.createTime) }}
-            </TableCell>
-            <TableCell class="text-right pr-8">
+            </div>
+          </template>
+        </el-table-column>
+
+        <!-- 当前状态 -->
+        <el-table-column
+          label="当前状态"
+          width="120"
+          align="center"
+        >
+          <template #default="{ row }">
+            <Badge :class="[getStatusBadge(row.status).class, 'text-xs whitespace-nowrap px-2 py-0.5']">
+              {{ getStatusBadge(row.status).text }}
+            </Badge>
+          </template>
+        </el-table-column>
+
+        <!-- 适用范围 -->
+        <el-table-column
+          label="适用范围"
+          width="180"
+          align="center"
+
+        >
+          <template #default="{ row }">
+            <div 
+              class="text-sm text-slate-600 truncate max-w-[160px] whitespace-nowrap" 
+              :title="row.deptName"
+            >
+              {{ row.deptName || '全公司适用' }}
+            </div>
+          </template>
+        </el-table-column>
+
+        <!-- 最后修改时间 -->
+        <el-table-column
+          label="最后修改时间"
+          width="180"
+          align="center"
+        >
+          <template #default="{ row }">
+            <span class="text-xs text-slate-500 font-medium whitespace-nowrap">
+              {{ formatDate(row.createTime) }}
+            </span>
+          </template>
+        </el-table-column>
+
+        <!-- 操作 -->
+        <el-table-column
+          label="操作"
+          width="100"
+          align="center"
+          fixed="right"
+        >
+          <template #default="{ row }">
+            <div>
               <DropdownMenu>
                 <DropdownMenuTrigger as-child>
                   <Button
@@ -356,15 +376,15 @@ const handleDelete = async (id: number) => {
                   align="end"
                   class="w-[160px]"
                 >
-                  <RouterLink :to="`/template/builder?id=${template.id}&mode=view`">
+                  <RouterLink :to="`/template/builder?id=${row.id}&mode=view`">
                     <DropdownMenuItem class="cursor-pointer">
                       <Eye class="mr-2 h-4 w-4 text-emerald-600" />
                       <span class="text-slate-700">查看模板配置</span>
                     </DropdownMenuItem>
                   </RouterLink>
                   <RouterLink 
-                    v-if="template.status === 1"
-                    :to="`/template/builder?id=${template.id}&mode=edit`"
+                    v-if="row.status === 1 || row.status === 3"
+                    :to="`/template/builder?id=${row.id}&mode=edit`"
                   >
                     <DropdownMenuItem class="cursor-pointer">
                       <FileEdit class="mr-2 h-4 w-4 text-blue-600" />
@@ -372,44 +392,43 @@ const handleDelete = async (id: number) => {
                     </DropdownMenuItem>
                   </RouterLink>
                   <DropdownMenuItem
-                    v-if="template.status === 2"
+                    v-if="row.status === 2"
                     class="cursor-pointer"
-                    @click="handleChangeStatus(template.id, 3)"
+                    @click="handleChangeStatus(row.id, 3)"
                   >
                     <PowerOff class="mr-2 h-4 w-4 text-amber-600" />
                     <span class="text-slate-700">暂停/停用</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    v-else
+                    v-else-if="row.status === 1"
                     class="cursor-pointer"
-                    @click="handleChangeStatus(template.id, 2)"
+                    @click="handleChangeStatus(row.id, 2)"
                   >
                     <Power class="mr-2 h-4 w-4 text-emerald-600" />
                     <span class="text-slate-700">发布启用</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    v-if="template.status === 1"
+                    v-if="row.status === 1"
                     class="cursor-pointer focus:bg-red-50"
-                    @click="handleDelete(template.id)"
+                    @click="handleDelete(row.id)"
                   >
                     <Trash2 class="mr-2 h-4 w-4 text-red-600" />
                     <span class="text-red-600">删除草稿</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </TableCell>
-          </TableRow>
-          <TableRow v-if="templates.length === 0 && !loading">
-            <TableCell
-              colspan="7"
-              class="h-24 text-center text-slate-500 text-sm"
-            >
-              未找到匹配的模板
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </Card>
+            </div>
+          </template>
+        </el-table-column>
+        
+        <template #empty>
+          <div class="h-24 flex items-center justify-center text-slate-500 text-sm">
+            未找到匹配的模板
+          </div>
+        </template>
+      </el-table>
+    
+      
 
     <div class="flex justify-center my-4 pb-4">
       <el-pagination
@@ -424,13 +443,27 @@ const handleDelete = async (id: number) => {
 </template>
 
 <style scoped>
-.column-zebra-table :deep(th:nth-child(even)),
-.column-zebra-table :deep(td:nth-child(even)) {
-  background-color: rgba(241, 245, 249, 0.4); /* slate-100/40 */
+.custom-el-table {
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-/* 确保悬停时仍然有良好的交互感 */
-.column-zebra-table :deep(tr:hover td) {
-  background-color: rgba(241, 245, 249, 0.8) !important;
+.custom-el-table :deep(.custom-table-header) {
+  background-color: #f1f5f9 !important; /* slate-100, more distinct than f8fafc */
+  color: #0f172a !important; /* slate-900, deepest color for clarity */
+  font-weight: 850 !important;
+  height: 54px !important;
+  font-size: 13px;
+  border-bottom: 2px solid #e2e8f0 !important;
+  white-space: nowrap !important;
+}
+
+.custom-el-table :deep(.el-table__cell) {
+  padding: 12px 16px; /* Balance horizontal and vertical padding */
+}
+
+/* 确保 hover 效果简洁 */
+.custom-el-table :deep(.el-table__row:hover > td) {
+  background-color: #f8fafc !important;
 }
 </style>

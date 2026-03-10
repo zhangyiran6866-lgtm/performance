@@ -215,20 +215,6 @@ const handlePasswordLogin = async () => {
               </template>
             </el-input>
           </div>
-
-          <div class="flex items-center justify-between pt-2">
-            <el-checkbox
-              v-model="loginForm.rememberMe"
-              class="text-slate-600"
-            >
-              30天内免登录
-            </el-checkbox>
-            <a
-              href="#"
-              class="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
-            >忘记密码?</a>
-          </div>
-
           <div class="pt-4">
             <el-button 
               type="primary" 

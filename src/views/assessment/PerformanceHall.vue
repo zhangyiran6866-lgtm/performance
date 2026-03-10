@@ -171,12 +171,7 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
                   <Target />
                 </el-icon>
                 <span class="text-slate-500 group-[.is-active]:text-indigo-600">团队目标设定</span>
-                <el-icon
-                  v-if="isGoalSettingLocked"
-                  class="ml-1 text-slate-300"
-                >
-                  <Lock />
-                </el-icon>
+                
               </div>
             </template>
           </el-tab-pane>

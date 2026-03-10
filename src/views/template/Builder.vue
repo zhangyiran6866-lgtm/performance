@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   ArrowLeft,
@@ -32,44 +32,45 @@ import {
 import IndicatorSelectorModal from '@/components/template/IndicatorSelectorModal.vue';
 import DailyReportPreviewModal from '@/components/template/DailyReportPreviewModal.vue';
 import { getSimpleDeptList, getUserByDept } from '@/api/system/dept/dept';
+import { createTemplate, updateTemplate, getTemplate, updateTemplateStatus } from '@/api/template';
+import type { templateReqVOS, PerformanceIndicatorTemplateReqVO } from '@/api/template';
 import { handleTree } from '@/lib/utils';
 import { getStrDictOptions } from '@/utils/dict';
 
-const router = useRouter();
+interface Indicator {
+  id: string;
+  name: string;
+  dimension: string;
+  ruleType: string;
+  ruleCode: string;
+  weight: number;
+  dataSourceType: string;
+  dataSourceValue: string;
+}
 
-// Mock data for initial selected indicators
-const initialSelectedIndicators = [
-  {
-    id: '1',
-    name: '主推大单品销售目标达成率',
-    dimension: '产品力',
-    ruleType: '90/70阶梯制(标准型)',
-    ruleCode: 'STEP_90_70',
-    weight: 30,
-    dataSourceType: 'system', // 'system' or 'complete'
-    dataSourceValue: 'api_act_big_item_sales',
-  },
-  {
-    id: '2',
-    name: '新客户开发目标达成率',
-    dimension: '市场指标',
-    ruleType: '100/70阶梯制(严格型)',
-    ruleCode: 'STEP_100_70',
-    weight: 30,
-    dataSourceType: 'system',
-    dataSourceValue: 'input_new_customer_count',
-  },
-  {
-    id: '3',
-    name: '重点商品退换货率控制',
-    dimension: '质量售后指标',
-    ruleType: '超标扣分制(达标满分)',
-    ruleCode: 'DEDUCT_EXCEED',
-    weight: 40,
-    dataSourceType: 'system',
-    dataSourceValue: 'api_return_rate',
-  },
-];
+const router = useRouter();
+const route = useRoute();
+
+// 页面模式: 'create' | 'edit' | 'view'
+const pageMode = computed(() => {
+  const mode = route.query.mode as string;
+  const id = route.query.id as string;
+  
+  if (mode === 'view') return 'view';
+  if (id) return 'edit';
+  return 'create';
+});
+
+const pageTitle = computed(() => {
+  switch (pageMode.value) {
+    case 'view': return '查看考核模板';
+    case 'edit': return '编辑考核模板';
+    case 'create':
+    default:
+      return '新建考核模板';
+  }
+});
+
 
 const templateInfo = ref({
   name: '',
@@ -78,6 +79,8 @@ const templateInfo = ref({
   users: [] as number[],
   period: 'month',
 });
+
+const saving = ref(false);
 
 const userList = ref<any[]>([]);
 const deptTree = ref<any[]>([]);
@@ -157,9 +160,51 @@ onMounted(async () => {
   if (templateInfo.value.applyTo.length > 0) {
     fetchUsersByDeptIds(templateInfo.value.applyTo);
   }
+
+  // 加载模板详情 (编辑/查看模式)
+  const id = route.query.id;
+  if ((pageMode.value === 'edit' || pageMode.value === 'view') && id) {
+    try {
+      const res = await getTemplate(Number(id));
+      const data = (res as any)?.data || res;
+      if (data) {
+        // 如果模板不是草稿状态且试图编辑，强制切换为查看模式
+        if (data.status !== 1 && pageMode.value === 'edit') {
+          router.replace({ query: { ...route.query, mode: 'view' } });
+          ElMessage.info('该模板已生效或已归档，已自动切换为查看模式');
+        }
+
+        templateInfo.value = {
+          name: data.name || '',
+          description: data.remark || '',
+          applyTo: data.deptId || [],
+          users: data.userId || [],
+          period: data.evaluationFrequency || 'month',
+        };
+        
+        const items = data.templateItemRespVOS || data.templateReqVOS;
+        if (items && Array.isArray(items)) {
+          indicators.value = items.map((item: any) => ({
+            id: String(item.indicatorId),
+            name: item.indicatorName,
+            dimension: item.category || '', 
+            ruleType: item.indicatorRuleName || '', 
+            ruleCode: item.indicatorRuleCode || '',
+            weight: item.weight || 0,
+            dataSourceType: item.dataAggregation || 'system',
+            dataSourceValue: item.dataAggregationValue || '',
+          }));
+        }
+        hasSaved.value = true;
+      }
+    } catch (error) {
+      console.error('Failed to fetch template detail:', error);
+      ElMessage.error('获取模板详情失败');
+    }
+  }
 });
 
-const indicators = ref(initialSelectedIndicators);
+const indicators = ref<Indicator[]>([]);
 const isModalOpen = ref(false);
 const isPreviewOpen = ref(false);
 const hasPreviewed = ref(false);
@@ -174,25 +219,98 @@ watch(
   { deep: true },
 );
 
-const handleSave = () => {
-  // 这里未来可以接保存接口
-  hasSaved.value = true;
-  ElMessage.success('草稿保存成功！');
+const handleSave = async () => {
+  // ====== 必填项校验 ======
+  if (!templateInfo.value.name.trim()) {
+    ElMessage.warning('请填写模板名称！');
+    return;
+  }
+  if (!templateInfo.value.applyTo || templateInfo.value.applyTo.length === 0) {
+    ElMessage.warning('请选择适用范围！');
+    return;
+  }
+  if (!templateInfo.value.users || templateInfo.value.users.length === 0) {
+    ElMessage.warning('请选取人员！');
+    return;
+  }
+  if (indicators.value.length === 0) {
+    ElMessage.warning('请至少添加一个考核指标！');
+    return;
+  }
+  if (!isWeightValid.value) {
+    ElMessage.warning('请确保所有指标权重合计为 100%！');
+    return;
+  }
+
+  // ====== 组装请求数据 ======
+  const templateReqVOSList: PerformanceIndicatorTemplateReqVO[] = indicators.value.map(
+    (ind, index) => ({
+      indicatorId: Number(ind.id),
+      indicatorName: ind.name,
+      weight: ind.weight,
+      sortOrder: index + 1,
+      ruleId: 0,
+      dataAggregation: ind.dataSourceType,
+      dataAggregationValue: ind.dataSourceValue,
+      targetValue: '',
+    }),
+  );
+
+  const requestData: templateReqVOS = {
+    name: templateInfo.value.name.trim(),
+    remark: templateInfo.value.description,
+    deptId: templateInfo.value.applyTo,
+    userId: templateInfo.value.users,
+    evaluationFrequency: templateInfo.value.period,
+    templateReqVOS: templateReqVOSList,
+  };
+
+  saving.value = true;
+  try {
+    if (pageMode.value === 'create') {
+      // 新建模式
+      const res = await createTemplate(requestData);
+      // 后端返回新建的模板 ID 后，切换 URL 为编辑模式，后续再次保存走 updateTemplate
+      const newId = (res as any)?.data ?? (res as any)?.id;
+      if (newId) {
+        router.replace({
+          path: '/template/builder',
+          query: { id: String(newId), mode: 'edit' },
+        });
+      }
+      hasSaved.value = true;
+      ElMessage.success('模板新建并保存草稿成功！');
+    } else if (pageMode.value === 'edit') {
+      // 编辑模式：将当前路由中的 id 写入请求体
+      requestData.id = Number(route.query.id);
+      await updateTemplate(requestData);
+      hasSaved.value = true;
+      ElMessage.success('模板草稿更新成功！');
+    }
+  } catch (error: any) {
+    console.error('保存草稿失败:', error);
+    ElMessage.error(error?.message || '保存草稿失败，请稍后重试！');
+  } finally {
+    saving.value = false;
+  }
 };
 
 const handleAddIndicators = (selected: any[]) => {
   const existingIds = indicators.value.map((ind) => ind.id);
+  const systemOptions = getStrDictOptions('system_performance_filling_method');
+  const defaultSystemValue = systemOptions && systemOptions.length > 0 ? systemOptions[0].value : '';
+
   const newIndicators = selected
-    .filter((ind) => !existingIds.includes(ind.id))
+    .filter((ind) => !existingIds.includes(String(ind.id)))
     .map((ind) => ({
-      id: ind.id,
+      id: String(ind.id),
       name: ind.name,
-      dimension: ind.dimension,
-      ruleType: ind.ruleType,
-      ruleCode: ind.ruleCode,
+      dimension: ind.category || ind.dimension || '',
+      ruleType: ind.indicatorRuleName || ind.ruleType || '',
+      ruleCode: ind.indicatorRuleCode || ind.ruleCode || '',
       weight: 0,
       dataSourceType: 'system',
-      dataSourceValue: '',
+      dataSourceValue: defaultSystemValue,
     }));
 
   indicators.value = [...indicators.value, ...newIndicators];
@@ -211,8 +329,16 @@ const handleWeightChange = (id: string, newWeight: string) => {
 };
 
 const handleSourceTypeChange = (id: string, type: string) => {
+  let defaultValue = '';
+  if (type === 'system') {
+    const options = getStrDictOptions('system_performance_filling_method');
+    if (options && options.length > 0) {
+      defaultValue = options[0].value;
+    }
+  }
+  
   indicators.value = indicators.value.map((ind) =>
-    ind.id === id ? { ...ind, dataSourceType: type, dataSourceValue: '' } : ind,
+    ind.id === id ? { ...ind, dataSourceType: type, dataSourceValue: defaultValue } : ind,
   );
 };
 
@@ -278,9 +404,22 @@ const handlePublish = () => {
       type: 'warning',
       customClass: 'publish-confirm-box'
     }
-  ).then(() => {
-    // 实际下发逻辑可以放这里
-    ElMessage.success('正式发布成功，模板已下发并启用！');
+  ).then(async () => {
+    try {
+      saving.value = true;
+      const id = Number(route.query.id);
+      await updateTemplateStatus({ id, status: 2 });
+      ElMessage.success('正式发布成功，模板已下发并启用！');
+      // 发布成功后延迟跳转回列表页
+      setTimeout(() => {
+        goBack();
+      }, 1000);
+    } catch (error: any) {
+      console.error('发布失败:', error);
+      ElMessage.error(error?.message || '发布失败，请重试');
+    } finally {
+      saving.value = false;
+    }
   }).catch(() => {
     // 用户取消了发布
   });
@@ -303,19 +442,20 @@ const handlePublish = () => {
           </Button>
           <div>
             <h1 class="text-xl font-bold tracking-tight text-slate-900">
-              新建考核模板
+              {{ pageTitle }}
             </h1>
             <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
               <Badge
                 variant="outline"
                 :class="[
                   'font-normal text-[10px] h-4',
-                  hasSaved ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200'
+                  pageMode === 'view' ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                  (hasSaved ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-amber-50 text-amber-600 border-amber-200')
                 ]"
               >
-                {{ hasSaved ? '已保存' : '草稿中' }}
+                {{ pageMode === 'view' ? '查看模式' : (hasSaved ? '已保存' : '草稿中') }}
               </Badge>
-              <span>{{ hasSaved ? '所有更改已同步' : '未保存更改' }}</span>
+              <span>{{ pageMode === 'view' ? '当前配置处于只读状态' : (hasSaved ? '所有更改已同步' : '未保存更改') }}</span>
             </div>
           </div>
         </div>
@@ -333,14 +473,17 @@ const handlePublish = () => {
             />
           </Button>
           <Button
+            v-if="pageMode !== 'view'"
             variant="outline"
             class="bg-white hover:bg-slate-50 text-slate-700"
+            :disabled="saving"
             @click="handleSave"
           >
-            <Save class="mr-2 h-4 w-4" />
-            保存草稿
+            <Save class="mr-2 h-4 w-4" :class="{ 'animate-spin': saving }" />
+            {{ saving ? '保存中...' : '保存草稿' }}
           </Button>
           <Button
+            v-if="pageMode !== 'view'"
             :class="[
                'shadow-sm',
                isWeightValid && hasPreviewed && hasSaved
@@ -379,6 +522,7 @@ const handlePublish = () => {
                     <Input
                       id="tpl-name"
                       v-model="templateInfo.name"
+                      :disabled="pageMode === 'view'"
                       placeholder="输入如: 2025年业务一部区域经理月度考核版"
                     />
                   </div>
@@ -390,14 +534,15 @@ const handlePublish = () => {
                     <Textarea
                       id="tpl-desc"
                       v-model="templateInfo.description"
+                      :disabled="pageMode === 'view'"
                       placeholder="简要描述该模板的考核重点与适用人群..."
                       class="resize-none h-20"
                     />
                   </div>
                   <div class="flex flex-wrap gap-4">
                     <div class="flex-1 min-w-[240px] space-y-2">
-                      <Label class="text-slate-700 font-semibold">标准考评频次</Label>
-                      <Select v-model:model-value="templateInfo.period">
+                      <Label class="text-slate-700 font-semibold">标准考评频次 <span class="text-red-500">*</span></Label>
+                      <Select v-model:model-value="templateInfo.period" :disabled="pageMode === 'view'">
                         <SelectTrigger class="bg-white w-full">
                           <SelectValue />
                         </SelectTrigger>
@@ -413,12 +558,13 @@ const handlePublish = () => {
                       </Select>
                     </div>
                     <div class="flex-1 min-w-[240px] space-y-2">
-                      <Label class="text-slate-700 font-semibold">适用范围</Label>
+                      <Label class="text-slate-700 font-semibold">适用范围 <span class="text-red-500">*</span></Label>
                       <el-tree-select
                         v-model="templateInfo.applyTo"
                         :data="deptTree"
                         :props="{ label: 'name', value: 'id', children: 'children' }"
                         placeholder="请选择适用范围"
+                        :disabled="pageMode === 'view'"
                         check-strictly
                         multiple
                         collapse-tags
@@ -462,11 +608,12 @@ const handlePublish = () => {
                       </el-tree-select>
                     </div>
                     <div class="flex-1 min-w-[240px] space-y-2">
-                      <Label class="text-slate-700 font-semibold">选取人员</Label>
+                      <Label class="text-slate-700 font-semibold">选取人员 <span class="text-red-500">*</span></Label>
                       <el-select
                         v-model="templateInfo.users"
                         multiple
                         filterable
+                        :disabled="pageMode === 'view'"
                         collapse-tags
                         collapse-tags-tooltip
                         placeholder="请选择人员"
@@ -521,6 +668,7 @@ const handlePublish = () => {
                     </CardDescription>
                   </div>
                   <Button
+                    v-if="pageMode !== 'view'"
                     size="sm"
                     variant="outline"
                     class="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700 shrink-0"
@@ -597,6 +745,7 @@ const handlePublish = () => {
                               <Input
                                 type="number"
                                 :model-value="ind.weight"
+                                :disabled="pageMode === 'view'"
                                 class="h-9 w-20 text-center font-semibold pr-6 rounded-r-none border-r-0 focus-visible:z-10 bg-slate-50/50"
                                 @update:model-value="(v) => handleWeightChange(ind.id, String(v))"
                               />
@@ -607,6 +756,7 @@ const handlePublish = () => {
                               </div>
                             </div>
                             <Button
+                              v-if="pageMode !== 'view'"
                               variant="outline"
                               size="icon"
                               class="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 hover:border-red-200"
@@ -631,6 +781,7 @@ const handlePublish = () => {
                             <div class="mb-3">
                               <Select
                                 :model-value="ind.dataSourceType"
+                                :disabled="pageMode === 'view'"
                                 @update:model-value="(v) => handleSourceTypeChange(ind.id, String(v))"
                               >
                                 <SelectTrigger class="bg-white border-slate-200 shadow-sm font-semibold h-9 text-xs w-full">
@@ -650,6 +801,7 @@ const handlePublish = () => {
                               <Select
                                 v-if="ind.dataSourceType === 'complete'"
                                 default-value="sum"
+                                :disabled="pageMode === 'view'"
                               >
                                  <SelectTrigger
                                    class="bg-white border-slate-200 shadow-sm font-semibold h-9 text-xs text-slate-900 w-full"
@@ -682,6 +834,7 @@ const handlePublish = () => {
                                   <Input
                                     placeholder="填写呈现给员工的字段指导文字..."
                                     :model-value="ind.dataSourceValue"
+                                    :disabled="pageMode === 'view'"
                                     class="h-7 text-xs flex-1 border-slate-200 focus-visible:ring-1"
                                     @update:model-value="(v) => handleSourceValueChange(ind.id, String(v))"
                                   />
@@ -692,10 +845,16 @@ const handlePublish = () => {
                                 >
                                   <Select
                                     :model-value="ind.dataSourceValue"
+                                    :disabled="pageMode === 'view'"
                                     @update:model-value="(v) => handleSourceValueChange(ind.id, String(v))"
                                   >
-                                    <SelectTrigger class="h-9 text-xs w-full bg-white border-slate-200 focus:ring-0 font-semibold text-slate-900">
-                                      <SelectValue placeholder="系统接口标识..." />
+                                    <SelectTrigger 
+                                      :class="[
+                                        'h-9 text-xs w-full bg-white border-slate-200 focus:ring-0 font-semibold',
+                                        !ind.dataSourceValue ? 'text-slate-400' : 'text-slate-900'
+                                      ]"
+                                    >
+                                      <SelectValue placeholder="" />
                                     </SelectTrigger>
                                     <SelectContent>
                                       <SelectItem

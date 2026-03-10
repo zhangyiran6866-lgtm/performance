@@ -5,13 +5,15 @@
  * @lines ~10
 -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
-import { Plus, Search, FileEdit, Trash2, PowerOff, Power, MoreHorizontal } from 'lucide-vue-next';
+import { Plus, Search, FileEdit, Trash2, PowerOff, Power, MoreHorizontal, Eye } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import dayjs from 'dayjs';
 import {
   Table,
   TableBody,
@@ -26,151 +28,197 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-// Mock data for initial templates
-const mockTemplates = [
-  {
-    id: 'TPL-2025-001',
-    name: '【休食-省级业务员】2025年绩效考核模板',
-    description: '适用于休闲食品事业部所有省级业务员的月度考评标准。',
-    indicatorCount: 5,
-    totalWeightStr: '100%',
-    status: 'published', // draft, published, disabled
-    updatedAt: '2025-04-12 14:30',
-  },
-  {
-    id: 'TPL-2025-002',
-    name: '【大客-KA经理】2025年绩效考核模板',
-    description: '针对KA渠道的拓客难度增加的主观与客观评价体系。',
-    indicatorCount: 8,
-    totalWeightStr: '100%',
-    status: 'published',
-    updatedAt: '2025-03-22 09:15',
-  },
-  {
-    id: 'TPL-2026-003',
-    name: '【餐饮-省级业务员】2026年绩效考核模板',
-    description: '2026年新版省级业务员考核草稿。',
-    indicatorCount: 3,
-    totalWeightStr: '80%', // Weight not up to 100%
-    status: 'draft',
-    updatedAt: '2025-10-18 16:45',
-  },
-  {
-    id: 'TPL-2026-004',
-    name: 'IT部门2026年绩效考核模板',
-    description: '针对IT部门研发与支持人员的考核体系。',
-    indicatorCount: 4,
-    totalWeightStr: '100%',
-    status: 'draft',
-    updatedAt: '2025-11-01 10:00',
-  },
-  {
-    id: 'TPL-2026-005',
-    name: '销售总监绩效考核模板',
-    description: '核心管理层业绩对赌通用模板。',
-    indicatorCount: 6,
-    totalWeightStr: '100%',
-    status: 'published',
-    updatedAt: '2025-12-11 11:20',
-  },
-  {
-    id: 'TPL-2024-099',
-    name: '[历史] 2024年度销售专员年底考核项',
-    description: '2024年的旧版考核规则，已废弃停用。',
-    indicatorCount: 4,
-    totalWeightStr: '100%',
-    status: 'disabled',
-    updatedAt: '2024-12-30 18:00',
-  },
-  {
-    id: 'TPL-2025-006',
-    name: '华东区大区经理绩效模板',
-    description: '适用于华东区各省分公司大区经理的月度考核。',
-    indicatorCount: 5,
-    totalWeightStr: '100%',
-    status: 'published',
-    updatedAt: '2025-05-10 09:30',
-  },
-  {
-    id: 'TPL-2025-007',
-    name: '线上电商运营专员考核',
-    description: '主要考量GMV、ROI以及店铺转化率等电商关键指标。',
-    indicatorCount: 7,
-    totalWeightStr: '100%',
-    status: 'draft',
-    updatedAt: '2025-05-15 11:20',
-  },
-  {
-    id: 'TPL-2025-008',
-    name: '客服团队年度绩效模板',
-    description: '关注客诉率、满意度与响应时效的综合评估。',
-    indicatorCount: 6,
-    totalWeightStr: '100%',
-    status: 'published',
-    updatedAt: '2025-05-18 14:00',
-  },
-  {
-    id: 'TPL-2025-009',
-    name: '产品研发部项目奖金模板',
-    description: '针对项目里程碑达成、代码质量和Bug率的团队考核。',
-    indicatorCount: 8,
-    totalWeightStr: '100%',
-    status: 'published',
-    updatedAt: '2025-06-01 10:45',
-  },
-  {
-    id: 'TPL-2025-010',
-    name: '人力资源部BP绩效考核',
-    description: '重点考核人才招聘周期、员工离职率以及组织氛围建设。',
-    indicatorCount: 5,
-    totalWeightStr: '100%',
-    status: 'draft',
-    updatedAt: '2025-06-05 16:30',
-  },
-  {
-    id: 'TPL-2025-011',
-    name: '供应链仓储物流考核模板',
-    description: '评估发货准时率、库存周转及损耗管控的专项考核。',
-    indicatorCount: 9,
-    totalWeightStr: '100%',
-    status: 'published',
-    updatedAt: '2025-06-10 08:15',
-  },
-];
+import { getTemplatePage, updateTemplateStatus, deleteTemplate } from '@/api/template';
+import { getStrDictOptions } from '@/utils/dict';
 
 const search = ref('');
-const templates = ref(mockTemplates);
-
-const filteredTemplates = computed(() => {
-  return templates.value.filter(
-    (t) => t.name.includes(search.value) || t.id.includes(search.value),
-  );
-});
-
+const templates = ref<PerformanceTemplateRespVO[]>([]);
 const currentPage = ref(1);
 const pageSize = ref(10);
+const total = ref(0);
+const loading = ref(false);
 
-const paginatedTemplates = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return filteredTemplates.value.slice(start, end);
+/**
+ * PerformanceTemplateRespVO，管理后台 - 绩效考核模板 Response VO
+ */
+export interface PerformanceTemplateRespVO {
+    /**
+     * 创建时间
+     */
+    createTime: Date;
+    /**
+     * 适用部门ID
+     */
+    deptId: number[];
+    /**
+     * 适用部门名称 (冗余)
+     */
+    deptName?: string;
+    /**
+     * 考核频次(month:月,quarter:季度,year:年)
+     */
+    evaluationFrequency?: string;
+    /**
+     * 主键ID
+     */
+    id: number;
+    /**
+     * 指标数量
+     */
+    indicatorCount: number;
+    /**
+     * 模板名称 (如: 销售专员标准考核模板)
+     */
+    name: string;
+    /**
+     * 模板编号
+     */
+    no?: string;
+    /**
+     * 摘要说明
+     */
+    remark?: string;
+    /**
+     * 状态 (1:草稿 2:已生效 3:已归档)
+     */
+    status?: number;
+    /**
+     * 总权重
+     */
+    totalWeight: number;
+    /**
+     * 适用用户ID
+     */
+    userId: number[];
+    /**
+     * 适用用户名称 (冗余)
+     */
+    userName?: string;
+    [property: string]: any;
+}
+
+
+const fetchTemplates = async () => {
+  loading.value = true;
+  try {
+    const res = await getTemplatePage({
+      pageNo: currentPage.value,
+      pageSize: pageSize.value,
+      name: search.value,
+    });
+    const data = (res as any)?.data || res;
+    templates.value = data.list || [];
+    total.value = data.total || 0;
+  } catch (error) {
+    console.error('获取模板列表失败:', error);
+    ElMessage.error('获取模板列表失败');
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchTemplates();
 });
 
+watch([currentPage, pageSize], () => {
+  fetchTemplates();
+});
+
+// 监听搜索词，重置页码并查询
+let searchTimer: any = null;
 watch(search, () => {
-  currentPage.value = 1;
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    fetchTemplates();
+  }, 300);
 });
 
-const getStatusBadge = (status: string) => {
-  switch (status) {
-  case 'published':
-    return { text: '生效中 (已发布)', class: 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 font-normal' };
-  case 'draft':
-    return { text: '草稿中', class: 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 font-normal' };
-  case 'disabled':
-    return { text: '已禁用', class: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 font-normal' };
-  default:
-    return { text: status, class: '' };
+const getStatusBadge = (status: any) => {
+  const options = getStrDictOptions('performance_template_status');
+  const dict = options.find(opt => String(opt.value) === String(status));
+  const label = dict ? dict.label : '未知';
+  
+  // 1:草稿 2:已生效 3:已归档
+  const s = Number(status);
+  switch (s) {
+    case 2:
+      return { text: label, class: 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 font-normal' };
+    case 1:
+      return { text: label, class: 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 font-normal' };
+    case 3:
+      return { text: label, class: 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 font-normal' };
+    default:
+      return { text: label, class: 'bg-slate-100 text-slate-400 border-slate-200 font-normal' };
+  }
+};
+
+const formatDate = (date: string | number | Date) => {
+  if (!date) return '-';
+  return dayjs(date).format('YYYY-MM-DD HH:mm');
+};
+
+/**
+ * 改变模板状态 (启用/停用)
+ */
+const handleChangeStatus = async (id: number, status: number) => {
+  const isPublish = status === 2;
+  const actionText = isPublish ? '发布启用' : '暂停/停用';
+  
+  try {
+    await ElMessageBox.confirm(
+      isPublish 
+        ? '确认发布并启用该考核模板吗？启用后相关考核计划将可引用此模板。' 
+        : '确认暂停/停用该考核模板吗？停用后将无法新建基于此模板的考核任务。',
+      '状态变更确认',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: isPublish ? 'success' : 'warning',
+      }
+    );
+    
+    loading.value = true;
+    await updateTemplateStatus({ id, status });
+    ElMessage.success(`${actionText}成功`);
+    fetchTemplates();
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error(`${actionText}失败:`, error);
+      ElMessage.error(error?.message || `${actionText}失败`);
+    }
+  } finally {
+    loading.value = false;
+  }
+};
+
+/**
+ * 删除考核模板 (仅限草稿)
+ */
+const handleDelete = async (id: number) => {
+  try {
+    await ElMessageBox.confirm(
+      '确认删除该考核模板吗？删除后将无法恢复。',
+      '删除确认',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'error',
+      }
+    );
+    
+    loading.value = true;
+    await deleteTemplate(id);
+    ElMessage.success('删除成功');
+    fetchTemplates();
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('删除失败:', error);
+      ElMessage.error(error?.message || '删除失败');
+    }
+  } finally {
+    loading.value = false;
   }
 };
 </script>
@@ -209,35 +257,35 @@ const getStatusBadge = (status: string) => {
 
     <Card
       class="border-slate-200 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm w-full mx-auto"
-      style="min-width: 1000px;"
+      style="min-width: 1100px; min-height: 400px;"
     >
-      <Table>
-        <TableHeader class="bg-slate-50/50">
-          <TableRow>
-            <TableHead class="w-[300px] pl-8">
-              模板名称 & 编号
+      <Table class="column-zebra-table">
+        <TableHeader class="bg-slate-100/80">
+          <TableRow class="hover:bg-transparent">
+            <TableHead class="w-[320px] pl-8 font-bold text-slate-700">
+              模板信息
             </TableHead>
-            <TableHead>说明摘要</TableHead>
-            <TableHead class="text-center">
-              指标个数
+            <TableHead class="min-w-[180px] font-bold text-slate-700">摘要说明</TableHead>
+            <TableHead class="text-center w-[130px] font-bold text-slate-700">
+              指标/权重
             </TableHead>
-            <TableHead class="text-center">
-              权重分配
-            </TableHead>
-            <TableHead class="text-center">
+            <TableHead class="text-center w-[120px] font-bold text-slate-700">
               当前状态
             </TableHead>
-            <TableHead class="text-right">
+            <TableHead class="w-[180px] font-bold text-slate-700">
+              适用范围
+            </TableHead>
+            <TableHead class="text-right w-[160px] font-bold text-slate-700">
               最后修改时间
             </TableHead>
-            <TableHead class="w-[80px] text-right pr-8">
+            <TableHead class="w-[80px] text-right pr-8 font-bold text-slate-700">
               操作
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBody v-loading="loading">
           <TableRow
-            v-for="template in paginatedTemplates"
+            v-for="template in templates"
             :key="template.id"
             class="hover:bg-slate-50/50 transition-colors"
           >
@@ -249,41 +297,49 @@ const getStatusBadge = (status: string) => {
                 >
                   {{ template.name }}
                 </span>
-                <span class="text-xs text-slate-400 font-medium mt-0.5">{{ template.id }}</span>
+                <span class="text-xs text-slate-400 font-medium mt-0.5">ID: {{ template.no }}</span>
               </div>
             </TableCell>
             <TableCell>
               <span
-                class="text-sm text-slate-600 line-clamp-1"
-                :title="template.description"
+                class="text-sm text-slate-600 line-clamp-2"
+                :title="template.remark"
               >
-                {{ template.description || '-' }}
+                {{ template.remark || '-' }}
               </span>
             </TableCell>
             <TableCell class="text-center">
-              <span
-                class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-xs font-semibold text-slate-700"
-              >
-                {{ template.indicatorCount }}
-              </span>
-            </TableCell>
-            <TableCell class="text-center">
-              <span
-                :class="[
-                  'text-sm font-medium',
-                  template.totalWeightStr === '100%' ? 'text-emerald-600' : 'text-amber-500',
-                ]"
-              >
-                {{ template.totalWeightStr }}
-              </span>
+              <div class="flex flex-col items-center justify-center py-1">
+                <div class="text-[13px] font-bold text-slate-700 mb-0.5">
+                  {{ template.indicatorCount || 0 }} 个指标
+                </div>
+                <div 
+                  :class="[
+                    'text-[12px] font-bold border-b-2 px-0.5 leading-tight',
+                    template.totalWeight === 100 
+                      ? 'text-emerald-500 border-emerald-100' 
+                      : 'text-amber-500 border-amber-100'
+                  ]"
+                >
+                  权重 {{ template.totalWeight }}%
+                </div>
+              </div>
             </TableCell>
             <TableCell class="text-center">
               <Badge :class="[getStatusBadge(template.status).class, 'text-xs whitespace-nowrap px-2 py-0.5']">
                 {{ getStatusBadge(template.status).text }}
               </Badge>
             </TableCell>
-            <TableCell class="text-right text-xs text-slate-500">
-              {{ template.updatedAt }}
+            <TableCell>
+              <div 
+                class="text-sm text-slate-600 truncate max-w-[160px]" 
+                :title="template.deptName"
+              >
+                {{ template.deptName || '全公司适用' }}
+              </div>
+            </TableCell>
+            <TableCell class="text-right text-xs text-slate-500 font-medium">
+              {{ formatDate(template.createTime) }}
             </TableCell>
             <TableCell class="text-right pr-8">
               <DropdownMenu>
@@ -300,15 +356,25 @@ const getStatusBadge = (status: string) => {
                   align="end"
                   class="w-[160px]"
                 >
-                  <RouterLink :to="`/template/builder?id=${template.id}`">
+                  <RouterLink :to="`/template/builder?id=${template.id}&mode=view`">
+                    <DropdownMenuItem class="cursor-pointer">
+                      <Eye class="mr-2 h-4 w-4 text-emerald-600" />
+                      <span class="text-slate-700">查看模板配置</span>
+                    </DropdownMenuItem>
+                  </RouterLink>
+                  <RouterLink 
+                    v-if="template.status === 1"
+                    :to="`/template/builder?id=${template.id}&mode=edit`"
+                  >
                     <DropdownMenuItem class="cursor-pointer">
                       <FileEdit class="mr-2 h-4 w-4 text-blue-600" />
                       <span class="text-slate-700">编辑模板配置</span>
                     </DropdownMenuItem>
                   </RouterLink>
                   <DropdownMenuItem
-                    v-if="template.status === 'published'"
+                    v-if="template.status === 2"
                     class="cursor-pointer"
+                    @click="handleChangeStatus(template.id, 3)"
                   >
                     <PowerOff class="mr-2 h-4 w-4 text-amber-600" />
                     <span class="text-slate-700">暂停/停用</span>
@@ -316,11 +382,16 @@ const getStatusBadge = (status: string) => {
                   <DropdownMenuItem
                     v-else
                     class="cursor-pointer"
+                    @click="handleChangeStatus(template.id, 2)"
                   >
                     <Power class="mr-2 h-4 w-4 text-emerald-600" />
                     <span class="text-slate-700">发布启用</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem class="cursor-pointer focus:bg-red-50">
+                  <DropdownMenuItem 
+                    v-if="template.status === 1"
+                    class="cursor-pointer focus:bg-red-50"
+                    @click="handleDelete(template.id)"
+                  >
                     <Trash2 class="mr-2 h-4 w-4 text-red-600" />
                     <span class="text-red-600">删除草稿</span>
                   </DropdownMenuItem>
@@ -328,9 +399,9 @@ const getStatusBadge = (status: string) => {
               </DropdownMenu>
             </TableCell>
           </TableRow>
-          <TableRow v-if="filteredTemplates.length === 0">
+          <TableRow v-if="templates.length === 0 && !loading">
             <TableCell
-              col-span="7"
+              colspan="7"
               class="h-24 text-center text-slate-500 text-sm"
             >
               未找到匹配的模板
@@ -344,10 +415,22 @@ const getStatusBadge = (status: string) => {
       <el-pagination
         v-model:current-page="currentPage"
         v-model:page-size="pageSize"
-        :total="filteredTemplates.length"
+        :total="total"
         background
-        layout="prev, pager, next"
+        layout="prev, pager, next, total"
       />
     </div>
   </div>
 </template>
+
+<style scoped>
+.column-zebra-table :deep(th:nth-child(even)),
+.column-zebra-table :deep(td:nth-child(even)) {
+  background-color: rgba(241, 245, 249, 0.4); /* slate-100/40 */
+}
+
+/* 确保悬停时仍然有良好的交互感 */
+.column-zebra-table :deep(tr:hover td) {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+}
+</style>

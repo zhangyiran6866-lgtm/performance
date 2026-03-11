@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, watch } from 'vue';
+import { getStrDictOptions } from '@/utils/dict';
+import { getAssessmentPage, updateAssessmentStatus, type PerformanceCycleRespVO } from '@/api/assessment';
+import dayjs from 'dayjs';
+import { ElMessage } from 'element-plus';
 import {
   CalendarDays,
   Clock,
-  PlayCircle,
   Eye,
-  ChevronRight,
   CheckCircle2,
   Info,
   BarChart3,
@@ -14,129 +16,137 @@ import {
   Rocket,
   TrendingUp,
   Archive,
+  Send,
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-// ========== Mock Data ==========
+// ========== State & Pagination ==========
+const cycles = ref<PerformanceCycleRespVO[]>([]);
+const currentPage = ref(1);
+const pageSize = ref(10);
+const total = ref(0);
+const loading = ref(false);
 
-// Cycles data
-const initialCycles = [
-  {
-    id: 'cyc-202604',
-    name: '2026年4月份全公司月度绩效考核',
-    period: '2026/04/01 - 2026/04/30',
-    stage: 'unknown',
-    templateNames: ['大客KA中心通用考核模板'],
-    totalEmployees: 45,
-    targetSetCount: 0,
-    targetConfirmedCount: 0,
-  },
-  {
-    id: 'cyc-202603',
-    name: '2026年3月份全公司月度绩效考核',
-    period: '2026/03/01 - 2026/03/31',
-    stage: 'goal_setting',
-    templateNames: [
-      '大客KA中心通用考核模板',
-      '餐饮中心业务专员月度考核表',
-      '市场部月度推广定性考评',
-      '休食中心日常绩效考核标准',
-    ],
-    totalEmployees: 45,
-    targetSetCount: 12,
-    targetConfirmedCount: 0,
-  },
-  {
-    id: 'cyc-202602',
-    name: '2026年2月份业务部门月度考核',
-    period: '2026/02/01 - 2026/02/28',
-    stage: 'evaluating',
-    templateNames: ['大客KA中心通用考核模板', '餐饮中心业务专员月度考核表', '市场部月度推广定性考评'],
-    totalEmployees: 42,
-    targetSetCount: 42,
-    targetConfirmedCount: 42,
-  },
-  {
-    id: 'cyc-202601',
-    name: '2026年1月份销售条线考核',
-    period: '2026/01/01 - 2026/01/31',
-    stage: 'finished',
-    templateNames: ['大客KA中心通用考核模板', '餐饮中心业务专员月度考核表'],
-    totalEmployees: 40,
-    targetSetCount: 40,
-    targetConfirmedCount: 40,
-  },
-];
+const formatDate = (date: any) => {
+  if (!date) return '-';
+  return dayjs(date).format('YYYY/MM/DD');
+};
 
-const cycles = ref(initialCycles);
+const fetchCycles = async () => {
+  loading.value = true;
+  try {
+    const res = await getAssessmentPage({
+      pageNo: String(currentPage.value),
+      pageSize: String(pageSize.value),
+    });
+    const data = (res as any)?.data || res;
+    cycles.value = data.list || [];
+    total.value = data.total || 0;
+  } catch (error) {
+    console.error('获取周期列表失败:', error);
+    ElMessage.error('获取周期列表失败');
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchCycles();
+});
+
+watch([currentPage, pageSize], () => {
+  fetchCycles();
+});
 
 const getStageBadge = (stage: string) => {
-  switch (stage) {
-  case 'goal_setting':
-    return { text: '目标制定中', class: 'bg-amber-50 text-amber-600 border-amber-200' };
-  case 'goal_confirming':
-    return { text: '员工确认中', class: 'bg-blue-50 text-blue-600 border-blue-200' };
-  case 'ongoing':
-    return { text: '正在执行', class: 'bg-emerald-50 text-emerald-600 border-emerald-200' };
-  case 'evaluating':
-    return { text: '结果评估与打分中', class: 'bg-purple-50 text-purple-600 border-purple-200' };
-  case 'finished':
-    return { text: '已归档结案', class: 'bg-slate-50 text-slate-500 border-slate-200' };
-  case 'unknown':
-    return { text: '未开启', class: 'bg-slate-50 text-slate-500 border-slate-200' };
+  const options = getStrDictOptions('performance_evaluation_cycle_status');
+  const dict = options.find(opt => String(opt.value).toUpperCase() === String(stage).toUpperCase());
+  const label = dict ? dict.label : '';
+
+  switch (String(stage).toUpperCase()) {
+  case 'TO_BE_OPENED':
+    return { text: label || '待开启', class: 'bg-slate-50 text-slate-500 border-slate-200' };
+  case 'GOAL_SETTING':
+    return { text: label || '目标设定中', class: 'bg-amber-50 text-amber-600 border-amber-200' };
+  case 'RATING':
+    return { text: label || '结果评分与打分中', class: 'bg-purple-50 text-purple-600 border-purple-200' };
+  case 'ARCHIVED':
+    return { text: label || '已归档结案', class: 'bg-slate-100 text-slate-600 border-slate-200' };
   default:
-    return { text: '状态异常', class: 'bg-red-50 text-red-500 border-red-200' };
+    return { text: label || '状态异常', class: 'bg-red-50 text-red-500 border-red-200' };
   }
 };
 
 const showGoalDialog = ref(false);
+const showPublishDialog = ref(false);
 const showEvalDialog = ref(false);
 const showFinishDialog = ref(false);
 const pendingCycleId = ref('');
 
-const openGoalDialog = (id: string) => {
-  pendingCycleId.value = id;
+const openGoalDialog = (id: number | string) => {
+  pendingCycleId.value = String(id);
   showGoalDialog.value = true;
 };
 
 const confirmGoalStage = () => {
   if (pendingCycleId.value) {
-    handlePushStage(pendingCycleId.value, 'goal_setting');
+    handlePushStage(pendingCycleId.value, 'GOAL_SETTING');
     showGoalDialog.value = false;
     pendingCycleId.value = '';
   }
 };
 
-const openEvalDialog = (id: string) => {
-  pendingCycleId.value = id;
+const confirmPublishStage = () => {
+  if (pendingCycleId.value) {
+    handlePushStage(pendingCycleId.value, 'PUBLISHED');
+    showPublishDialog.value = false;
+    pendingCycleId.value = '';
+  }
+};
+
+const openEvalDialog = (id: number | string) => {
+  pendingCycleId.value = String(id);
   showEvalDialog.value = true;
 };
 
 const confirmEvalStage = () => {
   if (pendingCycleId.value) {
-    handlePushStage(pendingCycleId.value, 'evaluating');
+    handlePushStage(pendingCycleId.value, 'RATING');
     showEvalDialog.value = false;
     pendingCycleId.value = '';
   }
 };
 
-const openFinishDialog = (id: string) => {
-  pendingCycleId.value = id;
+const openFinishDialog = (id: number | string) => {
+  pendingCycleId.value = String(id);
   showFinishDialog.value = true;
 };
 
 const confirmFinishStage = () => {
   if (pendingCycleId.value) {
-    handlePushStage(pendingCycleId.value, 'finished');
+    handlePushStage(pendingCycleId.value, 'ARCHIVED');
     showFinishDialog.value = false;
     pendingCycleId.value = '';
   }
 };
 
-const handlePushStage = (id: string, newStage: string) => {
-  cycles.value = cycles.value.map((c) => (c.id === id ? { ...c, stage: newStage } : c));
+const handlePushStage = async (id: number | string, newStage: string) => {
+  try {
+    loading.value = true;
+    await updateAssessmentStatus({
+      cycleId: Number(id),
+      stage: newStage
+    });
+    ElMessage.success('操作成功');
+    fetchCycles();
+  } catch (error) {
+    console.error('更新状态失败:', error);
+    ElMessage.error('更新状态失败，请稍后重试');
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
@@ -175,13 +185,16 @@ const handlePushStage = (id: string, newStage: string) => {
         </div>
       </div>
 
-      <div class="grid gap-4">
+      <div 
+        v-loading="loading"
+        class="grid gap-4"
+      >
         <Card
           v-for="cycle in cycles"
           :key="cycle.id"
           :class="[
             'shadow-sm overflow-hidden border-l-4 transition-all',
-            cycle.stage === 'goal_setting' ? 'border-l-amber-500 bg-amber-50/10' : 'border-l-slate-200',
+            String(cycle.stage).toUpperCase() === 'GOAL_SETTING' ? 'border-l-amber-500 bg-amber-50/10' : 'border-l-slate-200',
           ]"
         >
           <CardContent class="p-0">
@@ -200,19 +213,18 @@ const handlePushStage = (id: string, newStage: string) => {
                     >
                       <div class="flex items-center text-slate-600 font-medium">
                         <CalendarDays class="mr-1.5 h-4 w-4 text-slate-400" />
-                        {{ cycle.period }}
+                        {{ formatDate(cycle.startDate) }} - {{ formatDate(cycle.endDate) }}
                       </div>
                       <div class="flex items-start">
                         <Clock class="mr-1.5 h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                         <div>
                           <span class="text-slate-500">
-                            包含 {{ cycle.templateNames.length }} 个考核模板:
+                            包含 {{ cycle.templateCount }} 个考核模板:
                           </span>
                           <p
-                            class="text-xs text-slate-700 font-medium line-clamp-1 mt-0.5"
-                            :title="cycle.templateNames.join(', ')"
+                            class="text-xs text-slate-700 font-medium line-clamp-1 mt-1"
                           >
-                            {{ cycle.templateNames.join(', ') }}
+                            {{ cycle.templateName }}
                           </p>
                         </div>
                       </div>
@@ -228,25 +240,45 @@ const handlePushStage = (id: string, newStage: string) => {
 
                 <!-- Sub Progress if in goal setting -->
                 <div
-                  v-if="cycle.stage === 'goal_setting'"
+                  v-if="String(cycle.stage).toUpperCase() === 'GOAL_SETTING'"
                   class="mt-4 bg-slate-50 rounded-lg p-4 border border-slate-100"
                 >
                   <div class="flex justify-between text-sm mb-2">
-                    <span class="font-medium text-slate-700">主管下发目标进度</span>
-                    <span class="text-slate-500">
-                      {{ cycle.targetSetCount }} / {{ cycle.totalEmployees }} 人
+                    <span class="font-medium text-slate-700">考核目标设定进度</span>
+                    <span class="text-xs text-slate-500">
+                      已签署 {{ cycle.signedCount || 0 }} / 已下发 {{ cycle.notConfirmCount || 0 }} / 总计 {{ cycle.totalCount || 0 }} 人
                     </span>
                   </div>
-                  <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                  <div class="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden flex">
+                    <!-- 已签署部分 (绿色) -->
                     <div
-                      class="h-full bg-blue-500 rounded-full transition-all duration-500"
-                      :style="{ width: `${(cycle.targetSetCount / cycle.totalEmployees) * 100}%` }"
+                      class="h-full bg-emerald-500 transition-all duration-500"
+                      :style="{ width: `${((cycle.signedCount || 0) / (cycle.totalCount || 1)) * 100}%` }"
+                      title="已签署"
+                    />
+                    <!-- 已下发但未签署部分 (蓝色) -->
+                    <div
+                      class="h-full bg-blue-500 transition-all duration-500"
+                      :style="{ width: `${(( (cycle.notConfirmCount || 0) - (cycle.signedCount || 0) ) / (cycle.totalCount || 1)) * 100}%` }"
+                      title="已下发"
                     />
                   </div>
-                  <div
-                    class="mt-3 text-xs text-amber-600 flex items-center bg-amber-50 px-2 py-1 rounded-md max-w-max border border-amber-100"
-                  >
-                    ⚠️ 请催促未下发的主管尽快完成员工本月的基数与权重设定。
+                  <div class="mt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                      <div class="flex items-center gap-1.5 grayscale-[0.5]">
+                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <span class="text-[13px] text-slate-500">员工已签署</span>
+                      </div>
+                      <div class="flex items-center gap-1.5 grayscale-[0.5]">
+                        <div class="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                        <span class="text-[13px] text-slate-500">主管已下发</span>
+                      </div>
+                    </div>
+                    <div
+                      class="text-[14px] text-amber-600 flex items-center bg-amber-50 px-2 py-1 rounded border border-amber-100/50"
+                    >
+                      ⚠️ 请催促未下发的主管尽快完成员工本月的基数与权重设定。
+                    </div>
                   </div>
                 </div>
               </div>
@@ -256,7 +288,7 @@ const handlePushStage = (id: string, newStage: string) => {
                 class="w-full lg:w-48 bg-slate-50/50 py-4 px-6 flex flex-row lg:flex-col items-center justify-center gap-3"
               >
                 <!-- 非已归档状态才显示“查看周期详情”按钮 -->
-                <template v-if="cycle.stage !== 'finished'">
+                <template v-if="String(cycle.stage).toUpperCase() !== 'ARCHIVED'">
                   <Button
                     variant="outline"
                     class="w-full bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
@@ -269,7 +301,7 @@ const handlePushStage = (id: string, newStage: string) => {
                   </Button>
                 </template>
 
-                <template v-if="cycle.stage === 'unknown'">
+                <template v-if="String(cycle.stage).toUpperCase() === 'TO_BE_OPENED'">
                   <Button
                     variant="outline"
                     class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-100 shadow-sm"
@@ -279,8 +311,7 @@ const handlePushStage = (id: string, newStage: string) => {
                     开启目标设定
                   </Button>
                 </template>
-
-                <template v-else-if="cycle.stage === 'goal_setting'">
+                <template v-else-if="String(cycle.stage).toUpperCase() === 'GOAL_SETTING'">
                   <Button
                     variant="outline"
                     class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-100 shadow-sm"
@@ -291,7 +322,7 @@ const handlePushStage = (id: string, newStage: string) => {
                   </Button>
                 </template>
 
-                <template v-else-if="cycle.stage === 'evaluating'">
+                <template v-else-if="String(cycle.stage).toUpperCase() === 'RATING'">
                   <Button
                     variant="outline"
                     class="w-full bg-amber-50 hover:bg-amber-100 text-amber-600 border-amber-100 shadow-sm"
@@ -302,7 +333,7 @@ const handlePushStage = (id: string, newStage: string) => {
                   </Button>
                 </template>
 
-                <template v-else-if="cycle.stage === 'finished'">
+                <template v-else-if="String(cycle.stage).toUpperCase() === 'ARCHIVED'">
                   <Button
                     variant="outline"
                     class="w-full bg-white hover:bg-slate-50 text-emerald-600 border-emerald-100 shadow-sm"
@@ -318,6 +349,19 @@ const handlePushStage = (id: string, newStage: string) => {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-center mt-6">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :total="total"
+          background
+          layout="prev, pager, next, total"
+          @current-change="fetchCycles"
+          @size-change="fetchCycles"
+        />
       </div>
     </div>
 
@@ -345,7 +389,7 @@ const handlePushStage = (id: string, newStage: string) => {
         <div class="flex justify-end gap-3 pt-2">
           <Button
             variant="outline"
-            class="rounded-full px-8 bg-blue-50/50 text-blue-600 border-blue-100 hover:bg-blue-100 hover:text-blue-700"
+            class="rounded-full px-8 bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-700"
             @click="showGoalDialog = false"
           >
             取消
@@ -355,6 +399,45 @@ const handlePushStage = (id: string, newStage: string) => {
             @click="confirmGoalStage"
           >
             立即开启
+          </Button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 确认下达考核签报弹窗 -->
+    <el-dialog
+      v-model="showPublishDialog"
+      title="下达考核签报"
+      width="480px"
+      append-to-body
+      class="custom-dialog"
+      :show-close="true"
+      align-center
+    >
+      <div class="flex items-start gap-4 py-2">
+        <div class="bg-indigo-100 p-2.5 rounded-full shrink-0 mt-1">
+          <Send class="h-6 w-6 text-indigo-600" />
+        </div>
+        <div>
+          <p class="text-[15px] text-slate-600 leading-relaxed font-medium">
+            确定要正式下达本次考核签报吗？下达后，所有参与考核的人员将收到本次考核通知，主管可正式开始确认下属目标。
+          </p>
+        </div>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-2">
+          <Button
+            variant="outline"
+            class="rounded-full px-8 bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100 hover:text-slate-700"
+            @click="showPublishDialog = false"
+          >
+            取消
+          </Button>
+          <Button
+            class="rounded-full px-8 bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-100"
+            @click="confirmPublishStage"
+          >
+            确认下达
           </Button>
         </div>
       </template>

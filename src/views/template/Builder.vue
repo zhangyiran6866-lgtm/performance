@@ -358,7 +358,13 @@ const removeIndicator = (id: string) => {
   indicators.value = indicators.value.filter((ind) => ind.id !== id);
 };
 
-const goBack = () => router.push({ path: '/configuration', query: { tab: 'template' } });
+const goBack = () => {
+  if (route.query.redirect) {
+    router.push(String(route.query.redirect));
+  } else {
+    router.push({ path: '/configuration', query: { tab: 'template' } });
+  }
+};
 
 const colors = [
   'bg-blue-500',
@@ -472,26 +478,26 @@ const handlePublish = () => {
         </div>
         <div class="flex items-center gap-3">
           <Button
-            variant="outline"
-            class="relative bg-white hover:bg-slate-50 text-blue-600 border-blue-200"
-            @click="isPreviewOpen = true"
-          >
-            <Eye class="mr-2 h-4 w-4" />
-            日报界面预览
-            <span
-              v-if="!hasPreviewed"
-              class="absolute -top-1 -right-1 flex h-3 w-3 rounded-full bg-red-500 animate-pulse border-2 border-white"
-            />
-          </Button>
-          <Button
             v-if="pageMode !== 'view'"
             variant="outline"
             class="bg-white hover:bg-slate-50 text-slate-700"
             :disabled="saving"
             @click="handleSave"
           >
-            <Save class="mr-2 h-4 w-4" :class="{ 'animate-spin': saving }" />
+            <Save class="mr-0.5 h-4 w-4" :class="{ 'animate-spin': saving }" />
             {{ saving ? '保存中...' : '保存草稿' }}
+          </Button>
+          <Button
+            variant="outline"
+            class="relative bg-white hover:bg-slate-50 text-blue-600 border-blue-200"
+            @click="isPreviewOpen = true"
+          >
+            <Eye class="mr-0.5 h-4 w-4" />
+            日报界面预览
+            <span
+              v-if="!hasPreviewed"
+              class="absolute -top-1 -right-1 flex h-3 w-3 rounded-full bg-red-500 animate-pulse border-2 border-white"
+            />
           </Button>
           <Button
             v-if="pageMode !== 'view'"
@@ -503,7 +509,7 @@ const handlePublish = () => {
              ]"
              @click="handlePublish"
            >
-             <Send class="mr-2 h-4 w-4" />
+             <Send class="mr-0.5 h-4 w-4" />
              正式发布并启用
            </Button>
         </div>

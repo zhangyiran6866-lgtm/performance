@@ -132,8 +132,7 @@ const getStatusBadge = (status: any) => {
   const label = dict ? dict.label : '未知';
   
   // 1:草稿 2:已生效 3:已归档
-  const s = Number(status);
-  switch (s) {
+  switch (Number(status)) {
     case 2:
       return { text: label, class: 'bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 font-normal' };
     case 1:

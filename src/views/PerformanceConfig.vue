@@ -7,12 +7,13 @@
 -->
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { Briefcase } from 'lucide-vue-next';
 import IndicatorLibrary from '@/components/library/IndicatorLibrary.vue';
 import TemplateList from '@/components/template/TemplateList.vue';
 
 const route = useRoute();
+const router = useRouter();
 const activeTab = ref('library');
 
 onMounted(() => {
@@ -22,10 +23,19 @@ onMounted(() => {
 });
 
 watch(() => route.query.tab, (newTab) => {
-  if (newTab === 'template') {
+  if (newTab === 'template' && activeTab.value !== 'template') {
     activeTab.value = 'template';
-  } else if (newTab === 'library') {
+  } else if (newTab === 'library' && activeTab.value !== 'library') {
     activeTab.value = 'library';
+  }
+});
+
+// 监听 activeTab 的变化，同步更新 URL query
+watch(activeTab, (newVal) => {
+  if (route.query.tab !== newVal) {
+    router.replace({
+      query: { ...route.query, tab: newVal }
+    });
   }
 });
 </script>
@@ -66,7 +76,7 @@ watch(() => route.query.tab, (newTab) => {
             </div>
           </template>
           <div class="h-full pt-4 flex flex-col overflow-hidden">
-            <IndicatorLibrary />
+            <IndicatorLibrary v-if="activeTab === 'library'" />
           </div>
         </el-tab-pane>
         
@@ -83,7 +93,7 @@ watch(() => route.query.tab, (newTab) => {
             </div>
           </template>
           <div class="h-full pt-4 flex flex-col overflow-hidden">
-            <TemplateList />
+            <TemplateList v-if="activeTab === 'template'" />
           </div>
         </el-tab-pane>
       </el-tabs>

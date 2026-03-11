@@ -1,31 +1,99 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   ArrowDown as ChevronDown,
   ArrowRight as ChevronRight,
-  PieChart as BarChart3,
-  User as Users,
-  TrendCharts as TrendingUp,
-  Finished as UserCheck,
   Warning as AlertCircle,
   ArrowLeft as ChevronLeft,
-  Printer,
-  Download,
   Calendar,
 } from '@element-plus/icons-vue';
+import {
+  FileText,
+  Users,
+  UserCheck,
+  TrendingUp,
+  BarChart3,
+} from 'lucide-vue-next';
+import { getPerformanceCycle, type PerformanceCycleTemplateRespVO } from '@/api/assessment';
+import dayjs from 'dayjs';
+import { ElMessage } from 'element-plus';
 
 const route = useRoute();
 const router = useRouter();
 const cycleId = route.params.id as string;
 
-// ========== Mock Data for the selected cycle ==========
-// In a real app, this would be fetched based on cycleId
-const cycleInfo = {
+const activeTab = ref('templates'); // 'templates' or 'dashboard'
+
+const cycleInfo = ref({
   id: cycleId,
-  title: '2026年3月份初级销售KPI考核',
-  period: '2026/03/01 - 2026/03/31',
-  status: 'rating', // 'rating' or 'finished'
+  title: '',
+  period: '',
+  status: '',
+  teamMemberCount: 0,
+  completedCount: 0,
+});
+
+const cycleTemplates = ref<any[]>([]);
+const loading = ref(false);
+
+const fetchData = async () => {
+  loading.value = true;
+  try {
+    const res = await getPerformanceCycle(Number(cycleId));
+    const data = (res as any)?.data || res;
+    
+    // 映射周期基本信息
+    cycleInfo.value = {
+      id: cycleId,
+      title: data.name || '',
+      period: `${dayjs(data.startDate).format('YYYY/MM/DD')} - ${dayjs(data.endDate).format('YYYY/MM/DD')}`,
+      status: data.stage ? data.stage.toLowerCase() : '',
+      teamMemberCount: data.teamMemberCount || 0,
+      completedCount: data.completedCount || 0,
+    };
+
+    // 映射模板列表数据
+    if (data.templateRespVOS && Array.isArray(data.templateRespVOS)) {
+      cycleTemplates.value = data.templateRespVOS.map((tpl: PerformanceCycleTemplateRespVO) => {
+        // 提取指标，后端新接口逻辑：直接取 templateItemRespVOS
+        const templateItems = tpl.templateItemRespVOS || [];
+        
+        return {
+          id: tpl.templateId,
+          name: tpl.templateName,
+          userCount: tpl.userCount || 0,
+          indicatorCount: tpl.indicatorCount || templateItems.length,
+          indicators: templateItems.map(item => ({
+            name: item.indicatorName || '未命名指标',
+            detail: item.indicatorRuleDescription || '无描述',
+            engine: item.indicatorRuleName || 'DEFAULT',
+            weight: item.weight || 0
+          }))
+        };
+      });
+
+      // 默认展开第一个模板
+      if (cycleTemplates.value.length > 0) {
+        expandedTemplates.value[cycleTemplates.value[0].id] = true;
+      }
+    }
+  } catch (error) {
+    console.error('获取周期详情失败:', error);
+    ElMessage.error('获取周期详情失败');
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchData();
+});
+
+const expandedTemplates = ref<Record<string, boolean>>({});
+
+const toggleTemplate = (id: string) => {
+  expandedTemplates.value[id] = !expandedTemplates.value[id];
 };
 
 type EmployeeRecord = {
@@ -127,89 +195,205 @@ const gradeColor = (grade: string | null) => {
   }
 };
 
-// Summary stats
+// Summary stats - 使用 API 提供的汇总数据
 const summary = computed(() => {
-  const totalEmployees = departments.value.reduce((s, d) => s + d.headcount, 0);
-  const totalRated = departments.value.reduce((s, d) => s + d.ratedCount, 0);
-  const allScores = departments.value.flatMap((d) =>
-    d.employees.map((e) => e.score).filter((s): s is number => s !== null),
-  );
-  const overallAvg = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : null;
-  
   return {
-    totalEmployees,
-    totalRated,
-    overallAvg,
+    totalEmployees: cycleInfo.value.teamMemberCount || 0,
+    totalRated: cycleInfo.value.completedCount || 0,
+    overallAvg: null as number | null,
     deptCount: departments.value.length,
   };
 });
+
+const viewTemplateDetail = (templateId: string | number) => {
+  router.push({
+    path: '/template/builder',
+    query: {
+      id: templateId,
+      mode: 'view',
+      redirect: route.fullPath
+    }
+  });
+};
 
 const goBack = () => router.push('/assessment/cycle');
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 xl:px-8 pb-20 space-y-6">
+  <div class="h-full flex flex-col overflow-hidden space-y-6 px-4 xl:px-8 pb-6">
     <!-- Header with Back Button -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="flex items-center justify-between gap-4 mt-2">
       <div class="flex items-center gap-4">
+        <!-- Back Button -->
         <el-button
           circle
-          class="shadow-sm"
+          class="shadow-sm hover:border-indigo-200 hover:bg-indigo-50/10 group transition-all !w-11 !h-11"
           @click="goBack"
         >
-          <el-icon><ChevronLeft /></el-icon>
+          <ChevronLeft class="w-5 h-5 text-slate-400 group-hover:text-indigo-600" />
         </el-button>
-        <div>
-          <div class="flex items-center gap-2 mb-1">
+
+        <!-- Title Info -->
+        <div class="flex flex-col items-start gap-1">
+          <div class="flex items-center gap-3">
             <el-tag
               type="primary"
               effect="light"
-              class="custom-tag"
+              class="custom-tag-official"
+              size="large"
             >
               绩效大盘
             </el-tag>
-            <h1 class="text-xl font-bold tracking-tight text-slate-900">
+            <h1 class="text-2xl font-bold tracking-tight text-slate-800">
               {{ cycleInfo.title }}
             </h1>
           </div>
-          <p class="text-sm text-slate-500 flex items-center gap-1.5 text-left">
-            <el-icon><Calendar /></el-icon> {{ cycleInfo.period }} · 仅HR可见统计视图
-          </p>
+          <div class="flex items-center gap-1.5 text-slate-400">
+            <Calendar class="w-3.5 h-3.5 mb-0.5" />
+            <span class="text-[16px] font-medium tracking-tight">{{ cycleInfo.period }} · 仅HR可见统计视图</span>
+          </div>
         </div>
-      </div>
-      <div class="flex items-center gap-2 shrink-0">
-        <el-button
-          class="custom-header-button"
-        >
-          <el-icon class="mr-2">
-            <Printer />
-          </el-icon> 打印报告
-        </el-button>
-        <el-button
-          class="custom-header-button"
-        >
-          <el-icon class="mr-2">
-            <Download />
-          </el-icon> 导出Excel
-        </el-button>
       </div>
     </div>
 
-    <!-- Summary Statistics Dashboard -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Tabs Navigation -->
+    <div class="relative mt-2">
+      <!-- Full-width Divider Line -->
+      <div class="absolute bottom-0 -mx-4 xl:-mx-8 left-0 right-0 h-[1px] bg-slate-200/60"></div>
+      
+      <div class="flex gap-10">
+        <button
+          @click="activeTab = 'templates'"
+          :class="[
+            'pb-4 text-base font-bold transition-all relative z-10',
+            activeTab === 'templates' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
+          ]"
+        >
+          本周期适用模板及名单
+          <div
+            v-if="activeTab === 'templates'"
+            class="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full"
+          ></div>
+        </button>
+        <button
+          @click="activeTab = 'dashboard'"
+          :class="[
+            'pb-4 text-base font-bold transition-all relative z-10',
+            activeTab === 'dashboard' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
+          ]"
+        >
+          绩效综合大盘
+          <div
+            v-if="activeTab === 'dashboard'"
+            class="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-600 rounded-full"
+          ></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab Content Area -->
+    <div 
+      class="flex-1 overflow-y-auto pr-2 custom-scrollbar"
+      v-loading="loading"
+    >
+      <div v-if="activeTab === 'templates'" class="space-y-6 animate-in fade-in duration-500 pb-10">
+      <!-- Info Alert -->
+      <div class="bg-indigo-50/40 border border-indigo-100/50 p-3 rounded-2xl flex items-start gap-4 text-left shadow-sm">
+        <div class="w-2.5 h-2.5 bg-indigo-600 rounded-full mt-1.5 shrink-0 shadow-sm"></div>
+        <div class="text-[15px] text-indigo-900/80 leading-relaxed font-medium">
+          该面板展示本次考评周期关联的所有<span class="font-bold">“考核模板（由配置中心下发）”</span>以及被分配到对应模板下的<span class="font-bold">“人员名单”</span>。点击模板可预览考核维度构成。
+        </div>
+      </div>
+
+      <!-- Template List -->
+      <div class="space-y-4">
+        <div
+          v-for="tpl in cycleTemplates"
+          :key="tpl.id"
+          class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+        >
+          <!-- Template Header -->
+          <div
+            class="px-6 py-5 flex items-center justify-between cursor-pointer select-none group"
+            @click="toggleTemplate(tpl.id)"
+          >
+            <div class="flex items-center gap-5">
+              <div class="text-slate-300 transition-transform duration-300 transform group-hover:text-indigo-400" :class="{ 'rotate-0': expandedTemplates[tpl.id], '-rotate-90': !expandedTemplates[tpl.id] }">
+                <ChevronDown class="w-5 h-5" />
+              </div>
+              <div class="space-y-1.5">
+                <div class="flex items-center gap-4">
+                  <h3 class="text-xl font-bold text-slate-800 tracking-tight">{{ tpl.name }}</h3>
+                  <div class="bg-indigo-50/50 px-3 py-1 rounded-md text-[11px] font-bold text-indigo-600/70 border border-indigo-100/50">
+                    考评人数: {{ tpl.userCount }}人
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 text-slate-400">
+                  <FileText class="w-3.5 h-3.5" />
+                  <span class="text-xs font-medium">包含 {{ tpl.indicatorCount }} 个维度指标</span>
+                </div>
+              </div>
+            </div>
+
+            <el-button
+              class="rounded-xl border-slate-200 hover:bg-slate-50 text-slate-600 font-bold px-6 py-4 shadow-sm text-xs"
+              @click.stop="viewTemplateDetail(tpl.id)"
+            >
+              查看模板详情配置
+            </el-button>
+          </div>
+
+          <!-- Template Expanded Info -->
+          <div
+            v-if="expandedTemplates[tpl.id]"
+            class="px-8 pb-8 animate-in slide-in-from-top-2 duration-300"
+          >
+            <div class="border-t border-slate-100 pt-6">
+              <!-- <div class="flex items-center gap-2 mb-6 text-indigo-600">
+                <CircleDot class="w-4 h-4" />
+                <span class="text-sm font-bold tracking-tight">指标构成模型</span>
+              </div> -->
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div
+                  v-for="(indicator, idx) in tpl.indicators"
+                  :key="idx"
+                  class="bg-white border border-slate-100 rounded-xl p-5 relative shadow-sm hover:border-indigo-100 transition-all hover:shadow-md group/card"
+                >
+                  <div class="flex justify-between items-start mb-4">
+                    <span class="text-[104x] font-black text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded tracking-widest uppercase">
+                      {{ indicator.name }}
+                    </span>
+                    <span class="text-lg font-black text-indigo-700/80 font-mono">
+                      {{ indicator.weight }}%
+                    </span>
+                  </div>
+                  <h4 class="text-[15px] font-bold text-slate-700 mb-4 leading-snug">
+                    {{ indicator.detail }}
+                  </h4>
+                  <div class="flex items-center gap-2 text-slate-300">
+                    <div class="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover/card:bg-indigo-300 transition-colors"></div>
+                    <span class="text-[12px] font-bold uppercase tracking-wider">计分引擎: <span class="text-slate-400">{{ indicator.engine }}</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="activeTab === 'dashboard'" class="space-y-6 animate-in fade-in duration-500">
+      <!-- Summary Statistics Dashboard -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <el-card
         shadow="hover"
         class="relative group custom-stat-card border-none"
       >
-        <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500" />
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-blue-500"></div>
         <div class="p-1 flex items-center gap-4">
-          <div class="bg-blue-50 p-3 rounded-xl">
-            <el-icon
-              :size="24"
-              class="text-blue-600"
-            >
-              <Users />
-            </el-icon>
+          <div class="bg-blue-50 p-3 rounded-2xl">
+            <Users class="w-6 h-6 text-blue-500" />
           </div>
           <div class="text-left">
             <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
@@ -226,15 +410,10 @@ const goBack = () => router.push('/assessment/cycle');
         shadow="hover"
         class="relative group custom-stat-card border-none"
       >
-        <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500" />
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500"></div>
         <div class="p-1 flex items-center gap-4">
-          <div class="bg-emerald-50 p-3 rounded-xl">
-            <el-icon
-              :size="24"
-              class="text-emerald-600"
-            >
-              <UserCheck />
-            </el-icon>
+          <div class="bg-emerald-50 p-3 rounded-2xl">
+            <UserCheck class="w-6 h-6 text-emerald-500" />
           </div>
           <div class="text-left">
             <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
@@ -251,15 +430,10 @@ const goBack = () => router.push('/assessment/cycle');
         shadow="hover"
         class="relative group custom-stat-card border-none"
       >
-        <div class="absolute left-0 top-0 bottom-0 w-1 bg-purple-500" />
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-purple-500"></div>
         <div class="p-1 flex items-center gap-4">
-          <div class="bg-purple-50 p-3 rounded-xl">
-            <el-icon
-              :size="24"
-              class="text-purple-600"
-            >
-              <TrendingUp />
-            </el-icon>
+          <div class="bg-purple-50 p-3 rounded-2xl">
+            <TrendingUp class="w-6 h-6 text-purple-500" />
           </div>
           <div class="text-left">
             <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
@@ -276,15 +450,10 @@ const goBack = () => router.push('/assessment/cycle');
         shadow="hover"
         class="relative group custom-stat-card border-none"
       >
-        <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
         <div class="p-1 flex items-center gap-4">
-          <div class="bg-amber-50 p-3 rounded-xl">
-            <el-icon
-              :size="24"
-              class="text-amber-600"
-            >
-              <BarChart3 />
-            </el-icon>
+          <div class="bg-amber-50 p-3 rounded-2xl">
+            <BarChart3 class="w-6 h-6 text-amber-500" />
           </div>
           <div class="text-left">
             <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">
@@ -353,7 +522,7 @@ const goBack = () => router.push('/assessment/cycle');
                 </el-tag>
               </div>
               <div class="flex items-center gap-2 mt-2">
-                <span class="text-[10px] text-slate-400 font-bold uppercase">评分进度</span>
+                <span class="text-[12px] text-slate-400  uppercase">评分进度</span>
                 <el-progress 
                   :percentage="(dept.ratedCount / dept.headcount) * 100" 
                   :show-text="false" 
@@ -473,7 +642,7 @@ const goBack = () => router.push('/assessment/cycle');
                         <div class="flex items-end gap-1 h-6 cursor-help group-hover:scale-110 transition-transform origin-right">
                           <div
                             v-for="(h, i) in emp.history.slice(-4)"
-                            :key="i" 
+                            :key="i"
                             :class="['w-1.5 rounded-t-sm transition-all duration-500', 
                                      h.score >= 85 ? 'bg-emerald-400' : h.score >= 70 ? 'bg-blue-400' : 'bg-slate-300']"
                             :style="{ height: `${Math.max(4, (h.score / 100) * 24)}px` }"
@@ -489,6 +658,8 @@ const goBack = () => router.push('/assessment/cycle');
         </div>
       </el-card>
     </div>
+    </div>
+    </div>
   </div>
 </template>
 
@@ -498,9 +669,16 @@ const goBack = () => router.push('/assessment/cycle');
   to { opacity: 1; transform: translateY(0); }
 }
 
-.custom-tag {
+.custom-tag-official {
+  background-color: #DBEAFE;
+  color: #3b66ff;
   border: none;
-  font-weight: 600;
+  font-weight: 800;
+  padding: 5px 16px;
+  height: 32px;
+  line-height: 32px;
+  font-size: 14px;
+  border-radius: 8px;
 }
 
 .custom-header-button {
@@ -513,7 +691,7 @@ const goBack = () => router.push('/assessment/cycle');
   border-radius: 1rem;
 }
 .custom-stat-card :deep(.el-card__body) {
-  padding: 1.25rem;
+  padding: 1rem;
 }
 
 .custom-dept-card {
@@ -536,5 +714,22 @@ const goBack = () => router.push('/assessment/cycle');
   overflow: hidden !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
   border: none !important;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
 }
 </style>

@@ -62,24 +62,33 @@ export const useUserStore = defineStore('admin-user', {
       let userInfo = wsCache.get(CACHE_KEY.USER);
       if (!userInfo) {
         // 请求后台获取个人权限和信息
-        const res = await getInfo();
+        const res: any = await getInfo();
         userInfo = res.data || res; // 兼容不同格式返回值
       }
 
       if (userInfo) {
         this.permissions = userInfo.permissions || [];
         this.roles = userInfo.roles || [];
-        this.user = userInfo.user || {};
+        
+        // 关键逻辑：兼容嵌套 user 对象或平铺结构
+        const userData = userInfo.user || userInfo;
+        this.user = {
+          ...this.user,
+          ...userData,
+          // 强制适配部门ID的多种可能名称，并确保类型一致
+          deptId: Number(userData.deptId || userData.dept_id || 0)
+        };
+        
         this.isSetUser = true;
         wsCache.set(CACHE_KEY.USER, userInfo);
       }
     },
 
     async loginOut() {
-      // 如果后端有 logout 接口可以加，这里仅做纯前端清除演示或使用你的
       removeToken();
-      localStorage.removeItem('USER_INFO'); // 兼容旧逻辑
-      deleteUserCache(); // 删除用户缓存
+      deleteUserCache();
+      localStorage.removeItem('user'); // 额外清理，确保彻底
+      localStorage.removeItem('USER_INFO'); // 兼容部分旧系统的习惯
       this.resetState();
     },
     

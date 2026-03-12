@@ -14,7 +14,10 @@ import {
   TrendCharts as TrendingUp,
   Cloudy as History,
   InfoFilled as Info,
+  ArrowLeft,
 } from '@element-plus/icons-vue';
+
+const emit = defineEmits(['back']);
 
 // Define Props
 interface Props {
@@ -148,16 +151,26 @@ const getScoreGrade = (score: number) => {
 </script>
 
 <template>
-  <div class="min-h-full flex flex-col bg-slate-50/10">
+  <div class="h-full flex flex-col bg-slate-50/10 overflow-hidden">
+
+
     <!-- Workspace Grid -->
-    <div class="flex-1 p-4 grid grid-cols-12 gap-6 items-start">
+    <div class="flex-1 py-4 grid grid-cols-12 gap-6 items-start">
       <!-- Left: Navigation Sidebar -->
       <div
         class="col-span-3 flex flex-col gap-6 sticky top-4"
         style="height: calc(100vh - 220px);"
       >
         <div class="bg-white rounded-3xl border border-slate-200 shadow-sm flex-1 flex flex-col overflow-hidden">
-          <div class="p-5 border-b border-slate-100 bg-slate-50/30">
+          <div class="p-5 border-b border-slate-100 bg-slate-50/30 space-y-3">
+            <el-button
+              link
+              class="!text-slate-500 hover:!text-indigo-600 transition-colors flex items-center gap-1.5 p-0 h-auto"
+              @click="emit('back')"
+            >
+              <el-icon :size="14"><ArrowLeft /></el-icon>
+              <span class="text-sm font-medium">返回列表</span>
+            </el-button>
             <el-input 
               v-model="searchQuery" 
               placeholder="搜索考核对象..." 
@@ -277,7 +290,7 @@ const getScoreGrade = (score: number) => {
           </div>
 
           <!-- Forms Container - Expanding content -->
-          <div class="flex-1 px-8 py-8 space-y-10 bg-slate-50/20">
+          <div class="flex-1 px-8 py-8 space-y-10 bg-slate-50/20 overflow-y-auto custom-scrollbar">
             <div
               v-if="props.isLocked"
               class="mb-4"

@@ -1,6 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { Search, CheckCircle2, Loader2 } from 'lucide-vue-next';
+import {
+  Search,
+  CheckCircle2,
+  Loader2,
+  TrendingUp,
+  Package,
+  Target,
+  BarChart3,
+  Wallet,
+  Users,
+  Timer,
+  Settings,
+} from 'lucide-vue-next';
 import {
   Dialog,
   DialogContent,
@@ -88,25 +100,16 @@ const handleConfirm = () => {
   emit('close');
 };
 
-const getDimensionColor = (category: string) => {
-  switch (category) {
-    case '销售业绩':
-      return 'bg-red-50 text-red-500 border-red-100';
-    case '产品力':
-      return 'bg-orange-50 text-orange-500 border-orange-100';
-    case '市场指标':
-      return 'bg-blue-50 text-blue-500 border-blue-100';
-    case '渠道力':
-      return 'bg-indigo-50 text-indigo-500 border-indigo-100';
-    case '费用管理':
-      return 'bg-emerald-50 text-emerald-500 border-emerald-100';
-    case '组织力':
-      return 'bg-purple-50 text-purple-500 border-purple-100';
-    case '行动计划':
-      return 'bg-cyan-50 text-cyan-500 border-cyan-100';
-    default:
-      return 'bg-slate-50 text-slate-500 border-slate-200';
-  }
+const getDimensionStyles = (category: string) => {
+  const d = category?.trim();
+  if (d === '销售业绩') return { tag: 'bg-rose-50 text-rose-600 border-rose-100', icon: TrendingUp };
+  if (d === '产品力') return { tag: 'bg-orange-50 text-orange-600 border-orange-100', icon: Package };
+  if (d === '市场指标') return { tag: 'bg-blue-50 text-blue-600 border-blue-100', icon: Target };
+  if (d === '渠道力') return { tag: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: BarChart3 };
+  if (d === '费用管理') return { tag: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: Wallet };
+  if (d === '组织力') return { tag: 'bg-purple-50 text-purple-600 border-purple-100', icon: Users };
+  if (d === '行动计划') return { tag: 'bg-cyan-50 text-cyan-600 border-cyan-100', icon: Timer };
+  return { tag: 'bg-slate-50 text-slate-600 border-slate-200', icon: Settings };
 };
 
 const handleCancel = () => {
@@ -189,8 +192,9 @@ const handleCancel = () => {
                 <div class="flex items-center gap-2.5 mt-1.5">
                   <Badge
                     variant="outline"
-                    :class="['text-[10px] h-4.5 px-1.5 font-bold border', getDimensionColor(ind.dimension)]"
+                    :class="['text-[11px] h-4.5 px-1.5 font-bold border flex items-center gap-1', getDimensionStyles(ind.dimension).tag]"
                   >
+                    <component :is="getDimensionStyles(ind.dimension).icon" class="h-3 w-3" />
                     {{ ind.dimension }}
                   </Badge>
                   <span class="text-[11px] text-slate-500/80 font-medium">计分规则: <span class="text-slate-700">{{ ind.ruleType }}</span></span>

@@ -7,16 +7,17 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import {
-  Setting,
-  TrendCharts,
-  Goods,
-  User,
-  Operation,
-  Histogram,
-  Clock,
-  Money,
-  Delete,
-} from '@element-plus/icons-vue';
+  TrendingUp,
+  Package,
+  Target,
+  BarChart3,
+  Wallet,
+  Users,
+  Timer,
+  Settings,
+  Calculator,
+  Trash2,
+} from 'lucide-vue-next';
 
 export interface IndicatorData {
   id: string | number;
@@ -43,42 +44,24 @@ const emit = defineEmits<{
   (e: 'delete', data: IndicatorData): void;
 }>();
 
-const getDimensionIcon = (category: string) => {
-  switch (category?.trim()) {
-  case '销售业绩': return TrendCharts;
-  case '产品力': return Goods;
-  case '市场指标': return Operation;
-  case '渠道力': return Histogram;
-  case '费用管理': return Money;
-  case '组织力': return User;
-  case '行动计划': return Clock;
-  default: return Setting;
-  }
-};
-
-/** 
- * 根据分类获取主题色
- * 使用 CSS 变量以确保 Tailwind 能够正确渲染（绕过动态类名扫描限制）
- */
-const getCategoryColor = (category: string) => {
-  switch (category?.trim()) {
-  case '销售业绩': return '#f43f5e'; // rose-500
-  case '产品力': return '#f97316';   // orange-500
-  case '市场指标': return '#3b82f6'; // blue-500
-  case '渠道力': return '#6366f1';   // indigo-500
-  case '费用管理': return '#10b981'; // emerald-500
-  case '组织力': return '#a855f7';   // purple-500
-  case '行动计划': return '#06b6d4'; // cyan-500
-  default: return '#64748b';        // slate-500
-  }
+const getDimensionStyles = (category: string) => {
+  const d = category?.trim();
+  if (d === '销售业绩') return { color: '#f43f5e', icon: TrendingUp };
+  if (d === '产品力') return { color: '#f97316', icon: Package };
+  if (d === '市场指标') return { color: '#3b82f6', icon: Target };
+  if (d === '渠道力') return { color: '#6366f1', icon: BarChart3 };
+  if (d === '费用管理') return { color: '#10b981', icon: Wallet };
+  if (d === '组织力') return { color: '#a855f7', icon: Users };
+  if (d === '行动计划') return { color: '#06b6d4', icon: Timer };
+  return { color: '#64748b', icon: Settings };
 };
 
 const cardStyle = computed(() => {
-  const color = getCategoryColor(props.data.category);
+  const { color } = getDimensionStyles(props.data.category);
   return {
     '--theme-color': color,
-    '--theme-color-light': `${color}15`, // 主题色的浅色背景（约 8% 透明度）
-    '--theme-color-hover': `${color}4D`, // 悬浮时的边框色（约 30% 透明度）
+    '--theme-color-light': `${color}15`,
+    '--theme-color-hover': `${color}4D`,
   };
 });
 </script>
@@ -101,7 +84,7 @@ const cardStyle = computed(() => {
       plain
       @click.stop="emit('delete', data)"
     >
-      <el-icon><Delete /></el-icon>
+      <el-icon><Trash2 /></el-icon>
     </el-button>
     
     <div class="h-full flex flex-col pl-2">
@@ -110,9 +93,7 @@ const cardStyle = computed(() => {
         <div
           class="flex items-center px-4 py-1 rounded-full font-bold text-[12px] transition-all shadow-sm bg-[var(--theme-color-light)] text-[var(--theme-color)]"
         >
-          <el-icon class="mr-2 text-[14px]">
-            <component :is="getDimensionIcon(data.category)" />
-          </el-icon>
+          <component :is="getDimensionStyles(data.category).icon" class="mr-2 h-3.5 w-3.5" />
           <span>{{ data.category }}</span>
         </div>
         
@@ -133,9 +114,7 @@ const cardStyle = computed(() => {
       <!-- 中部：规则信息 -->
       <div class="flex-grow space-y-2 mt-1">
         <div class="flex items-start gap-2">
-          <el-icon class="h-4 w-4 text-slate-400 mt-0.5 shrink-0">
-            <Operation />
-          </el-icon>
+          <Calculator class="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
           <span class="text-xs font-semibold text-slate-600 truncate">
             {{ data.indicatorRuleName || data.ruleType || '未关联计分规则' }}
           </span>

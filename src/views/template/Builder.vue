@@ -11,6 +11,13 @@ import {
   Calendar,
   Eye,
   TrendingUp,
+  Package,
+  Target,
+  BarChart3,
+  Wallet,
+  Users,
+  Timer,
+  Settings,
   Filter,
   ArrowRight,
   Calculator,
@@ -46,6 +53,8 @@ interface Indicator {
   weight: number;
   dataSourceType: string;
   dataSourceValue: string;
+  templateItemId?: number;
+  indicatorAlias?: string;
 }
 
 const router = useRouter();
@@ -193,9 +202,12 @@ onMounted(async () => {
             weight: item.weight || 0,
             dataSourceType: item.dataAggregation || 'system',
             dataSourceValue: item.dataAggregationValue || '',
+            templateItemId: item.id,
+            indicatorAlias: item.indicatorAlias || item.indicatorName,
           }));
         }
         hasSaved.value = true;
+        saveDotClicked.value = true; // 已有的模板，初始视为已保存/已点击
       }
     } catch (error) {
       console.error('Failed to fetch template detail:', error);
@@ -210,14 +222,65 @@ const isPreviewOpen = ref(false);
 const hasPreviewed = ref(false);
 const hasSaved = ref(false);
 
-// 监听数据变化，若有改动则重置保存状态
+const publishTooltip = computed(() => {
+  if (!hasSaved.value) return '请先保存模板草稿';
+  if (!hasPreviewed.value) return '请先进行日报确认';
+  return '';
+});
+
+const saveDotClicked = ref(false);
+const confirmDotClicked = ref(false);
+const publishDotClicked = ref(false);
+
+// 任何数据变动都会检测是否真的需要重新保存、重新预览确认
+// 仅仅修改 indicatorAlias 不应当触发保存红点
 watch(
   [() => templateInfo.value, () => indicators.value],
-  () => {
-    hasSaved.value = false;
+  (newVal, oldVal) => {
+    const [newInfo, newInds] = newVal;
+    const [oldInfo, oldInds] = oldVal;
+
+    // 如果是第一次运行或者值没有变化（Vue的深度监听有时会触发重复回调），直接跳过
+    if (!oldVal) return;
+
+    // 比较核心字段，排除 indicatorAlias
+    const isRelevantChange = JSON.stringify({
+      info: newInfo,
+      inds: newInds.map((i: any) => ({
+        id: i.id,
+        name: i.name,
+        weight: i.weight,
+        type: i.dataSourceType,
+        val: i.dataSourceValue
+      }))
+    }) !== JSON.stringify({
+      info: oldInfo,
+      inds: oldInds.map((i: any) => ({
+        id: i.id,
+        name: i.name,
+        weight: i.weight,
+        type: i.dataSourceType,
+        val: i.dataSourceValue
+      }))
+    });
+
+    if (isRelevantChange) {
+      hasSaved.value = false;
+      saveDotClicked.value = false;
+      hasPreviewed.value = false; 
+      confirmDotClicked.value = false;
+      publishDotClicked.value = false;
+    }
   },
   { deep: true },
 );
+
+const handleIndicatorUpdate = (updatedInd: any) => {
+  const index = indicators.value.findIndex((ind) => ind.id === updatedInd.id);
+  if (index !== -1) {
+    indicators.value[index] = updatedInd;
+  }
+};
 
 const handleSave = async () => {
   // ====== 必填项校验 ======
@@ -235,10 +298,6 @@ const handleSave = async () => {
   }
   if (indicators.value.length === 0) {
     ElMessage.warning('请至少添加一个考核指标！');
-    return;
-  }
-  if (!isWeightValid.value) {
-    ElMessage.warning('请确保所有指标权重合计为 100%！');
     return;
   }
 
@@ -280,6 +339,7 @@ const handleSave = async () => {
         });
       }
       hasSaved.value = true;
+      saveDotClicked.value = true; // 保存成功，红点消失
       ElMessage.success('模板新建并保存草稿成功！');
       return newId;
     } else if (pageMode.value === 'edit') {
@@ -288,6 +348,7 @@ const handleSave = async () => {
       requestData.id = id;
       await updateTemplate(requestData);
       hasSaved.value = true;
+      saveDotClicked.value = true; // 保存成功，红点消失
       ElMessage.success('模板草稿更新成功！');
       return id;
     }
@@ -299,6 +360,10 @@ const handleSave = async () => {
     saving.value = false;
   }
   return null;
+};
+
+const handleConfirmPreviewAction = () => {
+  isPreviewOpen.value = true;
 };
 
 const handleAddIndicators = (selected: any[]) => {
@@ -336,11 +401,13 @@ const handleWeightChange = (id: string, value: number | null) => {
 
 const handleSourceTypeChange = (id: string, type: string) => {
   let defaultValue = '';
-  if (type === 'system') {
-    const options = getStrDictOptions('system_performance_filling_method');
-    if (options && options.length > 0) {
-      defaultValue = options[0].value;
-    }
+  const dictType = type === 'system' 
+    ? 'system_performance_filling_method' 
+    : 'complete_system_performance_filling_method';
+    
+  const options = getStrDictOptions(dictType);
+  if (options && options.length > 0) {
+    defaultValue = options[0].value;
   }
   
   indicators.value = indicators.value.map((ind) =>
@@ -366,31 +433,22 @@ const goBack = () => {
   }
 };
 
-const colors = [
-  'bg-blue-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-purple-500',
-  'bg-pink-500',
-];
-const lightColors = [
-  'bg-blue-50 text-blue-600',
-  'bg-emerald-50 text-emerald-600',
-  'bg-amber-50 text-amber-600',
-  'bg-purple-50 text-purple-600',
-  'bg-pink-50 text-pink-600',
-];
-const textColors = [
-  'text-blue-600',
-  'text-emerald-600',
-  'text-amber-600',
-  'text-purple-600',
-  'text-pink-600',
-];
+const getDimensionStyles = (dimension: string) => {
+  const d = dimension?.trim();
+  if (d === '销售业绩') return { border: 'bg-rose-500', light: 'bg-rose-50/50 text-rose-600', tag: 'bg-rose-50 text-rose-600 border-rose-100', text: 'text-rose-600', raw: '#f43f5e', icon: TrendingUp };
+  if (d === '产品力') return { border: 'bg-orange-500', light: 'bg-orange-50/50 text-orange-600', tag: 'bg-orange-50 text-orange-600 border-orange-100', text: 'text-orange-600', raw: '#f97316', icon: Package };
+  if (d === '市场指标') return { border: 'bg-blue-500', light: 'bg-blue-50/50 text-blue-600', tag: 'bg-blue-50 text-blue-600 border-blue-100', text: 'text-blue-600', raw: '#3b82f6', icon: Target };
+  if (d === '渠道力') return { border: 'bg-indigo-500', light: 'bg-indigo-50/50 text-indigo-600', tag: 'bg-indigo-50 text-indigo-600 border-indigo-100', text: 'text-indigo-600', raw: '#6366f1', icon: BarChart3 };
+  if (d === '费用管理') return { border: 'bg-emerald-500', light: 'bg-emerald-50/50 text-emerald-600', tag: 'bg-emerald-50 text-emerald-600 border-emerald-100', text: 'text-emerald-600', raw: '#10b981', icon: Wallet };
+  if (d === '组织力') return { border: 'bg-purple-500', light: 'bg-purple-50/50 text-purple-600', tag: 'bg-purple-50 text-purple-600 border-purple-100', text: 'text-purple-600', raw: '#a855f7', icon: Users };
+  if (d === '行动计划') return { border: 'bg-cyan-500', light: 'bg-cyan-50/50 text-cyan-600', tag: 'bg-cyan-50 text-cyan-600 border-cyan-100', text: 'text-cyan-600', raw: '#06b6d4', icon: Timer };
+  return { border: 'bg-slate-500', light: 'bg-slate-50/50 text-slate-600', tag: 'bg-slate-50 text-slate-600 border-slate-200', text: 'text-slate-600', raw: '#64748b', icon: Settings };
+};
 
 const handleConfirmPreview = () => {
   isPreviewOpen.value = false;
   hasPreviewed.value = true;
+  confirmDotClicked.value = true; // 确认预览，红点消失
 };
 
 const handlePublish = () => {
@@ -426,6 +484,7 @@ const handlePublish = () => {
       }
 
       await updateTemplateStatus({ id, status: 2 });
+      publishDotClicked.value = true; // 发布成功，红点消失
       ElMessage.success('正式发布成功，模板已下发并启用！');
       // 发布成功后延迟跳转回列表页
       setTimeout(() => {
@@ -479,39 +538,75 @@ const handlePublish = () => {
         <div class="flex items-center gap-3">
           <Button
             v-if="pageMode !== 'view'"
-            variant="outline"
-            class="bg-white hover:bg-slate-50 text-slate-700"
+            :class="[
+              'relative border transition-all duration-200',
+              !saving
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600'
+                : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed opacity-70'
+            ]"
             :disabled="saving"
             @click="handleSave"
           >
             <Save class="mr-0.5 h-4 w-4" :class="{ 'animate-spin': saving }" />
             {{ saving ? '保存中...' : '保存草稿' }}
-          </Button>
-          <Button
-            variant="outline"
-            class="relative bg-white hover:bg-slate-50 text-blue-600 border-blue-200"
-            @click="isPreviewOpen = true"
-          >
-            <Eye class="mr-0.5 h-4 w-4" />
-            日报界面预览
             <span
-              v-if="!hasPreviewed"
+              v-if="!hasSaved && !saveDotClicked"
               class="absolute -top-1 -right-1 flex h-3 w-3 rounded-full bg-red-500 animate-pulse border-2 border-white"
             />
           </Button>
-          <Button
+          <el-tooltip
+            :disabled="hasSaved"
+            content="请先保存模板草稿"
+            placement="top"
+          >
+            <span class="inline-block">
+              <Button
+                variant="outline"
+                :class="[
+                  'relative transition-all duration-200 w-full',
+                  hasSaved 
+                    ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white hover:border-blue-600' 
+                    : 'bg-white text-slate-400 border-slate-200 cursor-not-allowed opacity-70'
+                ]"
+                :disabled="!hasSaved"
+                @click="handleConfirmPreviewAction"
+              >
+                <Eye class="mr-0.5 h-4 w-4" />
+                日报确认
+                <span
+                  v-if="hasSaved && !hasPreviewed && !confirmDotClicked"
+                  class="absolute -top-1 -right-1 flex h-3 w-3 rounded-full bg-red-500 animate-pulse border-2 border-white"
+                />
+              </Button>
+            </span>
+          </el-tooltip>
+
+          <el-tooltip
             v-if="pageMode !== 'view'"
-            :class="[
-               'shadow-sm',
-               isWeightValid && hasPreviewed && hasSaved
-                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                 : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-70'
-             ]"
-             @click="handlePublish"
-           >
-             <Send class="mr-0.5 h-4 w-4" />
-             正式发布并启用
-           </Button>
+            :disabled="hasSaved && hasPreviewed"
+            :content="publishTooltip"
+            placement="top"
+          >
+            <span class="inline-block">
+              <Button
+                :class="[
+                  'relative shadow-sm border transition-all duration-200 w-full',
+                  hasPreviewed && hasSaved
+                    ? 'bg-amber-50 border-amber-200 text-amber-600 hover:bg-amber-600 hover:text-white hover:border-amber-600'
+                    : 'bg-slate-200 border-transparent text-slate-400 cursor-not-allowed opacity-70'
+                ]"
+                :disabled="!hasPreviewed || !hasSaved"
+                @click="handlePublish"
+              >
+                <Send class="mr-0.5 h-4 w-4" />
+                正式发布并启用
+                <span
+                  v-if="hasPreviewed && !publishDotClicked"
+                  class="absolute -top-1 -right-1 flex h-3 w-3 rounded-full bg-red-500 animate-pulse border-2 border-white"
+                />
+              </Button>
+            </span>
+          </el-tooltip>
         </div>
       </div>
     </div>
@@ -715,13 +810,14 @@ const handlePublish = () => {
                       </Button>
                     </div>
                     <div
-                      v-for="(ind, index) in indicators"
+                      v-for="ind in indicators"
                       v-else
                       :key="ind.id"
-                      class="relative bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden group"
+                      class="relative border border-slate-200 rounded-xl shadow-sm overflow-hidden group transition-all duration-300"
+                      :style="{ backgroundColor: 'white', borderColor: `${getDimensionStyles(ind.dimension).raw}20` }"
                     >
                       <!-- Left colored border -->
-                      <div :class="['absolute left-0 top-0 bottom-0 w-1.5', colors[index % colors.length]]" />
+                      <div :class="['absolute left-0 top-0 bottom-0 w-1.5', getDimensionStyles(ind.dimension).border]" />
 
                       <div class="p-5 pl-6">
                         <!-- Top Section -->
@@ -730,10 +826,10 @@ const handlePublish = () => {
                             <div
                               :class="[
                                 'h-10 w-10 rounded-xl flex items-center justify-center shrink-0',
-                                lightColors[index % lightColors.length],
+                                getDimensionStyles(ind.dimension).light,
                               ]"
                             >
-                              <TrendingUp class="h-5 w-5" />
+                              <component :is="getDimensionStyles(ind.dimension).icon" class="h-5 w-5" />
                             </div>
                             <div>
                               <h3 class="text-lg font-bold text-slate-900">
@@ -742,23 +838,19 @@ const handlePublish = () => {
                               <div
                                 class="flex flex-wrap items-center gap-2 mt-0.5 text-xs text-slate-500 font-medium"
                               >
-                                <span>性质: 数值</span>
-                                <div class="w-px h-3 bg-slate-300" />
                                 <Badge
                                   variant="outline"
-                                  class="font-normal border-slate-200 bg-slate-50 h-5 px-1.5 text-[10px]"
+                                  :class="['font-bold h-5 px-2 text-[11px] flex items-center gap-1 border', getDimensionStyles(ind.dimension).tag]"
                                 >
+                                  <component :is="getDimensionStyles(ind.dimension).icon" class="h-3 w-3" />
                                   {{ ind.dimension }}
                                 </Badge>
-                                <div class="w-px h-3 bg-slate-300" />
-                                <span :class="textColors[index % textColors.length]">
-                                  权重: {{ ind.weight }}%
-                                </span>
                               </div>
                             </div>
                           </div>
                           <div class="flex items-center gap-2 shrink-0">
                             <div class="flex items-center">
+                              <span>权重：</span>
                               <el-input-number
                                 :model-value="ind.weight"
                                 :min="0"
@@ -820,8 +912,9 @@ const handlePublish = () => {
                             <div class="h-[52px] flex flex-col justify-end">
                               <Select
                                 v-if="ind.dataSourceType === 'complete'"
-                                default-value="sum"
+                                :model-value="ind.dataSourceValue"
                                 :disabled="pageMode === 'view'"
+                                @update:model-value="(v) => handleSourceValueChange(ind.id, String(v))"
                               >
                                  <SelectTrigger
                                    class="bg-white border-slate-200 shadow-sm font-semibold h-9 text-xs text-slate-900 w-full"
@@ -851,13 +944,9 @@ const handlePublish = () => {
                                   v-if="ind.dataSourceType === 'complete'"
                                   class="flex items-center gap-1.5 mt-1.5"
                                 >
-                                  <Input
-                                    placeholder="填写呈现给员工的字段指导文字..."
-                                    :model-value="ind.dataSourceValue"
-                                    :disabled="pageMode === 'view'"
-                                    class="h-7 text-xs flex-1 border-slate-200 focus-visible:ring-1"
-                                    @update:model-value="(v) => handleSourceValueChange(ind.id, String(v))"
-                                  />
+                                  <div class="h-7 text-[10px] text-slate-400 flex items-center italic">
+                                    此模式下员工将在每日日报中手动输入数值
+                                  </div>
                                 </div>
                                 <div
                                   v-else
@@ -1000,15 +1089,15 @@ const handlePublish = () => {
                     <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                       权重合计检测
                     </h4>
-                    <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                      <div
-                        v-for="(ind, i) in indicators"
-                        :key="ind.id"
-                        :style="{ width: `${(ind.weight / Math.max(100, totalWeight)) * 100}%` }"
-                        :class="[colors[i % colors.length], 'h-full transition-all']"
-                        :title="`${ind.name}: ${ind.weight}%`"
-                      />
-                    </div>
+                      <div class="h-2 w-full bg-slate-100 rounded-full overflow-hidden flex">
+                        <div
+                          v-for="ind in indicators"
+                          :key="ind.id"
+                          :style="{ width: `${(ind.weight / Math.max(100, totalWeight)) * 100}%` }"
+                          :class="[getDimensionStyles(ind.dimension).border, 'h-full transition-all border-r border-white/20 last:border-r-0']"
+                          :title="`${ind.name}: ${ind.weight}%`"
+                        />
+                      </div>
                     <div class="space-y-1.5 mt-3 max-h-48 overflow-y-auto pr-1">
                       <div
                         v-for="(ind, i) in indicators"
@@ -1045,9 +1134,11 @@ const handlePublish = () => {
 
     <DailyReportPreviewModal
       v-model:is-open="isPreviewOpen"
+      :template-id="route.query.id as string"
       :indicators="indicators"
       @close="isPreviewOpen = false"
       @confirm="handleConfirmPreview"
+      @update-indicator="handleIndicatorUpdate"
     />
   </div>
 </template>
@@ -1267,7 +1358,7 @@ const handlePublish = () => {
 
 /* 权重输入框样式调整 */
 .weight-input-number {
-  width: 150px !important;
+  width: 140px !important;
 }
 
 .weight-input-number :deep(.el-input__wrapper) {

@@ -152,8 +152,15 @@ const formatDate = (date: string | number | Date) => {
 /**
  * 改变模板状态 (启用/停用)
  */
-const handleChangeStatus = async (id: number, status: number) => {
+const handleChangeStatus = async (row: PerformanceTemplateRespVO, status: number) => {
+  const id = row.id;
   const isPublish = status === 2;
+  
+  if (isPublish && row.totalWeight !== 100) {
+    ElMessage.warning(`该模板当前权重合计为 ${row.totalWeight}%，不符合发布要求（需为100%），请先前去编辑。`);
+    return;
+  }
+  
   const actionText = isPublish ? '发布启用' : '暂停/停用';
   
   try {
@@ -393,7 +400,7 @@ const handleDelete = async (id: number) => {
                   <DropdownMenuItem
                     v-if="row.status === 2"
                     class="cursor-pointer"
-                    @click="handleChangeStatus(row.id, 3)"
+                    @click="handleChangeStatus(row, 3)"
                   >
                     <PowerOff class="mr-2 h-4 w-4 text-amber-600" />
                     <span class="text-slate-700">暂停/停用</span>
@@ -401,7 +408,7 @@ const handleDelete = async (id: number) => {
                   <DropdownMenuItem
                     v-else-if="row.status === 1"
                     class="cursor-pointer"
-                    @click="handleChangeStatus(row.id, 2)"
+                    @click="handleChangeStatus(row, 2)"
                   >
                     <Power class="mr-2 h-4 w-4 text-emerald-600" />
                     <span class="text-slate-700">发布启用</span>

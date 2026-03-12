@@ -6,17 +6,16 @@
 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { BarChart3 as BarChart3Icon } from 'lucide-vue-next';
 import {
-  DataLine as LayoutDashboard,
-  Aim as Target,
   Medal as Award,
   User as UserCircle,
   Calendar,
-  Lock,
   Unlock,
 } from '@element-plus/icons-vue';
 
 import MyAssessmentWorkspace from '@/components/assessment/MyAssessmentWorkspace.vue';
+import TeamAssessmentWorkspace from '@/components/assessment/TeamAssessmentWorkspace.vue';
 import TeamGoalWorkspace from '@/components/assessment/TeamGoalWorkspace.vue';
 import RatingWorkspace from '@/components/assessment/RatingWorkspace.vue';
 
@@ -34,6 +33,19 @@ const userRole = ref<'employee' | 'manager'>('manager');
 
 // Navigation state
 const activeTab = ref('my_performance');
+
+// Map internal workspace state to top-level navigation tab
+const navTab = computed({
+  get: () => {
+    if (['team_performance', 'team_goals', 'team_rating'].includes(activeTab.value)) {
+      return 'team_performance';
+    }
+    return activeTab.value;
+  },
+  set: (val) => {
+    activeTab.value = val;
+  }
+});
 
 // Phase status UI mapping
 const phaseInfo = computed(() => {
@@ -75,34 +87,34 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
 <template>
   <div class="h-screen flex flex-col bg-slate-50/50 overflow-hidden">
     <!-- Top Header Navigation / Breadcrumb replacement for more space -->
-    <header class="bg-white border-b border-slate-200 px-8 py-3 shrink-0 shadow-sm z-20">
+    <header class="bg-white border-b border-slate-200 px-5 py-4 shrink-0 shadow-sm z-20">
       <div class="flex items-center justify-between max-w-full mx-auto">
-        <div class="flex items-center gap-6">
-          <div class="flex items-center gap-3">
-            <div class="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center">
-              <el-icon class="text-2xl text-white">
-                <LayoutDashboard />
-              </el-icon>
+        <div class="flex items-center gap-8">
+          <div class="flex items-center gap-4">
+            <div class="bg-indigo-50 p-3 rounded-2xl shadow-sm border border-indigo-100 flex items-center justify-center">
+              <BarChart3Icon class="h-6 w-6 text-indigo-600" />
             </div>
             <div>
-              <h1 class="text-2xl font-black text-slate-900 leading-none">
+              <h1 class="text-3xl font-black tracking-tight text-slate-900 leading-none">
                 绩效工作台
               </h1>
-              <p class="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                Performance Hall
+              <p class="text-base text-slate-500 mt-1">
+                实时跟进考评进度，沉淀个人与团队绩效资产
               </p>
             </div>
           </div>
           
-          <div class="h-8 w-px bg-slate-200 hidden md:block" />
+
+          
+          <div class="h-8 w-px bg-slate-200 hidden md:block" v-if="activeTab !== 'my_performance' && !['team_goals', 'team_rating'].includes(activeTab)" />
 
           <!-- Current Cycle Quick Info -->
-          <div class="hidden lg:flex items-center gap-5 bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-100">
+          <div v-if="activeTab !== 'my_performance'" class="hidden lg:flex items-center gap-5 bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-100">
             <el-icon class="text-slate-400 text-lg">
               <Calendar />
             </el-icon>
             <div class="flex flex-col text-left">
-              <span class="text-sm font-bold text-slate-700 leading-none">{{ currentCycle.title }}</span>
+              <span class="text-s font-bold text-slate-700 leading-none">{{ currentCycle.title }}</span>
               <span class="text-xs text-slate-400 mt-1">截止时间: {{ currentCycle.expireDate }}</span>
             </div>
             <el-tag
@@ -144,7 +156,7 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
     <div class="flex-1 flex flex-col overflow-hidden">
       <div class="bg-white border-b border-slate-200 px-8 py-0 shrink-0 z-10">
         <el-tabs
-          v-model="activeTab"
+          v-model="navTab"
           class="custom-nav-tabs"
         >
           <el-tab-pane name="my_performance">
@@ -157,44 +169,17 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
               </div>
             </template>
           </el-tab-pane>
-          
-          <el-tab-pane
-            v-if="userRole === 'manager'"
-            name="team_goals"
-          >
-            <template #label>
-              <div class="flex items-center gap-2 h-13 relative group">
-                <el-icon
-                  :size="20"
-                  :class="isGoalSettingLocked ? 'text-slate-300' : 'text-slate-400 group-[.is-active]:text-indigo-600'"
-                >
-                  <Target />
-                </el-icon>
-                <span class="text-slate-500 group-[.is-active]:text-indigo-600">团队目标设定</span>
-                
-              </div>
-            </template>
-          </el-tab-pane>
 
           <el-tab-pane
             v-if="userRole === 'manager'"
-            name="team_rating"
+            name="team_performance"
           >
             <template #label>
-              <div class="flex items-center gap-2 h-13 relative group">
-                <el-icon
-                  :size="20"
-                  :class="isRatingLocked ? 'text-slate-300' : 'text-slate-400 group-[.is-active]:text-indigo-600'"
-                >
+              <div class="flex items-center gap-2 h-13">
+                <el-icon :size="20">
                   <Award />
                 </el-icon>
-                <span :class="isRatingLocked ? 'text-slate-300' : 'text-slate-500 group-[.is-active]:text-indigo-600'">团队绩效评价</span>
-                <el-icon
-                  v-if="isRatingLocked"
-                  class="ml-1 text-slate-300"
-                >
-                  <Lock />
-                </el-icon>
+                <span>团队绩效</span>
               </div>
             </template>
           </el-tab-pane>
@@ -204,13 +189,19 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
       <!-- Content Area -->
       <div class="flex-1 overflow-hidden relative">
         <MyAssessmentWorkspace v-if="activeTab === 'my_performance'" />
+        <TeamAssessmentWorkspace 
+          v-else-if="activeTab === 'team_performance'" 
+          @switch-tab="(tab: string) => activeTab = tab"
+        />
         <TeamGoalWorkspace
           v-else-if="activeTab === 'team_goals'"
           :is-locked="isGoalSettingLocked"
+          @back="activeTab = 'team_performance'"
         />
         <RatingWorkspace
           v-else-if="activeTab === 'team_rating'"
           :is-locked="isRatingLocked"
+          @back="activeTab = 'team_performance'"
         />
 
         <!-- Floating Phase Status Notification -->

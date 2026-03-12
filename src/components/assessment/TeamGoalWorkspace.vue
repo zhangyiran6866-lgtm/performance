@@ -9,9 +9,11 @@ import {
   Edit as FileSignature,
   Right as ArrowRight,
   FolderChecked as Save,
-  Calendar,
   TrendCharts as TrendingUp,
+  ArrowLeft,
 } from '@element-plus/icons-vue';
+
+const emit = defineEmits(['back']);
 
 // Define Props
 interface Props {
@@ -121,79 +123,23 @@ const handleTargetChange = (indId: string, value: string) => {
 
 <template>
   <div class="h-full flex flex-col bg-slate-50/30 overflow-hidden">
-    <!-- Top Statistics Area -->
-    <div class="px-8 pt-8 shrink-0">
-      <div
-        class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6"
-      >
-        <div>
-          <div class="flex items-center gap-3 mb-1">
-            <el-tag
-              type="primary"
-              effect="light"
-              class="custom-tag"
-            >
-              目标设定阶段
-            </el-tag>
-            <h3 class="text-xl font-bold text-slate-900">
-              2026年3月份初级销售KPI指标下发
-            </h3>
-          </div>
-          <p class="text-sm text-slate-500 flex items-center mt-2">
-            <el-icon class="mr-1.5 opacity-70">
-              <Calendar />
-            </el-icon>
-            当前窗口: 2026/03/01 - 2026/03/07 (截止设定时间)
-          </p>
-        </div>
 
-        <div class="flex items-center gap-4 lg:gap-8 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-          <div class="text-center shrink-0">
-            <div class="text-2xl font-bold text-slate-700">
-              {{ stats.total }}
-            </div>
-            <div class="text-[10px] text-slate-500 font-bold mt-1 uppercase">
-              团队成员
-            </div>
-          </div>
-          <div class="h-10 w-px bg-slate-200 hidden lg:block" />
-          <div class="text-center shrink-0">
-            <div class="text-2xl font-bold text-amber-500">
-              {{ stats.pendingConfirm }}
-            </div>
-            <div class="text-[10px] text-slate-500 font-bold mt-1 uppercase">
-              待签署
-            </div>
-          </div>
-          <div class="h-10 w-px bg-slate-200 hidden lg:block" />
-          <div class="text-center shrink-0">
-            <div class="text-2xl font-bold text-slate-400">
-              {{ stats.pendingSet }}
-            </div>
-            <div class="text-[10px] text-slate-500 font-bold mt-1 uppercase">
-              待设定
-            </div>
-          </div>
-          <div class="h-10 w-px bg-slate-200 hidden lg:block" />
-          <div class="text-center shrink-0">
-            <div class="text-2xl font-bold text-emerald-500">
-              {{ stats.confirmed }}
-            </div>
-            <div class="text-[10px] text-slate-500 font-bold mt-1 uppercase">
-              已确认
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Workspace Area -->
-    <div class="flex-1 p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
+    <div class="flex-1 py-4 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
       <!-- Left Side: Employee List -->
       <div
-        class="col-span-1 lg:col-span-4 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0"
+        class="col-span-1 lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0"
       >
-        <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
+          <el-button
+            link
+            class="!text-slate-500 hover:!text-indigo-600 transition-colors flex items-center gap-1.5 p-0 h-auto"
+            @click="emit('back')"
+          >
+            <el-icon :size="14"><ArrowLeft /></el-icon>
+            <span class="text-sm font-medium">返回列表</span>
+          </el-button>
           <el-input
             v-model="searchQuery"
             placeholder="搜索下属姓名..."
@@ -247,11 +193,52 @@ const handleTargetChange = (indId: string, value: string) => {
             </div>
           </div>
         </div>
+        
+        <!-- Bottom Statistics Bar (Fixed) -->
+        <div class="bg-slate-100/50 border-t border-slate-100 p-4 shrink-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+          <div class="flex items-center justify-between mb-3 px-1">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">团队考核进度概览</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2">
+            <div class="text-center">
+              <div class="text-lg font-black text-slate-700 leading-none">
+                {{ stats.total }}
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                合计
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-black text-amber-500 leading-none">
+                {{ stats.pendingConfirm }}
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                待签署
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-black text-slate-400 leading-none">
+                {{ stats.pendingSet }}
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                待设定
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-black text-emerald-500 leading-none">
+                {{ stats.confirmed }}
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                已确认
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Right Side: Target Setting Form -->
       <div
-        class="col-span-1 lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden min-w-0"
+        class="col-span-1 lg:col-span-9 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden min-w-0"
       >
         <template v-if="selectedEmp">
           <!-- Employee Detail Header -->

@@ -10,6 +10,11 @@ const route = useRoute();
 
 const items = [
   {
+    title: '工作日报',
+    url: '/daily-report',
+    icon: Calendar,
+  },
+  {
     title: '绩效配置中心',
     url: '/configuration',
     icon: Setting,

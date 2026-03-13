@@ -18,7 +18,17 @@ const router = createRouter({
         {
           path: '',
           name: 'home',
-          redirect: '/configuration',
+          redirect: '/daily-report',
+        },
+        {
+          path: '/daily-report',
+          name: 'daily-report',
+          component: () => import('@/views/daily-report/index.vue'),
+        },
+        {
+          path: '/daily-report/create',
+          name: 'daily-report-create',
+          component: () => import('@/views/daily-report/Create.vue'),
         },
         {
           path: '/configuration',

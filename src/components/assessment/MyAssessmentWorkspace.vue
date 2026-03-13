@@ -91,7 +91,7 @@ const qualitativeResults = computed(() => {
   <div class="h-full flex flex-col bg-slate-50/30 overflow-hidden">
     <!-- Cycle List View -->
     <template v-if="!selectedCycle">
-      <div v-loading="loading" class="py-5 space-y-6 overflow-y-auto custom-scrollbar">
+      <div v-loading="loading" class="flex-1 py-5 space-y-6 overflow-y-auto custom-scrollbar">
         <div class="mx-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
           <h2 class="text-2xl font-black tracking-tight text-slate-900">
             我的考核目标与结果

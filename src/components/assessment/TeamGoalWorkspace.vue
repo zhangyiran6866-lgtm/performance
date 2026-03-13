@@ -129,7 +129,7 @@ const handleTargetChange = (indId: string, value: string) => {
     <div class="flex-1 py-4 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
       <!-- Left Side: Employee List -->
       <div
-        class="col-span-1 lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0"
+        class="col-span-1 lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0 h-full"
       >
         <div class="p-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
           <el-button
@@ -238,7 +238,7 @@ const handleTargetChange = (indId: string, value: string) => {
 
       <!-- Right Side: Target Setting Form -->
       <div
-        class="col-span-1 lg:col-span-9 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden min-w-0"
+        class="col-span-1 lg:col-span-9 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden min-w-0 h-full"
       >
         <template v-if="selectedEmp">
           <!-- Employee Detail Header -->

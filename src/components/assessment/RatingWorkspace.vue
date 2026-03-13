@@ -7,7 +7,6 @@ import {
   Warning as AlertCircle,
   Operation as Calculator,
   FolderChecked as Save,
-  ArrowRight as ChevronRight,
   Right as ArrowRight,
   User,
   ChatDotRound as MessageSquare,
@@ -139,6 +138,14 @@ const filteredIndicators = computed(() => {
   return resultIndicators;
 });
 
+const stats = computed(() => {
+  const total = employees.length;
+  const rated = employees.filter((e) => e.status === 'rated').length;
+  const pending = employees.filter((e) => e.status === 'pending_rate').length;
+  const rate = total > 0 ? Math.round((rated / total) * 100) : 0;
+  return { total, rated, pending, rate };
+});
+
 
 
 
@@ -155,76 +162,114 @@ const getScoreGrade = (score: number) => {
 
 
     <!-- Workspace Grid -->
-    <div class="flex-1 py-4 grid grid-cols-12 gap-6 items-start">
+    <div class="flex-1 py-4 grid grid-cols-12 gap-6 overflow-hidden">
       <!-- Left: Navigation Sidebar -->
       <div
-        class="col-span-3 flex flex-col gap-6 sticky top-4"
-        style="height: calc(100vh - 220px);"
+        class="col-span-1 lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-w-0 h-full"
       >
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm flex-1 flex flex-col overflow-hidden">
-          <div class="p-5 border-b border-slate-100 bg-slate-50/30 space-y-3">
-            <el-button
-              link
-              class="!text-slate-500 hover:!text-indigo-600 transition-colors flex items-center gap-1.5 p-0 h-auto"
-              @click="emit('back')"
-            >
-              <el-icon :size="14"><ArrowLeft /></el-icon>
-              <span class="text-sm font-medium">返回列表</span>
-            </el-button>
-            <el-input 
-              v-model="searchQuery" 
-              placeholder="搜索考核对象..." 
-              class="custom-search-input"
-            >
-              <template #prefix>
-                <el-icon><Search /></el-icon>
-              </template>
-            </el-input>
-          </div>
-          <div class="flex-1 overflow-y-auto p-3 space-y-1 custom-scrollbar">
-            <div
-              v-for="emp in filteredEmployees"
-              :key="emp.id"
-              :class="[
-                'group flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all duration-300 border-2',
-                selectedEmpId === emp.id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'border-transparent hover:bg-slate-50 hover:border-slate-100'
-              ]"
-              @click="selectedEmpId = emp.id"
-            >
-              <div class="flex items-center gap-3 min-w-0">
-                <el-avatar 
-                  :size="40" 
-                  :class="[
-                    'shadow-sm border-2 border-white shrink-0',
-                    selectedEmpId === emp.id ? 'bg-indigo-100 text-indigo-700 font-bold' : 'bg-slate-100 text-slate-500 font-medium'
-                  ]"
-                >
-                  {{ emp.avatar }}
-                </el-avatar>
-                <div class="min-w-0">
-                  <div class="font-bold text-slate-800 truncate">
-                    {{ emp.name }}
-                  </div>
-                  <div class="text-[10px] text-slate-400 font-medium mt-0.5">
-                    {{ emp.role }}
-                  </div>
-                </div>
-              </div>
-              <el-icon
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50 space-y-3">
+          <el-button
+            link
+            class="!text-slate-500 hover:!text-indigo-600 transition-colors flex items-center gap-1.5 p-0 h-auto"
+            @click="emit('back')"
+          >
+            <el-icon :size="14"><ArrowLeft /></el-icon>
+            <span class="text-sm font-medium">返回列表</span>
+          </el-button>
+          <el-input 
+            v-model="searchQuery" 
+            placeholder="搜索考核对象..." 
+            class="custom-search-input"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+        <div class="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
+          <div
+            v-for="emp in filteredEmployees"
+            :key="emp.id"
+            :class="[
+              'group flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all duration-300 border',
+              selectedEmpId === emp.id ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'border-transparent hover:bg-slate-50'
+            ]"
+            @click="selectedEmpId = emp.id"
+          >
+            <div class="flex items-center gap-3 min-w-0">
+              <el-avatar 
+                :size="40" 
                 :class="[
-                  'h-5 w-5 transition-colors',
-                  emp.status === 'rated' ? 'text-emerald-500' : 'text-slate-200'
+                  'shadow-sm border border-slate-200 shrink-0',
+                  selectedEmpId === emp.id ? 'bg-indigo-100 text-indigo-700 font-bold' : 'bg-slate-100 text-slate-500 font-medium'
                 ]"
               >
-                <component :is="emp.status === 'rated' ? CheckCircle2 : CircleDashed" />
-              </el-icon>
+                {{ emp.avatar }}
+              </el-avatar>
+              <div class="min-w-0">
+                <div class="font-bold text-slate-800 truncate">
+                  {{ emp.name }}
+                </div>
+                <div class="text-[10px] text-slate-400 font-medium mt-0.5">
+                  {{ emp.role }}
+                </div>
+              </div>
+            </div>
+            <el-icon
+              :class="[
+                'h-5 w-5 transition-colors',
+                emp.status === 'rated' ? 'text-emerald-500' : 'text-slate-200'
+              ]"
+            >
+              <component :is="emp.status === 'rated' ? CheckCircle2 : CircleDashed" />
+            </el-icon>
+          </div>
+        </div>
+
+        <!-- Bottom Statistics Bar -->
+        <div class="bg-slate-100/50 border-t border-slate-100 p-4 shrink-0 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)]">
+          <div class="flex items-center justify-between mb-3 px-1">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">团队打分进度概览</span>
+          </div>
+          <div class="grid grid-cols-4 gap-2">
+            <div class="text-center">
+              <div class="text-lg font-black text-slate-700 leading-none">
+                {{ stats.total }}
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                合计
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-black text-amber-500 leading-none">
+                {{ stats.pending }}
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                待打分
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-black text-emerald-500 leading-none">
+                {{ stats.rated }}
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                已打分
+              </div>
+            </div>
+            <div class="text-center">
+              <div class="text-lg font-black text-indigo-600 leading-none">
+                {{ stats.rate }}%
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                完成率
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Right: Main Form Body -->
-      <div class="col-span-9 bg-white rounded-[32px] border border-slate-200 shadow-sm flex flex-col">
+      <div class="col-span-9 bg-white rounded-[32px] border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
         <template v-if="selectedEmp">
           <!-- Detail Header -->
           <div class="px-8 py-3 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
@@ -451,29 +496,7 @@ const getScoreGrade = (score: number) => {
             </div>
           </div>
 
-          <!-- Bottom Footer Logic -->
-          <div class="px-8 py-5 border-t border-slate-100 bg-white shrink-0 flex items-center justify-end">
-            <div class="flex items-center gap-4">
-              <el-button
-                link
-                class="text-slate-500 font-bold"
-                @click="selectedEmpId = ''"
-              >
-                取消打分项
-              </el-button>
-              <el-button
-                type="primary"
-                size="large"
-                class="custom-submit-button"
-                :disabled="props.isLocked"
-              >
-                确认并封存本条打分项
-                <el-icon class="ml-2">
-                  <ChevronRight />
-                </el-icon>
-              </el-button>
-            </div>
-          </div>
+
         </template>
         <template v-else>
           <div class="flex-1 flex flex-col items-center justify-center text-slate-300">

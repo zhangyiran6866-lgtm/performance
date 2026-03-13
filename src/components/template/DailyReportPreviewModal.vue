@@ -105,6 +105,35 @@ const saveEdit = async (ind: any) => {
   }
 };
 
+const handleConfirm = async () => {
+  if (!props.templateId) {
+    emit('confirm');
+    return;
+  }
+
+  isSaving.value = true;
+  try {
+    const items = props.indicators.map(item => ({
+      indicatorId: Number(item.id),
+      indicatorName: item.name,
+      indicatorAlias: item.indicatorAlias || item.name,
+      templateItemId: item.templateItemId || 0,
+    }));
+
+    await createDailyTemplate({
+      templateId: Number(props.templateId),
+      items,
+    });
+    
+    emit('confirm');
+  } catch (error: any) {
+    console.error('Final confirm save failed:', error);
+    ElMessage.error(error?.message || '日报确认保存失败');
+  } finally {
+    isSaving.value = false;
+  }
+};
+
 const getMockValues = (i: number) => {
   const mockAchieved = i === 0 ? 24500 : i === 2 ? 1 : 450;
   const mockTarget = i === 0 ? 50000 : i === 2 ? 0 : 500;
@@ -307,9 +336,10 @@ watch(() => props.isOpen, (val) => {
         </Button>
         <Button
           class="bg-emerald-600 hover:bg-emerald-700 text-white"
-          @click="emit('confirm')"
+          :disabled="isSaving"
+          @click="handleConfirm"
         >
-          已确认，界面无误
+          {{ isSaving ? '保存中...' : '已确认，界面无误' }}
         </Button>
       </DialogFooter>
     </DialogContent>

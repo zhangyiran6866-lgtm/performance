@@ -5,7 +5,7 @@ import request from '@/utils/request';
  */
 export interface Request {
     /**
-     * 绩效模版ID
+     * ID
      */
     id?: number;
     /**

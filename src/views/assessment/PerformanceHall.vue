@@ -10,7 +10,6 @@ import { BarChart3 as BarChart3Icon } from 'lucide-vue-next';
 import {
   Medal as Award,
   User as UserCircle,
-  Calendar,
   Unlock,
 } from '@element-plus/icons-vue';
 
@@ -106,25 +105,9 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
           
 
           
-          <div class="h-8 w-px bg-slate-200 hidden md:block" v-if="activeTab !== 'my_performance' && !['team_goals', 'team_rating'].includes(activeTab)" />
-
-          <!-- Current Cycle Quick Info -->
-          <div v-if="activeTab !== 'my_performance'" class="hidden lg:flex items-center gap-5 bg-slate-50 px-5 py-2.5 rounded-2xl border border-slate-100">
-            <el-icon class="text-slate-400 text-lg">
-              <Calendar />
-            </el-icon>
-            <div class="flex flex-col text-left">
-              <span class="text-s font-bold text-slate-700 leading-none">{{ currentCycle.title }}</span>
-              <span class="text-xs text-slate-400 mt-1">截止时间: {{ currentCycle.expireDate }}</span>
-            </div>
-            <el-tag
-              :color="phaseInfo.color"
-              effect="dark"
-              class="border-none px-3 font-bold text-xs ml-2 custom-phase-tag"
-            >
-              {{ phaseInfo.label }}
-            </el-tag>
-          </div>
+          
+          
+           
         </div>
 
         <div class="flex items-center gap-3">

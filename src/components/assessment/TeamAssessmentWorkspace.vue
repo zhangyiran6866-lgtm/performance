@@ -128,7 +128,7 @@ const formatDate = (date: any) => {
                 <div class="flex flex-col gap-1 mt-1">
                   <p class="text-sm text-slate-400 flex items-center gap-1.5">
                     <el-icon class="text-indigo-400"><Notebook /></el-icon>
-                    考核方案：<span class="text-slate-600 font-medium">{{ cycle.templateName || '通用考核模板' }} ({{ cycle.templateCount }}个模板)</span>
+                    考核模板：<span class="text-slate-600 font-medium">{{ cycle.templateName || '通用考核模板' }} </span>
                   </p>
                   <p class="text-xs text-slate-500 flex items-center gap-1">
                     <el-icon><Clock /></el-icon> {{ formatDate(cycle.startDate) }} ~ {{ formatDate(cycle.endDate) }}

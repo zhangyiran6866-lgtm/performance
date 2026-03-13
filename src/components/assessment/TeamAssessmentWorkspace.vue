@@ -11,6 +11,7 @@ defineEmits(['switch-tab']);
 const teamCycleList = ref<PerformanceCycleRespVO[]>([]);
 const loading = ref(false);
 const total = ref(0);
+const currentDeptId = ref<string | number>('');
 const currentDeptName = ref('-');
 const userStore = useUserStore();
 const queryParams = ref({
@@ -50,6 +51,7 @@ const fetchList = async () => {
       }
     }
 
+    currentDeptId.value = finalDeptId || '';
     currentDeptName.value = finalDeptName || '-';
 
     const res: any = await getDepartmentPerformance({
@@ -117,12 +119,12 @@ const formatDate = (date: any) => {
                   </h3>
                   <el-tag
                     v-if="cycle.stage"
-                    :type="cycle.stage === 'ARCHIVED' ? 'info' : (cycle.stage === 'RATING' ? 'warning' : 'success')"
+                    :type="['ARCHIVED', 'TO_BE_OPENED'].includes(cycle.stage) ? 'info' : (cycle.stage === 'RATING' ? 'warning' : 'success')"
                     effect="light"
                     size="small"
                     class="custom-tag"
                   >
-                    {{ cycle.stage === 'GOAL_SETTING' ? '目标设定' : (cycle.stage === 'PUBLISHED' ? '待签署' : (cycle.stage === 'RATING' ? '打分中' : '已归档')) }}
+                    {{ cycle.stage === 'TO_BE_OPENED' ? '待开启' : (cycle.stage === 'GOAL_SETTING' ? '目标设定' : (cycle.stage === 'PUBLISHED' ? '待签署' : (cycle.stage === 'RATING' ? '打分中' : '已归档'))) }}
                   </el-tag>
                 </div>
                 <div class="flex flex-col gap-1 mt-1">
@@ -157,7 +159,8 @@ const formatDate = (date: any) => {
                   type="primary" 
                   plain 
                   class="custom-action-btn"
-                  @click="$emit('switch-tab', 'team_goals')"
+                  :disabled="cycle.stage === 'TO_BE_OPENED'"
+                  @click="$emit('switch-tab', 'team_goals', cycle, currentDeptId)"
                 >
                   <template #icon>
                     <el-icon><Edit /></el-icon>
@@ -168,7 +171,8 @@ const formatDate = (date: any) => {
                   type="success" 
                   plain 
                   class="custom-action-btn"
-                  @click="$emit('switch-tab', 'team_rating')"
+                  :disabled="['GOAL_SETTING', 'PUBLISHED', 'TO_BE_OPENED'].includes(cycle.stage)"
+                  @click="$emit('switch-tab', 'team_rating', cycle, currentDeptId)"
                 >
                   <template #icon>
                     <el-icon><TrendCharts /></el-icon>

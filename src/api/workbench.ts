@@ -162,4 +162,14 @@ export function getEmployeePerformance(params: GetEmployeePerformanceParams) {
     });
 }
 
+// 员工考核目标确认
+export function confirmEmployeePerformance(params: { userId: number; cycleId: number }) {
+    return request({
+        url: '/human/performance-user-target/userConfirmNew',
+        method: 'get',
+        params,
+    });
+}
+
+
 

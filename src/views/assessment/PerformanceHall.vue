@@ -6,11 +6,14 @@
 -->
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { BarChart3 as BarChart3Icon } from 'lucide-vue-next';
+import { 
+  BarChart3 as BarChart3Icon, 
+  Calendar as CalendarIcon
+} from 'lucide-vue-next';
 import {
   Medal as Award,
   User as UserCircle,
-  Unlock,
+  Unlock
 } from '@element-plus/icons-vue';
 
 import MyAssessmentWorkspace from '@/components/assessment/MyAssessmentWorkspace.vue';
@@ -32,6 +35,18 @@ const userRole = ref<'employee' | 'manager'>('manager');
 
 // Navigation state
 const activeTab = ref('my_performance');
+const selectedTeamCycle = ref<any>(null);
+const currentDeptId = ref<string | number>('');
+
+const handleSwitchTab = (tab: string, cycle: any, deptId?: string | number) => {
+  activeTab.value = tab;
+  if (cycle) {
+    selectedTeamCycle.value = cycle;
+  }
+  if (deptId) {
+    currentDeptId.value = deptId;
+  }
+};
 
 // Map internal workspace state to top-level navigation tab
 const navTab = computed({
@@ -48,12 +63,19 @@ const navTab = computed({
 
 // Phase status UI mapping
 const phaseInfo = computed(() => {
-  switch (currentCycle.phase) {
+  const phase = (cycleProgressDetail.value?.stage || selectedTeamCycle.value?.stage || currentCycle.phase).toLowerCase();
+  switch (phase) {
   case 'goal_setting':
     return {
       label: '目标设定中',
       color: 'bg-blue-500',
       description: '当前正在为下属设定本期指标。',
+    };
+  case 'published':
+    return {
+      label: '待签署',
+      color: 'bg-indigo-500',
+      description: '指标已下发，等待员工签署。',
     };
   case 'rating':
     return {
@@ -61,17 +83,17 @@ const phaseInfo = computed(() => {
       color: 'bg-amber-500',
       description: '各级主管正根据业绩表现进行闭案评分。',
     };
-  case 'public_公示':
-    return {
-      label: '成绩公示中',
-      color: 'bg-purple-500',
-      description: '评分已完成，正处于异议复核期。',
-    };
-  case 'finished':
+  case 'archived':
     return {
       label: '已归档',
       color: 'bg-emerald-500',
       description: '本考核周期已正式结束。',
+    };
+  case 'to_be_opened':
+    return {
+      label: '待开启',
+      color: 'bg-slate-400',
+      description: '等待周期开启。',
     };
   default:
     return { label: '未开始', color: 'bg-slate-400', description: '等待周期开启。' };
@@ -79,8 +101,32 @@ const phaseInfo = computed(() => {
 });
 
 // Locking logic for different workspaces
-const isGoalSettingLocked = computed(() => currentCycle.phase !== 'goal_setting');
-const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
+const isGoalSettingLocked = computed(() => {
+  if (selectedTeamCycle.value) {
+    return selectedTeamCycle.value.stage !== 'GOAL_SETTING';
+  }
+  return currentCycle.phase !== 'goal_setting';
+});
+const isRatingLocked = computed(() => {
+  if (selectedTeamCycle.value) {
+    return selectedTeamCycle.value.stage !== 'RATING';
+  }
+  return currentCycle.phase !== 'rating';
+});
+
+const cycleProgressDetail = ref<any>(null);
+const handleUpdateCycleInfo = (data: any) => {
+  cycleProgressDetail.value = data;
+};
+
+const formatDate = (date: any) => {
+  if (!date) return '-';
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 </script>
 
 <template>
@@ -103,33 +149,41 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
             </div>
           </div>
           
-
-          
-          
-          
-           
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-6">
+          <!-- Main Information Card (Requested Style) -->
+          <div 
+            v-if="['team_goals', 'team_rating'].includes(activeTab)"
+            class="bg-slate-50 border border-slate-100/60 rounded-[20px] px-5 py-3 flex items-center gap-4 transition-all duration-300"
+          >
+            <div class="text-slate-400">
+              <el-icon :size="20"><CalendarIcon /></el-icon>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <h4 class="text-[16px] font-black text-slate-800 leading-tight truncate">
+                {{ cycleProgressDetail?.name || selectedTeamCycle?.name || currentCycle.title }}
+              </h4>
+              <p class="text-[14px] text-slate-400 font-bold mt-0.5 tracking-tight">
+                截止时间: {{ cycleProgressDetail ? formatDate(cycleProgressDetail.endDate) : (selectedTeamCycle ? (selectedTeamCycle.endDate?.split?.(' ')?.[0] || '2026-03-07') : currentCycle.expireDate) }}
+              </p>
+            </div>
+            <div 
+              class="ml-2 px-3 py-1.5 rounded-xl text-white text-[11px] font-black shadow-[0_4px_10px_-2px_rgba(245,158,11,0.4)] whitespace-nowrap"
+              :class="activeTab === 'team_rating' ? 'bg-amber-500' : phaseInfo.color"
+            >
+              {{ phaseInfo.label }}
+            </div>
+          </div>
+
+          <!-- Special Actions if in Rating Mode -->
           <template v-if="activeTab === 'team_rating' && !isRatingLocked">
-            <div class="flex items-center gap-6 mr-1">
-              <div class="flex flex-col items-end pt-1">
-                <div class="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
-                  <span>评分进度: <span class="text-indigo-600">2</span>/5 (40%)</span>
-                  <div class="w-1.5 h-1.5 rounded-full bg-slate-200 hidden sm:block" />
-                  <span class="hidden sm:inline">剩余时间: <span class="text-slate-700">14:22:05</span></span>
-                </div>
-                <div class="w-56 h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner hidden sm:block">
-                  <div class="h-full bg-indigo-600 w-[40%] transition-all" />
-                </div>
-              </div>
-              <el-button
+             <el-button
                 type="primary"
-                class="custom-submit-btn"
+                class="!bg-indigo-600 !border-indigo-600 !rounded-xl !h-10 !px-6 !font-bold shadow-lg shadow-indigo-600/20 transition-all hover:!scale-105 active:!scale-95"
               >
                 全部提交
               </el-button>
-            </div>
           </template>
         </div>
       </div>
@@ -174,16 +228,20 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
         <MyAssessmentWorkspace v-if="activeTab === 'my_performance'" />
         <TeamAssessmentWorkspace 
           v-else-if="activeTab === 'team_performance'" 
-          @switch-tab="(tab: string) => activeTab = tab"
+          @switch-tab="handleSwitchTab"
         />
         <TeamGoalWorkspace
           v-else-if="activeTab === 'team_goals'"
           :is-locked="isGoalSettingLocked"
+          :dept-id="currentDeptId"
+          :cycle-id="selectedTeamCycle?.id"
           @back="activeTab = 'team_performance'"
+          @update-cycle-info="handleUpdateCycleInfo"
         />
         <RatingWorkspace
           v-else-if="activeTab === 'team_rating'"
           :is-locked="isRatingLocked"
+          :dept-id="currentDeptId"
           @back="activeTab = 'team_performance'"
         />
 
@@ -197,7 +255,7 @@ const isRatingLocked = computed(() => currentCycle.phase !== 'rating');
           leave-to-class="opacity-0"
         >
           <div 
-            v-if="activeTab !== 'my_performance' && (activeTab === 'team_goals' ? isGoalSettingLocked : isRatingLocked)"
+            v-if="['team_goals', 'team_rating'].includes(activeTab) && (activeTab === 'team_goals' ? isGoalSettingLocked : isRatingLocked)"
             class="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none"
           >
             <div class="bg-blue-600/90 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-4 border border-blue-400/50">

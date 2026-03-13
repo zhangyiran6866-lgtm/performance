@@ -301,7 +301,7 @@ const goBack = () => router.push('/assessment/cycle');
       <div class="bg-indigo-50/40 border border-indigo-100/50 p-3 rounded-2xl flex items-start gap-4 text-left shadow-sm">
         <div class="w-2.5 h-2.5 bg-indigo-600 rounded-full mt-1.5 shrink-0 shadow-sm"></div>
         <div class="text-[15px] text-indigo-900/80 leading-relaxed font-medium">
-          该面板展示本次考评周期关联的所有<span class="font-bold">“考核模板（由配置中心下发）”</span>以及被分配到对应模板下的<span class="font-bold">“人员名单”</span>。点击模板可预览考核维度构成。
+          该面板展示本次考评周期关联的所有<span class="font-bold">“考核模板（由配置中心下发）”</span>以及被分配到对应模板下的<span class="font-bold">“人员名单”</span>。点击查看模板详情配置可预览考核维度构成。
         </div>
       </div>
 

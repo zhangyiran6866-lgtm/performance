@@ -8,7 +8,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { Warning, Edit, CircleCheck, TrendCharts, ArrowLeft, Calendar, Clock, Right, Aim, Operation as Calculator, PriceTag as Award, Notebook, } from '@element-plus/icons-vue';
 import { getDictOptions, getDictLabel } from '@/utils/dict';
-import { getEmployeePerformance, type PerformanceUserResultRespVO } from '@/api/workbench';
+import { getEmployeePerformance, confirmEmployeePerformance, type PerformanceUserResultRespVO } from '@/api/workbench';
 
 // Define Props
 interface Props {
@@ -19,6 +19,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 // ========== Mock Data ==========
+import { ElMessageBox, ElMessage } from 'element-plus';
+
 // ========== State & Data ==========
 const cycleList = ref<PerformanceUserResultRespVO[]>([]);
 const loading = ref(false);
@@ -29,7 +31,6 @@ const queryParams = ref({
 });
 
 const selectedCycleId = ref<number | null>(null);
-const confirmStatus = ref<Record<number, string>>({});
 
 // Fetch data from API
 const fetchList = async () => {
@@ -51,20 +52,57 @@ onMounted(() => {
   fetchList();
 });
 
-const selectedCycle = computed(() => cycleList.value.find((c) => c.id === selectedCycleId.value));
+const selectedCycle = computed(() => cycleList.value.find((c) => c.cycleId === selectedCycleId.value));
 
 const currentStatus = computed(() => {
   if (!selectedCycleId.value) return '0';
-  const cycle = cycleList.value.find((c) => c.id === selectedCycleId.value);
-  return (
-    confirmStatus.value[selectedCycleId.value] ||
-    (cycle ? String(cycle.status) : '0')
-  );
+  const cycle = cycleList.value.find((c) => c.cycleId === selectedCycleId.value);
+  return cycle ? String(cycle.status) : '0';
 });
 
 const handleConfirm = (cycleId: number) => {
-  // In a real app, this would call an API
-  confirmStatus.value[cycleId] = '2'; // Set to "Confirmed" status
+  if (!selectedCycle.value) return;
+  
+  ElMessageBox.confirm(
+    '您确定已完整阅读并确认签署该绩效目标吗？签署后将作为周期末计分的唯一法律基础。',
+    '签署确认',
+    {
+      confirmButtonText: '确定签署',
+      cancelButtonText: '取消',
+      type: 'warning',
+      draggable: true,
+      roundButton: true,
+    }
+  )
+    .then(async () => {
+      try {
+        loading.value = true;
+        const res: any = await confirmEmployeePerformance({
+          userId: selectedCycle.value!.userId,
+          cycleId: cycleId
+        });
+        
+        if (res.code === 0) {
+          ElMessage({
+            type: 'success',
+            message: '目标签署成功',
+            duration: 2000
+          });
+          // 刷新列表数据以更新状态
+          await fetchList();
+        } else {
+          ElMessage.error(res.msg || '签署失败，请稍后重试');
+        }
+      } catch (error) {
+        console.error('Confirm performance failed:', error);
+        ElMessage.error('网络请求失败');
+      } finally {
+        loading.value = false;
+      }
+    })
+    .catch(() => {
+      // User cancelled
+    });
 };
 
 // Utils
@@ -104,10 +142,10 @@ const qualitativeResults = computed(() => {
         <div class="grid gap-4">
           <el-card
             v-for="cycle in cycleList"
-            :key="cycle.id"
+            :key="cycle.cycleId"
             shadow="hover"
             class="custom-card-hover border-slate-200 !rounded-3xl overflow-hidden cursor-pointer animate-in fade-in slide-in-from-bottom-4 duration-500 group"
-            @click="selectedCycleId = cycle.id"
+            @click="selectedCycleId = cycle.cycleId"
           >
             <div
               class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
@@ -116,7 +154,7 @@ const qualitativeResults = computed(() => {
                 <div
                   :class="[
                     'h-14 w-14 rounded-2xl flex flex-col items-center justify-center font-bold leading-tight shrink-0 transition-colors',
-                    String(cycle.status) === '4' ? 'bg-slate-50 text-slate-400' :
+                    (cycle.stage === 'TO_BE_OPENED' || String(cycle.status) === '4') ? 'bg-slate-50 text-slate-400' :
                     String(cycle.status) === '0' ? 'bg-amber-50 text-amber-600' :
                     String(cycle.status) === '2' ? 'bg-indigo-50 text-indigo-600' :
                     String(cycle.status) === '1' ? 'bg-emerald-50 text-emerald-600' :
@@ -132,7 +170,15 @@ const qualitativeResults = computed(() => {
                     <h3 class="text-lg font-black text-slate-800 truncate group-hover:text-blue-700 transition-colors">
                       {{ cycle.cycleName || cycle.templateName }}
                     </h3>
-                    <template v-for="dict in getDictOptions('user_performance_status')" :key="dict.value">
+                    <el-tag
+                      v-if="cycle.stage === 'TO_BE_OPENED'"
+                      type="info"
+                      effect="light"
+                      class="custom-tag"
+                    >
+                      待开启
+                    </el-tag>
+                    <template v-else v-for="dict in getDictOptions('user_performance_status')" :key="dict.value">
                       <el-tag
                         v-if="dict.value === String(cycle.status)"
                         :type="dict.value === '4' ? 'info' : (dict.value === '0' ? 'warning' : 'success')"
@@ -231,7 +277,7 @@ const qualitativeResults = computed(() => {
                 type="danger"
                 class="!bg-[#f00000] !border-[#f00000] !rounded-xl !px-6 !py-5 shadow-lg shadow-red-100 hover:!bg-[#d00000] transition-all font-black"
                 :disabled="props.isLocked"
-                @click="handleConfirm(selectedCycle.id)"
+                @click="handleConfirm(selectedCycle.cycleId)"
               >
                 <el-icon class="mr-2"><Edit /></el-icon> 我已完整阅读，确认签署
               </el-button>
@@ -246,17 +292,17 @@ const qualitativeResults = computed(() => {
                 <span class="flex items-center gap-2 font-bold"><el-icon><Aim /></el-icon>考核指标详情(目标)</span>
               </template>
               
-              <div class="mt-2 space-y-8 pb-10">
+              <div class="mt-2 space-y-4 pb-10">
                 <!-- Status Notices -->
-                <div v-if="currentStatus === '4'" class="bg-slate-50 border-l-4 border-l-slate-400 border-y border-r border-y-slate-100 border-r-slate-100 p-6 rounded-r-2xl shadow-sm flex items-start gap-5 animate-in slide-in-from-top-4 duration-500">
+                <div v-if="currentStatus === '4'" class="bg-slate-50 border-l-4 border-l-slate-400 border-y border-r border-y-slate-100 border-r-slate-100 p-4 rounded-r-2xl shadow-sm flex items-start gap-4 animate-in slide-in-from-top-4 duration-500">
                   <div class="bg-slate-100 p-3 rounded-2xl shrink-0 shadow-sm text-slate-500"><el-icon :size="24"><Clock /></el-icon></div>
                   <div class="flex-1 text-left">
-                    <h4 class="text-slate-900 font-black text-lg">暂存草稿：目标尚未下发</h4>
+                    <h4 class="text-slate-900 font-black text-lg">待开启：目标尚未下发</h4>
                     <p class="text-slate-500 text-sm mt-1">当前绩效周期尚处于准备阶段，请在目标正式下发后再进行确认签署。</p>
                   </div>
                 </div>
 
-                <div v-if="currentStatus === '0'" class="bg-red-50 border-l-4 border-l-red-500 border-y border-r border-y-red-100 border-r-red-100 p-6 rounded-r-2xl shadow-sm flex items-start gap-5 animate-in slide-in-from-top-4 duration-500 active-notice">
+                <div v-if="currentStatus === '0'" class="bg-red-50 border-l-4 border-l-red-500 border-y border-r border-y-red-100 border-r-red-100 p-4 rounded-r-2xl shadow-sm flex items-start gap-4 animate-in slide-in-from-top-4 duration-500 active-notice">
                   <div class="bg-red-100 p-3 rounded-2xl shrink-0 shadow-sm"><el-icon :size="24" class="text-red-600"><Warning /></el-icon></div>
                   <div class="flex-1 text-left">
                     <h4 class="text-red-900 font-black text-lg">待确认：本月绩效核心目标</h4>

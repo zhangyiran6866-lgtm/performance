@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import {
   Search,
   CircleCheck as CheckCircle2,
@@ -15,25 +15,57 @@ import {
   InfoFilled as Info,
   ArrowLeft,
 } from '@element-plus/icons-vue';
+import { getUserByDept } from '@/api/system/dept/dept';
 
 const emit = defineEmits(['back']);
 
 // Define Props
 interface Props {
   isLocked?: boolean
+  deptId?: string | number
 }
 const props = withDefaults(defineProps<Props>(), {
   isLocked: false,
+  deptId: '',
 });
 
-// Mock Data
-const employees = [
-  { id: 'emp-001', name: '李小明', role: '初级销售', avatar: 'XM', status: 'pending_rate' },
-  { id: 'emp-002', name: '王大利', role: '资深销售', avatar: 'DL', status: 'pending_rate' },
-  { id: 'emp-003', name: '张美美', role: '初级销售', avatar: 'MM', status: 'rated' },
-  { id: 'emp-004', name: '赵铁柱', role: '店长助理', avatar: 'TZ', status: 'rated' },
-  { id: 'emp-005', name: '孙小圣', role: '初级销售', avatar: 'XS', status: 'pending_rate' },
-];
+// State & Data
+const searchQuery = ref('');
+const selectedEmpId = ref('');
+const employees = ref<any[]>([]);
+const loading = ref(false);
+
+const fetchEmployees = async () => {
+  if (!props.deptId) return;
+  try {
+    loading.value = true;
+    const res: any = await getUserByDept({ deptIds: [props.deptId] });
+    if (res.code === 0) {
+      employees.value = (res.data || []).map((user: any) => ({
+        id: String(user.id),
+        name: user.nickname || user.userName || '未知',
+        role: user.deptName || '员工',
+        avatar: (user.nickname || user.userName || '未知').substring(0, 1),
+        status: 'pending_rate', // Default status for demo
+      }));
+      if (employees.value.length > 0 && !selectedEmpId.value) {
+        selectedEmpId.value = employees.value[0].id;
+      }
+    }
+  } catch (error) {
+    console.error('Fetch employees failed:', error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchEmployees();
+});
+
+watch(() => props.deptId, () => {
+  fetchEmployees();
+});
 
 const resultIndicators = [
   {
@@ -116,17 +148,15 @@ const resultIndicators = [
   },
 ];
 
-const searchQuery = ref('');
-const selectedEmpId = ref('emp-001');
 const activeIndicatorTab = ref('all'); // all, quantitative, qualitative
 
 const qualitativeScores = ref<Record<string, number>>({});
 const qualitativeComments = ref<Record<string, string>>({});
 
-const selectedEmp = computed(() => employees.find((e) => e.id === selectedEmpId.value));
+const selectedEmp = computed(() => employees.value.find((e) => e.id === selectedEmpId.value));
 
 const filteredEmployees = computed(() =>
-  employees.filter((e) => e.name.includes(searchQuery.value)),
+  employees.value.filter((e) => e.name.includes(searchQuery.value)),
 );
 
 const filteredIndicators = computed(() => {
@@ -139,9 +169,9 @@ const filteredIndicators = computed(() => {
 });
 
 const stats = computed(() => {
-  const total = employees.length;
-  const rated = employees.filter((e) => e.status === 'rated').length;
-  const pending = employees.filter((e) => e.status === 'pending_rate').length;
+  const total = employees.value.length;
+  const rated = employees.value.filter((e) => e.status === 'rated').length;
+  const pending = employees.value.filter((e) => e.status === 'pending_rate').length;
   const rate = total > 0 ? Math.round((rated / total) * 100) : 0;
   return { total, rated, pending, rate };
 });

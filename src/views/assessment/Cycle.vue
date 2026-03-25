@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { getStrDictOptions } from '@/utils/dict';
-import { getAssessmentPage, updateAssessmentStatus, type PerformanceCycleRespVO } from '@/api/assessment';
+import { getAssessmentPage, updateAssessmentStatus, exportEmployeeEvaluation, type PerformanceCycleRespVO } from '@/api/assessment';
 import dayjs from 'dayjs';
 import { ElMessage } from 'element-plus';
 import {
@@ -17,10 +17,14 @@ import {
   TrendingUp,
   Archive,
   Send,
+  Inbox,
+  Download,
 } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+defineOptions({ name: 'AssessmentCycle' });
 
 // ========== State & Pagination ==========
 const cycles = ref<PerformanceCycleRespVO[]>([]);
@@ -148,6 +152,35 @@ const handlePushStage = async (id: number | string, newStage: string) => {
     loading.value = false;
   }
 };
+
+const handleExport = async (cycleId: number) => {
+  try {
+    loading.value = true;
+    const res: any = await exportEmployeeEvaluation(cycleId);
+    
+    // 如果后端直接返回的是二进制流内容（由于我们在 API 层配置了 responseType: 'blob'，res 此时就是 Blob 对象）
+    const blob = res instanceof Blob ? res : new Blob([res]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // 生成文件名，如：考核指标导出_20260324.xls
+    const fileName = `考核指标导出_${dayjs().format('YYYYMMDD')}.xls`;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    
+    // 清理
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    ElMessage.success('导出成功，正在下载...');
+  } catch (error) {
+    console.error('导出失败:', error);
+    ElMessage.error('导出失败，请稍后重试');
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <template>
@@ -187,168 +220,201 @@ const handlePushStage = async (id: number | string, newStage: string) => {
 
       <div 
         v-loading="loading"
-        class="grid gap-4"
+        class="grid gap-4 min-h-[200px]"
       >
-        <Card
-          v-for="cycle in cycles"
-          :key="cycle.id"
-          :class="[
-            'shadow-sm overflow-hidden border-l-4 transition-all',
-            String(cycle.stage).toUpperCase() === 'GOAL_SETTING' ? 'border-l-amber-500 bg-amber-50/10' : 'border-l-slate-200',
-          ]"
-        >
-          <CardContent class="p-0">
-            <div class="flex flex-col lg:flex-row">
-              <!-- Left Main Info -->
-              <div class="flex-1 py-4 px-6 border-b lg:border-b-0 lg:border-r border-slate-100">
-                <div class="flex justify-between items-start mb-4">
-                  <div>
-                    <h3
-                      class="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors"
-                    >
-                      {{ cycle.name }}
-                    </h3>
-                    <div
-                      class="flex flex-col md:flex-row md:items-center gap-y-2 gap-x-6 mt-3 text-sm text-slate-500"
-                    >
-                      <div class="flex items-center text-slate-600 font-medium">
-                        <CalendarDays class="mr-1.5 h-4 w-4 text-slate-400" />
-                        {{ formatDate(cycle.startDate) }} - {{ formatDate(cycle.endDate) }}
-                      </div>
-                      <div class="flex items-start">
-                        <Clock class="mr-1.5 h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                        <div>
-                          <span class="text-slate-500">
-                            包含 {{ cycle.templateCount }} 个考核模板:
-                          </span>
-                          <p
-                            class="text-xs text-slate-700 font-medium line-clamp-1 mt-1"
-                          >
-                            {{ cycle.templateName }}
-                          </p>
+        <template v-if="cycles.length > 0">
+          <Card
+            v-for="cycle in cycles"
+            :key="cycle.id"
+            :class="[
+              'shadow-sm overflow-hidden border-l-4 transition-all',
+              String(cycle.stage).toUpperCase() === 'GOAL_SETTING' ? 'border-l-amber-500 bg-amber-50/10' : 'border-l-slate-200',
+            ]"
+          >
+            <CardContent class="p-0">
+              <div class="flex flex-col lg:flex-row">
+                <!-- Left Main Info -->
+                <div class="flex-1 py-4 px-6 border-b lg:border-b-0 lg:border-r border-slate-100">
+                  <div class="flex justify-between items-start mb-4">
+                    <div>
+                      <h3
+                        class="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors"
+                      >
+                        {{ cycle.name }}
+                      </h3>
+                      <div
+                        class="flex flex-col md:flex-row md:items-center gap-y-2 gap-x-6 mt-3 text-sm text-slate-500"
+                      >
+                        <div class="flex items-center text-slate-600 font-medium">
+                          <CalendarDays class="mr-1.5 h-4 w-4 text-slate-400" />
+                          {{ formatDate(cycle.startDate) }} - {{ formatDate(cycle.endDate) }}
+                        </div>
+                        <div class="flex items-start">
+                          <Clock class="mr-1.5 h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <div>
+                            <span class="text-slate-500">
+                              包含 {{ cycle.templateCount }} 个考核模板:
+                            </span>
+                            <p
+                              class="text-xs text-slate-700 font-medium line-clamp-1 mt-1"
+                            >
+                              {{ cycle.templateName }}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <Badge
-                    variant="outline"
-                    :class="getStageBadge(cycle.stage).class"
-                  >
-                    {{ getStageBadge(cycle.stage).text }}
-                  </Badge>
-                </div>
-
-                <!-- Sub Progress if in goal setting -->
-                <div
-                  v-if="String(cycle.stage).toUpperCase() === 'GOAL_SETTING'"
-                  class="mt-4 bg-slate-50 rounded-lg p-4 border border-slate-100"
-                >
-                  <div class="flex justify-between text-sm mb-2">
-                    <span class="font-medium text-slate-700">考核目标设定进度</span>
-                    <span class="text-xs text-slate-500">
-                      已签署 {{ cycle.signedCount || 0 }} / 已下发 {{ cycle.notConfirmCount || 0 }} / 总计 {{ cycle.totalCount || 0 }} 人
-                    </span>
-                  </div>
-                  <div class="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden flex">
-                    <!-- 已签署部分 (绿色) -->
-                    <div
-                      class="h-full bg-emerald-500 transition-all duration-500"
-                      :style="{ width: `${((cycle.signedCount || 0) / (cycle.totalCount || 1)) * 100}%` }"
-                      title="已签署"
-                    />
-                    <!-- 已下发但未签署部分 (蓝色) -->
-                    <div
-                      class="h-full bg-blue-500 transition-all duration-500"
-                      :style="{ width: `${(( (cycle.notConfirmCount || 0) - (cycle.signedCount || 0) ) / (cycle.totalCount || 1)) * 100}%` }"
-                      title="已下发"
-                    />
-                  </div>
-                  <div class="mt-3 flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                      <div class="flex items-center gap-1.5 grayscale-[0.5]">
-                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        <span class="text-[13px] text-slate-500">员工已签署</span>
-                      </div>
-                      <div class="flex items-center gap-1.5 grayscale-[0.5]">
-                        <div class="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                        <span class="text-[13px] text-slate-500">主管已下发</span>
-                      </div>
-                    </div>
-                    <div
-                      class="text-[14px] text-amber-600 flex items-center bg-amber-50 px-2 py-1 rounded border border-amber-100/50"
+                    <Badge
+                      variant="outline"
+                      :class="getStageBadge(cycle.stage).class"
                     >
-                      ⚠️ 请催促未下发的主管尽快完成员工本月的基数与权重设定。
+                      {{ getStageBadge(cycle.stage).text }}
+                    </Badge>
+                  </div>
+
+                  <!-- Sub Progress if in goal setting -->
+                  <div
+                    v-if="String(cycle.stage).toUpperCase() === 'GOAL_SETTING'"
+                    class="mt-4 bg-slate-50 rounded-lg p-4 border border-slate-100"
+                  >
+                    <div class="flex justify-between text-sm mb-2">
+                      <span class="font-medium text-slate-700">考核目标设定进度</span>
+                      <span class="text-xs text-slate-500">
+                        已签署 {{ cycle.signedCount || 0 }} / 已下发 {{ cycle.notConfirmCount || 0 }} / 总计 {{ cycle.totalCount || 0 }} 人
+                      </span>
+                    </div>
+                    <div class="h-2.5 w-full bg-slate-200 rounded-full overflow-hidden flex">
+                      <!-- 已签署部分 (绿色) -->
+                      <div
+                        class="h-full bg-emerald-500 transition-all duration-500"
+                        :style="{ width: `${((cycle.signedCount || 0) / (cycle.totalCount || 1)) * 100}%` }"
+                        title="已签署"
+                      />
+                      <!-- 已下发但未签署部分 (蓝色) -->
+                      <div
+                        class="h-full bg-blue-500 transition-all duration-500"
+                        :style="{ width: `${(( (cycle.notConfirmCount || 0) - (cycle.signedCount || 0) ) / (cycle.totalCount || 1)) * 100}%` }"
+                        title="已下发"
+                      />
+                    </div>
+                    <div class="mt-3 flex items-center justify-between">
+                      <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1.5 grayscale-[0.5]">
+                          <div class="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <span class="text-[13px] text-slate-500">员工已签署</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 grayscale-[0.5]">
+                          <div class="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          <span class="text-[13px] text-slate-500">主管已下发</span>
+                        </div>
+                      </div>
+                      <div
+                        class="text-[14px] text-amber-600 flex items-center bg-amber-50 px-2 py-1 rounded border border-amber-100/50"
+                      >
+                        ⚠️ 请催促未下发的主管尽快完成员工本月的基数与权重设定。
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                <!-- Right Actions Area -->
+                <div
+                  class="w-full lg:w-48 bg-slate-50/50 py-4 px-6 flex flex-row lg:flex-col items-center justify-center gap-3"
+                >
+                  <!-- 非已归档状态才显示“查看周期详情”按钮 -->
+                  <template v-if="String(cycle.stage).toUpperCase() !== 'ARCHIVED'">
+                    <Button
+                      variant="outline"
+                      class="w-full bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
+                      as-child
+                    >
+                      <RouterLink :to="`/assessment/cycle/${cycle.id}/stats`">
+                        <Eye class="mr-2 h-4 w-4 text-slate-400" />
+                        查看周期详情
+                      </RouterLink>
+                    </Button>
+
+                    <Button
+                      v-if="String(cycle.stage).toUpperCase() === 'GOAL_SETTING'"
+                      variant="outline"
+                      class="w-full bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
+                      @click="handleExport(cycle.id)"
+                    >
+                      <Download class="mr-2 h-4 w-4 text-slate-400" />
+                      导出考核指标
+                    </Button>
+                  </template>
+
+                  <template v-if="String(cycle.stage).toUpperCase() === 'TO_BE_OPENED'">
+                    <Button
+                      variant="outline"
+                      class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-100 shadow-sm"
+                      @click="openGoalDialog(cycle.id)"
+                    >
+                      <Rocket class="mr-2 h-4 w-4" />
+                      开启目标设定
+                    </Button>
+                  </template>
+                  <template v-else-if="String(cycle.stage).toUpperCase() === 'GOAL_SETTING'">
+                    <Button
+                      variant="outline"
+                      class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-100 shadow-sm"
+                      @click="openEvalDialog(cycle.id)"
+                    >
+                      <TrendingUp class="mr-2 h-4 w-4" />
+                      开启绩效打分
+                    </Button>
+                  </template>
+
+                  <template v-else-if="String(cycle.stage).toUpperCase() === 'RATING'">
+                    <Button
+                      variant="outline"
+                      class="w-full bg-amber-50 hover:bg-amber-100 text-amber-600 border-amber-100 shadow-sm"
+                      @click="openFinishDialog(cycle.id)"
+                    >
+                      <Archive class="mr-2 h-4 w-4" />
+                      关闭本周期
+                    </Button>
+                  </template>
+
+                  <template v-else-if="String(cycle.stage).toUpperCase() === 'ARCHIVED'">
+                    <Button
+                      variant="outline"
+                      class="w-full bg-white hover:bg-slate-50 text-emerald-600 border-emerald-100 shadow-sm"
+                      as-child
+                    >
+                      <RouterLink :to="`/assessment/cycle/${cycle.id}/stats`">
+                        <BarChart3 class="mr-2 h-4 w-4 text-emerald-500" />
+                        查看绩效结果
+                      </RouterLink>
+                    </Button>
+                  </template>
+                </div>
               </div>
-
-              <!-- Right Actions Area -->
-              <div
-                class="w-full lg:w-48 bg-slate-50/50 py-4 px-6 flex flex-row lg:flex-col items-center justify-center gap-3"
-              >
-                <!-- 非已归档状态才显示“查看周期详情”按钮 -->
-                <template v-if="String(cycle.stage).toUpperCase() !== 'ARCHIVED'">
-                  <Button
-                    variant="outline"
-                    class="w-full bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm"
-                    as-child
-                  >
-                    <RouterLink :to="`/assessment/cycle/${cycle.id}/stats`">
-                      <Eye class="mr-2 h-4 w-4 text-slate-400" />
-                      查看周期详情
-                    </RouterLink>
-                  </Button>
-                </template>
-
-                <template v-if="String(cycle.stage).toUpperCase() === 'TO_BE_OPENED'">
-                  <Button
-                    variant="outline"
-                    class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-100 shadow-sm"
-                    @click="openGoalDialog(cycle.id)"
-                  >
-                    <Rocket class="mr-2 h-4 w-4" />
-                    开启目标设定
-                  </Button>
-                </template>
-                <template v-else-if="String(cycle.stage).toUpperCase() === 'GOAL_SETTING'">
-                  <Button
-                    variant="outline"
-                    class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border-emerald-100 shadow-sm"
-                    @click="openEvalDialog(cycle.id)"
-                  >
-                    <TrendingUp class="mr-2 h-4 w-4" />
-                    开启绩效打分
-                  </Button>
-                </template>
-
-                <template v-else-if="String(cycle.stage).toUpperCase() === 'RATING'">
-                  <Button
-                    variant="outline"
-                    class="w-full bg-amber-50 hover:bg-amber-100 text-amber-600 border-amber-100 shadow-sm"
-                    @click="openFinishDialog(cycle.id)"
-                  >
-                    <Archive class="mr-2 h-4 w-4" />
-                    关闭本周期
-                  </Button>
-                </template>
-
-                <template v-else-if="String(cycle.stage).toUpperCase() === 'ARCHIVED'">
-                  <Button
-                    variant="outline"
-                    class="w-full bg-white hover:bg-slate-50 text-emerald-600 border-emerald-100 shadow-sm"
-                    as-child
-                  >
-                    <RouterLink :to="`/assessment/cycle/${cycle.id}/stats`">
-                      <BarChart3 class="mr-2 h-4 w-4 text-emerald-500" />
-                      查看绩效结果
-                    </RouterLink>
-                  </Button>
-                </template>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </template>
+        <div 
+          v-else-if="!loading" 
+          class="flex flex-col items-center justify-center py-24 bg-white/40 rounded-3xl border border-dashed border-slate-200 shadow-sm"
+        >
+          <div class="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+            <Inbox class="w-10 h-10 text-slate-400" />
+          </div>
+          <h3 class="text-xl font-bold text-slate-900 mb-2">暂无考核周期实例数据</h3>
+          <p class="text-slate-500 text-center max-w-sm leading-relaxed px-6">
+            系统尚未生成任何考核周期。根据预设规则，每月25日系统将根据生效模板自动生成下月的考核实例。
+          </p>
+          <div class="mt-8 flex items-center gap-3">
+            <Button
+              variant="outline"
+              class="bg-white text-slate-600"
+              @click="fetchCycles"
+            >
+              刷新重试
+            </Button>
+          </div>
+        </div>
       </div>
 
       <!-- Pagination -->

@@ -1,5 +1,5 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessageBox } from 'element-plus';
 import { removeToken } from './auth';
 
 export const isRelogin = { show: false };
@@ -8,7 +8,7 @@ let isRefreshToken = false;
 let requestList: any[] = [];
 
 // 仿照 c-center: base_url = target url + api preffix
-const baseURL = (import.meta.env.VITE_API_TARGET_URL || '') + (import.meta.env.VITE_API_BASE_URL || '/api');
+const baseURL = (import.meta.env.VITE_API_TARGET_URL || '') + (import.meta.env.VITE_API_BASE_URL || '/admin-api');
 
 
 // 创建 axios 实例
@@ -43,7 +43,8 @@ service.interceptors.request.use(
     }
     
     // 参照 c-center 行为：可能由于临时限制或者业务写死，这里强制传递临时租户ID '1'
-    config.headers['tenant-id'] = tenantId || '1';
+    // 修复：对包含中文字符的 tenant-id 添加 encodeURIComponent 转码，避免 setRequestHeader 异常
+    config.headers['tenant-id'] = encodeURIComponent(tenantId || '1');
     
     // 如果有环境 tag 也带上
     const serviceTag = import.meta.env.VITE_APP_SERVICE_TAG;
@@ -136,7 +137,6 @@ service.interceptors.response.use(
         });
       }
     } else if (code === 500) {
-      ElMessage.error(msg);
       return Promise.reject(new Error(msg));
     }
     
@@ -225,12 +225,10 @@ service.interceptors.response.use(
       }
     }
     
-    // 使用 Element Plus 弹出统一提示信息
-    ElMessage({
-      message,
-      type: 'error',
-      duration: 3000,
-    });
+    // 如果有特定的错误信息，将其赋值给 error.message，供调用方使用
+    if (message) {
+      error.message = message;
+    }
     
     return Promise.reject(error);
   },

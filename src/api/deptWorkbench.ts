@@ -237,6 +237,10 @@ export interface PerformanceUserIndicatorRespVO {
      */
     templateName?: string;
     /**
+     * 用户目标状态
+     */
+    temporaryStatus?: number;
+    /**
      * 用户id
      */
     userId?: number;
@@ -411,6 +415,15 @@ export interface PerformanceCycleRespVO {
 export function getDepartmentUserTargetProgress(params:{cycleId: number,deptId: number}) {
     return request({
         url: '/human/performance-cycle/getPerformanceCycleInfo',
+        method: 'get',
+        params,
+    });
+}
+
+// 团队目标下发确认
+export function confirmDepartmentUserTarget(params:{cycleId: number,userId: number}) {
+    return request({
+        url: '/human/performance-user-target/singleDispatch',
         method: 'get',
         params,
     });

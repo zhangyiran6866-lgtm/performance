@@ -60,6 +60,7 @@ const formData = ref({
   mapField: '',
   evaluationCycle: 'month',
   ruleId: 0 as number,
+  description: '',
 });
 
 const previewValue = ref(85);
@@ -106,6 +107,15 @@ const isQualitativeGrade = computed(() => {
   return currentRule.value.type === 'QUALITATIVE_GRADE';
 });
 
+/** 判断当前规则是否为领导直接打分 */
+const isDirectScoring = computed(() => {
+  if (!currentRule.value) return false;
+  return (
+    currentRule.value.type === 'DIRECT_SCORING' ||
+    currentRule.value.name?.includes('领导直接打分') 
+  );
+});
+
 /** 加载规则列表 */
 const fetchRules = async () => {
   ruleLoading.value = true;
@@ -137,6 +147,8 @@ const getRuleTypeLabel = (rule: RuleItem | null) => {
     return '任务节点';
   case 'QUALITATIVE_GRADE':
     return '定性分级';
+  case 'DIRECT_SCORING':
+    return '领导直接打分';
   default:
     return '通用计分';
   }
@@ -162,6 +174,7 @@ watch(
           mapField: props.initialData.mapField || '',
           evaluationCycle: props.initialData.evaluationCycle || 'month',
           ruleId: Number(props.initialData.ruleId) || (ruleOptions.value[0]?.id ?? 0),
+          description: props.initialData.description || '',
         };
       } else {
         formData.value = {
@@ -170,6 +183,7 @@ watch(
           mapField: '',
           evaluationCycle: 'month',
           ruleId: ruleOptions.value[0]?.id ?? 0,
+          description: '',
         };
       }
     }
@@ -199,7 +213,7 @@ const handleSave = async () => {
     category: formData.value.category,
     evaluationCycle: formData.value.evaluationCycle,
     ruleId: formData.value.ruleId,
-    description: ruleDesc,
+    description: formData.value.description,
   };
 
   if (props.initialData?.id) {
@@ -226,8 +240,7 @@ const handleSave = async () => {
       ElMessage.error(res.msg || '保存失败，请稍后重试');
     }
   } catch (error) {
-    console.error('Save failed:', error);
-    ElMessage.error('保存失败，请稍后重试');
+    ElMessage.error('该指标已存在');
   } finally {
     saveLoading.value = false;
   }
@@ -242,7 +255,8 @@ const stepScore = computed(() => {
   const val = previewValue.value;
   if (val < min) return 0;
   if (val >= max) return 100;
-  return Math.round(((val - min) / (max - min)) * 100);
+  // 在零分线和满分线之间，直接取实际完成率数值作为分数
+  return Math.round(val);
 });
 
 const budgetScore = computed(() => {
@@ -286,6 +300,17 @@ const onRuleChange = (v: number) => {
             v-model="formData.name"
             placeholder="例如: 月度大单品销售达成率"
             class="custom-input-h10"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label class="text-slate-700 font-semibold text-sm">指标描述</label>
+          <el-input
+            v-model="formData.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入指标的详细描述，例如考核标准、统计口径等"
+            class="custom-textarea"
           />
         </div>
 
@@ -346,14 +371,27 @@ const onRuleChange = (v: number) => {
               :value="rule.id"
             />
           </el-select>
-          <p class="text-xs text-slate-500 ml-1 mt-1.5 leading-relaxed">
-            {{ currentRule?.description || '该规则决定了该指标在月末是如何将"实际业务数值"自动转化成"绩效考分"的。' }}
-          </p>
+        </div>
+
+        <!-- Manager Direct scoring preview (领导直接打分) -->
+        <div
+          v-if="isDirectScoring"
+          class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center text-sm text-slate-500 min-h-[100px] shadow-sm italic text-center animate-in fade-in"
+        >
+          该指标类型最终考核得分，以领导在月底打分录入的实际分值为准。
+        </div>
+
+        <!-- Qualitative grade preview (定性分级/等级评分) -->
+        <div
+          v-else-if="isQualitativeGrade"
+          class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center text-sm text-slate-500 min-h-[100px] shadow-sm italic animate-in fade-in"
+        >
+          该指标类型最终考核得分，以最终等级评分规则为准。
         </div>
 
         <!-- Step rules preview (阶梯制) -->
         <div
-          v-if="isStepRule"
+          v-else-if="isStepRule"
           class="space-y-6 mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden"
         >
           <div class="flex justify-between items-center mb-2">
@@ -431,31 +469,7 @@ const onRuleChange = (v: number) => {
           </div>
         </div>
 
-        <!-- Qualitative grade preview (定性分级) -->
-        <div
-          v-else-if="isQualitativeGrade"
-          class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 shadow-sm"
-        >
-          <p class="text-sm font-semibold text-slate-700 mb-3">
-            定性分级预设
-          </p>
-          <div class="grid grid-cols-2 gap-2">
-            <div
-              v-for="grade in (parsedExpression.grades || [])"
-              :key="grade.name"
-              class="flex items-center justify-between p-2.5 bg-white rounded-lg border border-slate-100"
-            >
-              <span class="text-sm font-medium text-slate-700">{{ grade.name }}</span>
-              <el-tag
-                size="small"
-                effect="plain"
-                class="font-bold"
-              >
-                {{ grade.score }} 分
-              </el-tag>
-            </div>
-          </div>
-        </div>
+
 
         <!-- Task node preview (任务节点二元型) -->
         <div
@@ -470,7 +484,7 @@ const onRuleChange = (v: number) => {
           v-else
           class="mt-4 p-5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center text-sm text-slate-500 min-h-[100px] shadow-sm"
         >
-          通用打分预设，直接由考核人在月底输入 0-100 的数值。
+          通用计分逻辑：直接由考核人在月底根据实际情况，输入 0-100 之间的考核分值。
         </div>
       </div>
     </div>
@@ -540,6 +554,17 @@ const onRuleChange = (v: number) => {
 .custom-select-h10 :deep(.el-input__wrapper) {
   height: 40px;
   border-radius: 0.5rem;
+}
+
+.custom-textarea :deep(.el-textarea__inner) {
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  background-color: white;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+}
+
+.custom-textarea :deep(.el-textarea__inner:focus) {
+  box-shadow: 0 0 0 1px #2563eb inset;
 }
 
 .custom-rule-select :deep(.el-input__wrapper) {

@@ -3,8 +3,10 @@ import { ref, reactive, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { User, Lock, Loading } from '@element-plus/icons-vue';
-import { getTenantIdByName, socialAuthRedirect, loginByPassword } from '@/api/login';
+import { getTenantIdByName, getTenantByWebsite, socialAuthRedirect, loginByPassword } from '@/api/login';
 import { setToken, setTenantId, getTenantId } from '@/utils/auth';
+
+defineOptions({ name: 'Login' });
 
 const router = useRouter();
 const route = useRoute();
@@ -23,50 +25,87 @@ const loginForm = reactive({
   rememberMe: true,
 });
 
+// 根据域名自动获取租户信息
+const resolveTenantByWebsite = async () => {
+  try {
+    const website = window.location.host;
+    const res: any = await getTenantByWebsite(website);
+    if (res && (res.data || res.id)) {
+      const data = res.data || res;
+      loginForm.tenantName = data.name || loginForm.tenantName;
+      setTenantId(data.id);
+      return data.id;
+    }
+  } catch (error) {
+    console.warn('Failed to get tenant by website, falling back to name lookup.');
+  }
+  return null;
+};
+
+// 获取租户 ID (按名称)
+const resolveTenantByForm = async () => {
+  try {
+    const tenantRes: any = await getTenantIdByName(loginForm.tenantName);
+    const tenantId = tenantRes?.data ?? tenantRes;
+    if (tenantId) {
+      setTenantId(tenantId);
+      return tenantId;
+    }
+  } catch (error) {
+    console.error('Failed to get tenant ID by name:', error);
+  }
+  return null;
+};
+
+// 综合租户解析
+const ensureTenantId = async () => {
+  let id = getTenantId();
+  if (id) return id;
+
+  id = await resolveTenantByWebsite();
+  if (id) return id;
+
+  return await resolveTenantByForm();
+};
+
 // 加载二维码链接
 const loadSocialLogin = async () => {
   try {
-    // 关键修复：c-center在拉取二维码前必须先获取并设置一次租户 ID！
-    if (!getTenantId()) {
-      const tenantRes = await getTenantIdByName(loginForm.tenantName || '卓希平台');
-      if (tenantRes && tenantRes.data !== undefined) {
-        setTenantId(tenantRes.data);
-      } else if (tenantRes !== undefined) {
-        setTenantId(tenantRes as any);
-      }
-    }
+    // 1. 确保租户 ID 已设置
+    await ensureTenantId();
 
-    // 复刻 c-center 线上回调地址
-    const encodedParams = encodeURIComponent('type=30&redirect=/configuration');
+    // 2. 复刻 c-center 线上回调地址逻辑
+    const redirect = route.query.redirect as string || '/daily-report';
+    const encodedParams = encodeURIComponent(`type=30&redirect=${redirect}`);
     const redirectUri = 'https://www.zhuoxi.group/social-login?' + encodedParams;
     
-    // 发起带租户信息的社交授权请求
-    const res = await socialAuthRedirect(30, encodeURIComponent(redirectUri));
-    // 返回真实的跳转URL给 iframe
-    if (res && res.data) {
-      iframeUrl.value = res.data;
-    } else if (typeof res === 'string') {
-      iframeUrl.value = res;
+    // 3. 发起带租户信息的社交授权请求
+    const res: any = await socialAuthRedirect(30, encodeURIComponent(redirectUri));
+    
+    // 4. 返回真实的跳转URL给 iframe
+    const url = res?.data ?? res;
+    if (url && typeof url === 'string') {
+      iframeUrl.value = url;
     }
   } catch (error) {
     console.error('Failed to load QR code login:', error);
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   // 读取记住的账号密码
   import('@/utils/auth').then((authUtil) => {
     const cachedForm = authUtil.getLoginForm();
     if (cachedForm) {
+      loginForm.tenantName = cachedForm.tenantName || loginForm.tenantName;
       loginForm.username = cachedForm.username || loginForm.username;
       loginForm.password = cachedForm.password || loginForm.password;
       loginForm.rememberMe = cachedForm.rememberMe ?? loginForm.rememberMe;
-      // 注意：由于未引入加密中间件，我们在设置 storage 的时候存为明文或简单对象
     }
   });
 
-  // onMounted 阶段即自动执行获取并挂载扫码 iframe
-  loadSocialLogin();
+  // 挂载时即尝试初始化租户并获取二维码
+  await loadSocialLogin();
 });
 
 const handlePasswordLogin = async () => {
@@ -77,33 +116,24 @@ const handlePasswordLogin = async () => {
 
   loading.value = true;
   try {
-    // 1. 先尝试获取并设置租户 ID
-    if (!getTenantId()) {
-      const tenantRes = await getTenantIdByName(loginForm.tenantName);
-      if (tenantRes && tenantRes.data !== undefined) {
-        setTenantId(tenantRes.data);
-      } else if (tenantRes !== undefined) {
-        setTenantId(tenantRes as any);
-      }
-    }
+    // 1. 确保租户 ID 已设置
+    await ensureTenantId();
 
-    // 2. 发起登录请求（c-center 底层采用 axios 的 params 处理参数，因此直接对象即可）
-    const res = await loginByPassword(loginForm);
+    // 2. 发起登录请求
+    const res: any = await loginByPassword(loginForm);
+    const tokenData = res?.data ?? res;
 
-    if (res && (res.access_token || res.data?.access_token || typeof res === 'string')) {
-      // 传递完整的 res，auth.ts 能够解析提取 access_token 和 refresh_token
-      setToken(res.data || res);
+    if (tokenData && (tokenData.access_token || tokenData.accessToken)) {
+      setToken(tokenData);
       
       // 保存表单信息（记住密码）
-      if (loginForm.rememberMe) {
-        import('@/utils/auth').then((authUtil) => {
+      import('@/utils/auth').then((authUtil) => {
+        if (loginForm.rememberMe) {
           authUtil.setLoginForm(loginForm);
-        });
-      } else {
-        import('@/utils/auth').then((authUtil) => {
+        } else {
           authUtil.removeLoginForm();
-        });
-      }
+        }
+      });
 
       // 3. 复刻 c-center：获取个人信息并交由 store 接管存储
       const { useUserStoreWithOut } = await import('@/store/modules/user');
@@ -112,10 +142,10 @@ const handlePasswordLogin = async () => {
 
       ElMessage.success('登录成功');
       
-      const redirectPath = route.query.redirect as string || '/configuration';
+      const redirectPath = route.query.redirect as string || '/daily-report';
       router.push({ path: redirectPath });
     } else {
-      ElMessage.error(res?.msg || '获取不到登录权限凭证，请重试');
+      ElMessage.error(res?.msg || '登录失败，请检查账号密码');
     }
   } catch (error: any) {
     console.error('Login failed:', error);
@@ -130,7 +160,7 @@ const handlePasswordLogin = async () => {
   <div class="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-cover bg-center login-bg">
     <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
       <h2 class="mt-6 text-center text-3xl font-extrabold text-blue-900 tracking-tight">
-        绩效考核原型系统
+        卓希绩效考核系统
       </h2>
       <p class="mt-2 text-center text-sm text-slate-600">
         欢迎回来，请登录您的工作账号
@@ -185,6 +215,16 @@ const handlePasswordLogin = async () => {
           v-else
           class="space-y-5 animate-fade-in min-h-[300px]"
         >
+          <!-- <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">租户名称</label>
+            <el-input 
+              v-model="loginForm.tenantName" 
+              placeholder="请输入租户名称" 
+              size="large"
+              class="custom-login-input text-base"
+            />
+          </div> -->
+
           <div>
             <label class="block text-sm font-medium text-slate-700 mb-1">账号/手机号</label>
             <el-input 
@@ -233,8 +273,6 @@ const handlePasswordLogin = async () => {
 
 <style scoped>
 .login-bg {
-  /* 可以替换成更优质的渐变或浅色纹理 */
-  /* background-image: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%); */
   background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
 }
 

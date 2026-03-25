@@ -33,3 +33,25 @@ export const getInfo = () => {
     method: 'get',
   });
 };
+
+// 根据主域名获取租户信息
+export const getTenantByWebsite = (website: string) => {
+  return request({
+    url: '/system/tenant/get-by-website',
+    method: 'get',
+    params: { website },
+  });
+};
+
+// 社交登录
+export const socialLogin = (type: string | number, code: string, state: string) => {
+  return request({
+    url: '/system/auth/social-login',
+    method: 'post',
+    data: {
+      type,
+      code,
+      state,
+    },
+  });
+};

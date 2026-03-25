@@ -1,8 +1,8 @@
-import { getInfo } from '@/api/login';
-import { CACHE_KEY, deleteUserCache, useCache } from '@/hooks/web/useCache';
-import { store } from '@/store';
 import { getToken, removeToken } from '@/utils/auth';
 import { defineStore } from 'pinia';
+import { getMenuTree, type MenuVO } from '@/api/system/menu/menu';
+import { CACHE_KEY, deleteUserCache, useCache } from '@/hooks/web/useCache';
+import { store } from '@/store';
 
 const { wsCache } = useCache();
 
@@ -21,6 +21,7 @@ interface UserInfoVO {
   roles: string[];
   isSetUser: boolean;
   user: UserVO;
+  menus: MenuVO[];
 }
 
 export const useUserStore = defineStore('admin-user', {
@@ -37,7 +38,9 @@ export const useUserStore = defineStore('admin-user', {
       deptName: '',
       openidQw: '',
     },
+    menus: [],
   }),
+  persist: true, // 持久化用户信息
   getters: {
     getPermissions(): string[] {
       return this.permissions;
@@ -51,6 +54,9 @@ export const useUserStore = defineStore('admin-user', {
     getUser(): UserVO {
       return this.user;
     },
+    getMenus(): MenuVO[] {
+      return this.menus;
+    },
   },
   actions: {
     async setUserInfoAction() {
@@ -60,22 +66,22 @@ export const useUserStore = defineStore('admin-user', {
       }
       
       let userInfo = wsCache.get(CACHE_KEY.USER);
-      if (!userInfo) {
-        // 请求后台获取个人权限和信息
-        const res: any = await getInfo();
+      if (!userInfo || !userInfo.menus) {
+        // 请求后台获取个人权限、信息和菜单树 (针对当前微应用 performance)
+        const res: any = await getMenuTree('performance-new');
         userInfo = res.data || res; // 兼容不同格式返回值
       }
 
       if (userInfo) {
         this.permissions = userInfo.permissions || [];
         this.roles = userInfo.roles || [];
+        this.menus = userInfo.menus || [];
         
-        // 关键逻辑：兼容嵌套 user 对象或平铺结构
+        // 兼容嵌套 user 对象或平铺结构
         const userData = userInfo.user || userInfo;
         this.user = {
           ...this.user,
           ...userData,
-          // 强制适配部门ID的多种可能名称，并确保类型一致
           deptId: Number(userData.deptId || userData.dept_id || 0)
         };
         
@@ -87,8 +93,8 @@ export const useUserStore = defineStore('admin-user', {
     async loginOut() {
       removeToken();
       deleteUserCache();
-      localStorage.removeItem('user'); // 额外清理，确保彻底
-      localStorage.removeItem('USER_INFO'); // 兼容部分旧系统的习惯
+      localStorage.removeItem('user');
+      localStorage.removeItem('USER_INFO');
       this.resetState();
     },
     
@@ -96,6 +102,7 @@ export const useUserStore = defineStore('admin-user', {
       this.permissions = [];
       this.roles = [];
       this.isSetUser = false;
+      this.menus = [];
       this.user = {
         id: 0,
         avatar: '',

@@ -15,9 +15,11 @@ import {
   TrendingUp,
   BarChart3,
 } from 'lucide-vue-next';
-import { getPerformanceCycle, type PerformanceCycleTemplateRespVO } from '@/api/assessment';
+import { getPerformanceCycle, getPerformanceDashboard, type PerformanceCycleTemplateRespVO, type PerformanceComprehensiveRespVO } from '@/api/assessment';
 import dayjs from 'dayjs';
 import { ElMessage } from 'element-plus';
+
+defineOptions({ name: 'AssessmentCycleDashboard' });
 
 const route = useRoute();
 const router = useRouter();
@@ -35,7 +37,25 @@ const cycleInfo = ref({
 });
 
 const cycleTemplates = ref<any[]>([]);
+const dashboardData = ref<PerformanceComprehensiveRespVO | null>(null);
 const loading = ref(false);
+const dashboardLoading = ref(false);
+
+const fetchDashboardData = async () => {
+  if (dashboardData.value) return; // 已加载则跳过
+  try {
+    dashboardLoading.value = true;
+    const res: any = await getPerformanceDashboard(Number(cycleId));
+    if (res.code === 0) {
+      dashboardData.value = res.data;
+    }
+  } catch (error) {
+    console.error('获取绩效大盘失败:', error);
+    ElMessage.error('获取绩效大盘数据失败');
+  } finally {
+    dashboardLoading.value = false;
+  }
+};
 
 const fetchData = async () => {
   loading.value = true;
@@ -124,60 +144,27 @@ const generateHistory = (base: number): { month: string; score: number }[] => [
   { month: '2026-02', score: Math.round(base + (Math.random() - 0.5) * 6) },
 ];
 
-const departments = ref<Department[]>([
-  {
-    id: 'dept-1',
-    name: '大客KA',
-    avgScore: 82.5,
-    headcount: 5,
-    ratedCount: 5,
-    employees: [
-      { id: 'e1', name: '刘小红', role: '大客经理', avatar: '刘', score: 91, grade: 'A', goalStatus: '已确认', history: generateHistory(88) },
-      { id: 'e2', name: '王建军', role: 'KA主管', avatar: '王', score: 85, grade: 'B', goalStatus: '已确认', history: generateHistory(83) },
-      { id: 'e3', name: '张丽华', role: '客户专员', avatar: '张', score: 79, grade: 'B', goalStatus: '已确认', history: generateHistory(78) },
-      { id: 'e4', name: '陈志明', role: '客户专员', avatar: '陈', score: 76, grade: 'B', goalStatus: '已确认', history: generateHistory(74) },
-      { id: 'e5', name: '李小明', role: '助理', avatar: '李', score: 82, grade: 'B', goalStatus: '已确认', history: generateHistory(80) },
-    ],
-  },
-  {
-    id: 'dept-2',
-    name: '餐饮中心',
-    avgScore: 78.2,
-    headcount: 4,
-    ratedCount: 4,
-    employees: [
-      { id: 'e6', name: '赵国强', role: '餐饮总监', avatar: '赵', score: 88, grade: 'A', goalStatus: '已确认', history: generateHistory(86) },
-      { id: 'e7', name: '周雪梅', role: '渠道经理', avatar: '周', score: 75, grade: 'B', goalStatus: '已确认', history: generateHistory(73) },
-      { id: 'e8', name: '吴明辉', role: '业务专员', avatar: '吴', score: 72, grade: 'C', goalStatus: '已确认', history: generateHistory(70) },
-      { id: 'e9', name: '孙丽丽', role: '业务专员', avatar: '孙', score: 78, grade: 'B', goalStatus: '已确认', history: generateHistory(76) },
-    ],
-  },
-  {
-    id: 'dept-3',
-    name: '市场推广部',
-    avgScore: 85.7,
-    headcount: 3,
-    ratedCount: 3,
-    employees: [
-      { id: 'e10', name: '黄晓东', role: '市场总监', avatar: '黄', score: 92, grade: 'A', goalStatus: '已确认', history: generateHistory(90) },
-      { id: 'e11', name: '林婉婷', role: '品牌经理', avatar: '林', score: 86, grade: 'A', goalStatus: '已确认', history: generateHistory(84) },
-      { id: 'e12', name: '郑伟杰', role: '推广专员', avatar: '郑', score: 79, grade: 'B', goalStatus: '已确认', history: generateHistory(77) },
-    ],
-  },
-  {
-    id: 'dept-4',
-    name: '休食中心',
-    avgScore: 80.3,
-    headcount: 4,
-    ratedCount: 4,
-    employees: [
-      { id: 'e13', name: '何俊杰', role: '休食总监', avatar: '何', score: 87, grade: 'A', goalStatus: '已确认', history: generateHistory(85) },
-      { id: 'e14', name: '钱晓燕', role: '品类经理', avatar: '钱', score: 81, grade: 'B', goalStatus: '已确认', history: generateHistory(79) },
-      { id: 'e15', name: '冯大伟', role: '业务专员', avatar: '冯', score: 77, grade: 'B', goalStatus: '已确认', history: generateHistory(75) },
-      { id: 'e16', name: '褚小芳', role: '业务专员', avatar: '褚', score: 76, grade: 'B', goalStatus: '已确认', history: generateHistory(74) },
-    ],
-  },
-]);
+const departments = computed<Department[]>(() => {
+  if (!dashboardData.value?.templateRespVOS) return [];
+  
+  return dashboardData.value.templateRespVOS.map(tpl => ({
+    id: String(tpl.templateId),
+    name: tpl.templateName,
+    avgScore: tpl.averageScore ?? null,
+    headcount: tpl.userCount || 0,
+    ratedCount: tpl.completeScoreCount || 0,
+    employees: (tpl.userRespVOS || []).map(user => ({
+      id: String(user.userId),
+      name: user.userName,
+      role: user.position || '员工',
+      avatar: (user.userName || '未').substring(0, 1),
+      score: user.overallScore,
+      grade: user.grade,
+      goalStatus: '已确认', // API 暂无此细化状态，默认为已确认
+      history: generateHistory(user.overallScore || 80)
+    }))
+  }));
+});
 
 const expandedDepts = ref<Record<string, boolean>>({});
 
@@ -197,11 +184,19 @@ const gradeColor = (grade: string | null) => {
 
 // Summary stats - 使用 API 提供的汇总数据
 const summary = computed(() => {
+  if (dashboardData.value) {
+    return {
+      totalEmployees: dashboardData.value.totalAssessmentUser || 0,
+      totalRated: dashboardData.value.completedScoringUser || 0,
+      overallAvg: dashboardData.value.fullCycleAverageScore ?? null,
+      deptCount: dashboardData.value.totalParticipatingDepartments || 0,
+    };
+  }
   return {
     totalEmployees: cycleInfo.value.teamMemberCount || 0,
     totalRated: cycleInfo.value.completedCount || 0,
     overallAvg: null as number | null,
-    deptCount: departments.value.length,
+    deptCount: 0,
   };
 });
 
@@ -276,7 +271,7 @@ const goBack = () => router.push('/assessment/cycle');
           ></div>
         </button>
         <button
-          @click="activeTab = 'dashboard'"
+          @click="() => { activeTab = 'dashboard'; fetchDashboardData(); }"
           :class="[
             'pb-4 text-base font-bold transition-all relative z-10',
             activeTab === 'dashboard' ? 'text-indigo-600' : 'text-slate-500 hover:text-slate-700'
@@ -294,7 +289,7 @@ const goBack = () => router.push('/assessment/cycle');
     <!-- Tab Content Area -->
     <div 
       class="flex-1 overflow-y-auto pr-2 custom-scrollbar"
-      v-loading="loading"
+      v-loading="loading || dashboardLoading"
     >
       <div v-if="activeTab === 'templates'" class="space-y-6 animate-in fade-in duration-500 pb-10">
       <!-- Info Alert -->

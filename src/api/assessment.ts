@@ -286,3 +286,114 @@ export function getPerformanceCycle(id: number) {
   });
 }
 
+
+/**
+ * PerformanceComprehensiveRespVO
+ */
+export interface PerformanceComprehensiveRespVO {
+    /**
+     * 已确认完成人数
+     */
+    completedScoringUser: number;
+    /**
+     * 全周期平均分
+     */
+    fullCycleAverageScore: number;
+    /**
+     * 主键ID
+     */
+    id: number;
+    /**
+     * 周期名称 (如: 2026年3月份月度绩效考核)
+     */
+    name: string;
+    templateRespVOS?: PerformanceComprehensiveTemplateRespVO[];
+    /**
+     * 考核总人数
+     */
+    totalAssessmentUser: number;
+    /**
+     * 参评部门总数
+     */
+    totalParticipatingDepartments: number;
+    [property: string]: any;
+}
+
+/**
+ * PerformanceComprehensiveTemplateRespVO
+ */
+export interface PerformanceComprehensiveTemplateRespVO {
+    /**
+     * 部门平均分
+     */
+    averageScore?: number;
+    /**
+     * 完成评分人数
+     */
+    completeScoreCount?: number;
+    /**
+     * 考核周期id
+     */
+    cycleId: number;
+    /**
+     * 模版id
+     */
+    templateId: number;
+    /**
+     * 模版名称
+     */
+    templateName: string;
+    /**
+     * 用户数量
+     */
+    userCount?: number;
+    /**
+     * 模版用户得分明细
+     */
+    userRespVOS?: PerformanceComprehensiveUserRespVO[];
+    [property: string]: any;
+}
+
+/**
+ * PerformanceComprehensiveUserRespVO，模版用户得分明细
+ */
+export interface PerformanceComprehensiveUserRespVO {
+    /**
+     * 等级
+     */
+    grade: string;
+    /**
+     * 得分
+     */
+    overallScore: number;
+    /**
+     * 岗位
+     */
+    position: string;
+    /**
+     * 用户ID
+     */
+    userId: number;
+    /**
+     * 用户名称
+     */
+    userName: string;
+    [property: string]: any;
+}
+
+// 查看绩效大盘
+export function getPerformanceDashboard(cycleId: number) {
+  return request({
+    url: `/human/performance-cycle/getPerformanceComprehensiveList?id=${cycleId}`,
+    method: 'get',
+  });
+}
+
+// 导出员工考核指标
+export function exportEmployeeEvaluation(cycleId: number) {
+  return request({
+    url: `/human/performance-user-target/exportUserTarget?cycleId=${cycleId}`,
+    method: 'get',
+    responseType: 'blob',
+  });
+}

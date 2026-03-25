@@ -12,6 +12,8 @@ import { Briefcase } from 'lucide-vue-next';
 import IndicatorLibrary from '@/components/library/IndicatorLibrary.vue';
 import TemplateList from '@/components/template/TemplateList.vue';
 
+defineOptions({ name: 'PerformanceConfig' });
+
 const route = useRoute();
 const router = useRouter();
 const activeTab = ref('library');

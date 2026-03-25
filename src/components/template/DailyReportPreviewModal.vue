@@ -271,7 +271,7 @@ watch(() => props.isOpen, (val) => {
                   绩效得分转化规则: {{ ind.ruleType || '线性增长模型' }}
                 </div>
                 <p class="text-[12px] text-slate-500/80 leading-relaxed pl-6 italic">
-                  当前配置：100%达成得满分，线性浮动，未达标逐级递减的分数转化模型。
+                  指标描述：{{ ind.indicatorRuleDescription || '暂无规则描述' }}
                 </p>
               </div>
 
@@ -280,10 +280,10 @@ watch(() => props.isOpen, (val) => {
                 <div class="flex justify-between items-end">
                   <div>
                     <div class="flex items-center gap-1.5 mb-1.5">
-                      <p class="text-[12px] text-slate-400 font-medium uppercase tracking-tight">
+                      <p class="text-[13px] text-slate-400 font-medium uppercase tracking-tight">
                         指标达成进度预览 (本考核周期)
                       </p>
-                      <Badge variant="outline" class="h-4.5 px-1.5 text-[10px] bg-white border-slate-200 text-slate-500 font-normal">
+                      <Badge variant="outline" class="h-4.5 px-1.5 text-[12px] bg-white border-slate-200 text-slate-500 font-normal">
                         {{ ind.dataSourceType === 'system' ? getDictLabel('system_performance_filling_method', ind.dataSourceValue) : getDictLabel('complete_system_performance_filling_method', ind.dataSourceValue) }}
                       </Badge>
                     </div>

@@ -11,9 +11,12 @@ import {
   FolderChecked as Save,
   TrendCharts as TrendingUp,
   ArrowLeft,
+  Notebook,
 } from '@element-plus/icons-vue';
 import { getUserByDept } from '@/api/system/dept/dept';
 import { getDepartmentUserTarget, saveDepartmentUserTarget, getDepartmentUserTargetProgress, type PerformanceUserIndicatorRespVO, type PerformanceCycleRespVO } from '@/api/deptWorkbench';
+import { confirmDepartmentUserTarget } from '@/api/deptWorkbench';
+
 import { getDictLabel } from '@/utils/dict';
 import { ElMessage, ElMessageBox } from 'element-plus';
 
@@ -62,14 +65,22 @@ const fetchEmployees = async () => {
   if (!props.deptId) return;
   try {
     loading.value = true;
-    const res: any = await getUserByDept({ deptIds: [props.deptId] });
+    // 只有当设定目标点进去时才传递cycleId
+    const queryParams: any = { deptIds: [props.deptId] };
+    if (props.cycleId) {
+      queryParams.cycleId = Number(props.cycleId);
+    }
+    
+    const res: any = await getUserByDept(queryParams);
     if (res.code === 0) {
       employees.value = (res.data || []).map((user: any) => ({
         id: String(user.id),
         name: user.nickname || user.userName || '未知',
-        role: user.deptName || '员工',
+        position: user.position || '待定',
+        role: user.deptName || '员工', // 保留作为兜底
         avatar: (user.nickname || user.userName || '未知').substring(0, 1),
-        status: user.performanceStatus || 'pending_set', // 假设后端返回状态，否则默认为待设定
+        // 优先使用 temporaryStatus，0-3 的数字状态
+        status: user.temporaryStatus !== undefined ? user.temporaryStatus : (user.performanceStatus || 0),
       }));
       
       // 如果有员工且当前未选中，默认选中第一个
@@ -135,6 +146,7 @@ const handleSaveTarget = async () => {
         await saveDepartmentUserTarget(updateData);
         ElMessage.success('目标暂存成功');
         await fetchUserTarget();
+        await fetchEmployees(); // 刷新员工列表以更新状态图标
     } catch (error) {
         console.error('Save target failed:', error);
         ElMessage.error('目标暂存失败，请重试');
@@ -155,6 +167,7 @@ const handlePublishTarget = async () => {
     }
 
     try {
+        // 第一轮确认
         await ElMessageBox.confirm(
             `确定要下发【${selectedEmp.value?.name}】的考核目标吗？下发后将由员工进行签署确认。`,
             '确认下发',
@@ -165,8 +178,21 @@ const handlePublishTarget = async () => {
             }
         );
 
+        // 第二轮确认 (二次弹框)
+        await ElMessageBox.confirm(
+          `考评目标一旦下发，该员工的指标基数将暂时锁定。如需再次修改，需联系管理员或执行撤回操作。是否确认下发？`,
+          '操作预警',
+          {
+            confirmButtonText: '确认并下发',
+            cancelButtonText: '返回检查',
+            type: 'warning',
+            dangerouslyUseHTMLString: true,
+          }
+        );
+
         publishing.value = true;
         
+        // 1. 先保存最新的目标数值（确保最新的修改被保存）
         const updateData = indicatorData.value.items.map(item => ({
             id: item.id!,
             indicatorId: item.indicatorId!,
@@ -174,22 +200,29 @@ const handlePublishTarget = async () => {
             templateId: item.templateId!,
             userId: Number(selectedEmpId.value),
             cycleId: Number(props.cycleId),
-            status: 1, // 1表示待签署/待确认
             weight: item.weight,
             userName: item.userName,
             indicatorName: item.indicatorName
         }));
         
         await saveDepartmentUserTarget(updateData);
+
+        // 2. 调用真正的下发确认接口
+        await confirmDepartmentUserTarget({
+            userId: Number(selectedEmpId.value),
+            cycleId: Number(props.cycleId)
+        });
+
         ElMessage.success('考核目标下发成功');
         
         // 刷新数据
         await fetchUserTarget();
         await fetchEmployees();
+        await fetchCycleProgress(); // 刷新进度
     } catch (error) {
         if (error !== 'cancel') {
             console.error('Publish target failed:', error);
-            ElMessage.error('目标下发失败，请重试');
+            ElMessage.error('目标下发失败，请刷新页面重试');
         }
     } finally {
         publishing.value = false;
@@ -216,42 +249,93 @@ watch(() => selectedEmpId.value, () => {
 
 type EmployeeStatus = 'pending_set' | 'pending_confirm' | 'confirmed' | 'disputed'
 
-const getStatusUI = (status: EmployeeStatus) => {
+const isPendingSet = (s: any) => s === 'pending_set' || s === 0 || s === 1;
+const isPendingConfirm = (s: any) => s === 'pending_confirm' || s === 2;
+const isConfirmed = (s: any) => s === 'confirmed' || s === 3;
+
+const getStatusUI = (statusInput: any) => {
+  // 统一转为数字进行判断，如果是字符串枚举则保持不变
+  const status = (statusInput !== null && statusInput !== undefined && !isNaN(Number(statusInput))) 
+    ? Number(statusInput) 
+    : statusInput;
+
+  if (typeof status === 'number') {
+    const label = getDictLabel('user_performance_temporary', status);
+    
+    // 映射颜色和图标
+    // 0: 待设定 -> info/slate
+    // 1: 已暂存 -> warning/amber
+    // 2: 已下发 -> primary/blue
+    // 3: 已确认 -> success/emerald
+    let type = 'info';
+    let icon: any = CircleDashed;
+    let iconColor = '#cbd5e1'; // slate-300
+
+    if (status === 1) {
+      type = 'warning';
+      icon = FileSignature;
+      iconColor = '#f59e0b'; // amber-500
+    } else if (status === 2) {
+      type = 'primary';
+      icon = Send;
+      iconColor = '#3b82f6'; // blue-500
+    } else if (status === 3) {
+      type = 'success';
+      icon = CheckCircle2;
+      iconColor = '#10b981'; // emerald-500
+    }
+
+    return { 
+      icon, 
+      iconColor, 
+      badgeText: label || '未知状态', 
+      type 
+    };
+  }
+
+  // 处理字符串枚举状态 (兜底或旧逻辑)
   switch (status) {
   case 'pending_set':
     return {
       icon: CircleDashed,
-      iconClass: 'text-slate-300',
+      iconColor: '#cbd5e1',
       badgeText: '待设定目标',
       type: 'info',
     };
   case 'pending_confirm':
     return {
       icon: FileSignature,
-      iconClass: 'text-amber-500',
+      iconColor: '#f59e0b',
       badgeText: '待员工签署',
       type: 'warning',
     };
   case 'confirmed':
     return {
       icon: CheckCircle2,
-      iconClass: 'text-emerald-500',
+      iconColor: '#10b981',
       badgeText: '已签署确认',
       type: 'success',
     };
   case 'disputed':
     return {
       icon: AlertCircle,
-      iconClass: 'text-red-500',
+      iconColor: '#ef4444',
       badgeText: '有异议',
       type: 'danger',
     };
   default:
-    return { icon: null, iconClass: '', badgeText: '', type: 'info' };
+    return { icon: null, iconColor: '', badgeText: '', type: 'info' };
   }
 };
 
 const selectedEmp = computed(() => employees.value.find((e) => e.id === selectedEmpId.value));
+
+const currentStatus = computed(() => {
+  if (indicatorData.value?.temporaryStatus !== undefined) {
+    return indicatorData.value.temporaryStatus;
+  }
+  return selectedEmp.value?.status;
+});
 
 const stats = computed(() => {
   // 优先使用接口返回的进度数据
@@ -265,11 +349,13 @@ const stats = computed(() => {
   }
   // 兜底使用当前加载的员工列表计算
   const totalCount = employees.value.length;
+  // 0,1/pending_set (待设定), 2/pending_confirm (待签署), 3/confirmed (已确认)
+
   return {
     total: totalCount || 0,
-    pendingSet: employees.value.filter((e) => e.status === 'pending_set').length,
-    pendingConfirm: employees.value.filter((e) => e.status === 'pending_confirm').length,
-    confirmed: employees.value.filter((e) => e.status === 'confirmed').length,
+    pendingSet: employees.value.filter((e) => isPendingSet(e.status)).length,
+    pendingConfirm: employees.value.filter((e) => isPendingConfirm(e.status)).length,
+    confirmed: employees.value.filter((e) => isConfirmed(e.status)).length,
   };
 });
 
@@ -341,13 +427,13 @@ const filteredEmployees = computed(() =>
                   {{ emp.name }}
                 </span>
                 <el-icon
-                  :class="getStatusUI(emp.status as EmployeeStatus).iconClass"
+                  :color="getStatusUI(emp.status).iconColor"
                 >
-                  <component :is="getStatusUI(emp.status as EmployeeStatus).icon" />
+                  <component :is="getStatusUI(emp.status).icon" />
                 </el-icon>
               </div>
               <div class="text-xs text-slate-500 truncate mt-0.5">
-                {{ emp.role }}
+                {{ emp.position }}
               </div>
             </div>
           </div>
@@ -368,19 +454,19 @@ const filteredEmployees = computed(() =>
               </div>
             </div>
             <div class="text-center">
-              <div class="text-lg font-black text-amber-500 leading-none">
-                {{ stats.pendingConfirm }}
-              </div>
-              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
-                待签署
-              </div>
-            </div>
-            <div class="text-center">
               <div class="text-lg font-black text-slate-400 leading-none">
                 {{ stats.pendingSet }}
               </div>
               <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
                 待设定
+              </div>
+            </div>
+             <div class="text-center">
+              <div class="text-lg font-black text-amber-500 leading-none">
+                {{ stats.pendingConfirm }}
+              </div>
+              <div class="text-[12px] text-slate-400 font-bold mt-1.5 uppercase tracking-tighter">
+                待签署
               </div>
             </div>
             <div class="text-center">
@@ -418,10 +504,10 @@ const filteredEmployees = computed(() =>
                   </h4>
                   <el-tag
                     effect="light"
-                    :type="getStatusUI(selectedEmp.status as EmployeeStatus).type as any"
+                    :type="getStatusUI(currentStatus as EmployeeStatus).type as any"
                     class="custom-tag"
                   >
-                    {{ getStatusUI(selectedEmp.status as EmployeeStatus).badgeText }}
+                    {{ typeof currentStatus === 'number' ? getDictLabel('user_performance_temporary', currentStatus) : getStatusUI(currentStatus as EmployeeStatus).badgeText }}
                   </el-tag>
                 </div>
                 <p class="text-sm text-slate-500 mt-1 truncate">
@@ -431,7 +517,8 @@ const filteredEmployees = computed(() =>
             </div>
             <div class="flex items-center gap-3 shrink-0">
               <el-button
-                :disabled="props.isLocked || saving || publishing"
+                v-if="isPendingSet(currentStatus) && !props.isLocked"
+                :disabled="saving || publishing"
                 :loading="saving"
                 @click="handleSaveTarget"
               >
@@ -442,7 +529,7 @@ const filteredEmployees = computed(() =>
               </el-button>
               <el-button
                 type="primary"
-                :disabled="selectedEmp.status !== 'pending_set' || props.isLocked || saving || publishing"
+                :disabled="!isPendingSet(currentStatus) || props.isLocked || saving || publishing"
                 :loading="publishing"
                 @click="handlePublishTarget"
               >
@@ -475,7 +562,7 @@ const filteredEmployees = computed(() =>
             </div>
 
             <div
-              v-if="selectedEmp.status !== 'pending_set' && !props.isLocked"
+              v-if="!isPendingSet(currentStatus) && !props.isLocked"
               class="mb-6"
             >
               <div
@@ -486,8 +573,8 @@ const filteredEmployees = computed(() =>
                 </el-icon>
                 <p class="flex-1 leading-relaxed">
                   当前员工考核目标已下发。员工处于<b>{{
-                    selectedEmp.status === 'pending_confirm' ? '待签署' : '已签署'
-                  }}</b>状态时，目标不建议随意修改。如确需调整，需先撤回重新流转。
+                    (isPendingConfirm(currentStatus)) ? '待签署' : '已签署'
+                  }}</b>状态，目标不允许修改。
                 </p>
               </div>
             </div>
@@ -512,13 +599,12 @@ const filteredEmployees = computed(() =>
                       {{ ind.indicatorName }}
                     </h5>
                     <el-tag
-                      v-if="ind.indicatorType"
                       size="small"
                       effect="light"
-                      type="info"
+                      type="primary"
                       class="border-none bg-indigo-50 text-indigo-600 ml-2"
                     >
-                      {{ getDictLabel('classification_performance_indicators_type', ind.indicatorType) }}
+                    {{  ind.ruleName }}
                     </el-tag>
                   </div>
                   <div class="text-sm font-semibold text-slate-700">
@@ -529,7 +615,11 @@ const filteredEmployees = computed(() =>
                 <!-- Middle config -->
                 <div class="px-5 py-3 flex flex-col md:flex-row gap-6 items-center">
                   <!-- Left: properties -->
-                  <div class="flex-1 grid grid-cols-2 gap-4 text-sm w-full">
+                  <div class="flex-1 w-full space-y-4">
+                    <div v-if="ind.indicatorRuleDescription" class="text-[13px] text-slate-400 leading-relaxed mb-4">
+                      <span class="text-slate-600 font-bold">指标描述：</span>{{ ind.indicatorRuleDescription }}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <div class="text-slate-400 text-xs mb-1">
                         数据采集方式
@@ -551,6 +641,7 @@ const filteredEmployees = computed(() =>
                       </div>
                     </div>
                   </div>
+                </div>
 
                   <el-icon class="h-5 w-5 text-slate-300 hidden md:block shrink-0">
                     <ArrowRight />
@@ -558,16 +649,16 @@ const filteredEmployees = computed(() =>
 
                   <!-- Right: Target input component -->
                   <div
-                    class="w-full md:w-[320px] shrink-0 bg-blue-50/50 rounded-xl border border-blue-100 p-4"
+                    class="w-full md:w-[320px] shrink-0 bg-blue-50/50 rounded-xl border border-blue-100 px-4 py-2"
                   >
                     <div class="mb-2 flex items-center justify-between">
-                      <span class="text-xs font-bold text-blue-800">🎯 设定本期目标基数值：</span>
+                      <span class="text-xs font-bold text-blue-800">🎯 设定本期完成目标：</span>
                     </div>
                     <el-input
                       class="custom-indicator-input"
-                      placeholder="请输入需达成的具体数值..."
+                      placeholder="请输入需达成的具体目标"
                       v-model="targets[String(ind.id)]"
-                      :disabled="selectedEmp.status !== 'pending_set' || props.isLocked"
+                      :disabled="!isPendingSet(currentStatus) || props.isLocked"
                     />
                   </div>
                 </div>
@@ -615,6 +706,7 @@ const filteredEmployees = computed(() =>
 .custom-search-input :deep(.el-input__wrapper) {
   border-radius: 0.75rem;
   box-shadow: 0 0 0 1px #e2e8f0 inset;
+  height: 44px;
 }
 
 .custom-indicator-input :deep(.el-input__wrapper) {

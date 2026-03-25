@@ -20,5 +20,8 @@ export const getSimpleDeptList = (): Promise<DeptVO[]> => {
 // 根据所选部门查询人员数据
 export const getUserByDept = (data:any) => {
   return request({ url: '/system/user/selectUsersByDeptId',method: 'post' , data})
+};
+// 获取信息 system/user/getManageAllUser
+ export const getManageAllUser = () => {
+  return request({ url: '/system/user/getManageAllUser',method: 'post' })
 }
- 

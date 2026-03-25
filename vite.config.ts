@@ -5,6 +5,7 @@ import path from 'node:path';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
+    base: env.VITE_PUBLIC_PATH || '/', // 由部署环境显式控制静态资源基路径，避免生产环境相对路径错位
     plugins: [vue()],
     resolve: {
       alias: {
@@ -23,6 +24,9 @@ export default defineConfig(({ mode }) => {
       //     rewrite: (path) => path.replace(/^\/admin-api/, ''),
       //   },
       // },
+    },
+    build: {
+      outDir: env.VITE_OUT_DIR || 'dist',
     },
   };
 });

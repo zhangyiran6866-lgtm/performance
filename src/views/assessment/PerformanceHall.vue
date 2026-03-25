@@ -21,6 +21,8 @@ import TeamAssessmentWorkspace from '@/components/assessment/TeamAssessmentWorks
 import TeamGoalWorkspace from '@/components/assessment/TeamGoalWorkspace.vue';
 import RatingWorkspace from '@/components/assessment/RatingWorkspace.vue';
 
+defineOptions({ name: 'AssessmentHall' });
+
 // ---------- Mock Business Logic ----------
 // Current cycle state (simulated)
 const currentCycle = {
@@ -177,14 +179,14 @@ const formatDate = (date: any) => {
           </div>
 
           <!-- Special Actions if in Rating Mode -->
-          <template v-if="activeTab === 'team_rating' && !isRatingLocked">
+          <!-- <template v-if="activeTab === 'team_rating' && !isRatingLocked">
              <el-button
                 type="primary"
                 class="!bg-indigo-600 !border-indigo-600 !rounded-xl !h-10 !px-6 !font-bold shadow-lg shadow-indigo-600/20 transition-all hover:!scale-105 active:!scale-95"
               >
                 全部提交
               </el-button>
-          </template>
+          </template> -->
         </div>
       </div>
     </header>
@@ -242,6 +244,7 @@ const formatDate = (date: any) => {
           v-else-if="activeTab === 'team_rating'"
           :is-locked="isRatingLocked"
           :dept-id="currentDeptId"
+          :cycle-id="selectedTeamCycle?.id"
           @back="activeTab = 'team_performance'"
         />
 

@@ -23,6 +23,7 @@ export interface IndicatorData {
   id: string | number;
   name: string;
   category: string;
+  description?: string;
   ruleType?: string;
   ruleDesc?: string;
   ruleId?: number | string;
@@ -122,9 +123,9 @@ const cardStyle = computed(() => {
         
         <p
           class="text-xs text-slate-400 italic leading-relaxed line-clamp-2"
-          :title="data.indicatorRuleDescription || data.ruleDesc"
+          :title="data.description || data.indicatorRuleDescription || data.ruleDesc"
         >
-          {{ data.indicatorRuleDescription || data.ruleDesc || '暂无规则描述' }}
+          {{ data.description || data.indicatorRuleDescription || data.ruleDesc || '暂无规则描述' }}
         </p>
       </div>
 

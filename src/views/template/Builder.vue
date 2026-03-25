@@ -42,7 +42,10 @@ import { getSimpleDeptList, getUserByDept } from '@/api/system/dept/dept';
 import { createTemplate, updateTemplate, getTemplate, updateTemplateStatus } from '@/api/template';
 import type { templateReqVOS, PerformanceIndicatorTemplateReqVO } from '@/api/template';
 import { handleTree } from '@/lib/utils';
+
 import { getStrDictOptions } from '@/utils/dict';
+
+defineOptions({ name: 'TemplateBuilder' });
 
 interface Indicator {
   id: string;
@@ -55,6 +58,7 @@ interface Indicator {
   dataSourceValue: string;
   templateItemId?: number;
   indicatorAlias?: string;
+  indicatorRuleDescription?: string;
 }
 
 const router = useRouter();
@@ -92,8 +96,11 @@ const templateInfo = ref({
 const saving = ref(false);
 
 const userList = ref<any[]>([]);
+const userSearchQuery = ref('');
+const isOnlyShowSelected = ref(false);
+const deptMap = ref<Record<number, string>>({});
 const deptTree = ref<any[]>([]);
-const rootDeptIds = computed(() => deptTree.value.map(node => node.id));
+const allDeptIds = ref<number[]>([]);
 
 const fetchUsersByDeptIds = async (deptIds: number[]) => {
   try {
@@ -108,9 +115,11 @@ const fetchUsersByDeptIds = async (deptIds: number[]) => {
     const list = Array.isArray(res) ? res : (res as any).data;
     userList.value = Array.isArray(list) ? list : [];
     
-    // 选取适用范围后，人员选项默认全选
+    // 选取适用范围后，人员选项默认全选 (只选取未绑定的人员)
     if (userList.value.length > 0) {
-      templateInfo.value.users = userList.value.map(user => user.id);
+      templateInfo.value.users = userList.value
+        .filter(user => user.isBind !== '10')
+        .map(user => user.id);
     } else {
       templateInfo.value.users = [];
     }
@@ -119,19 +128,44 @@ const fetchUsersByDeptIds = async (deptIds: number[]) => {
   }
 };
 
+const filteredUserList = computed(() => {
+  return userList.value.filter(user => {
+    const query = userSearchQuery.value.toLowerCase();
+    const nickname = (user.nickname || '').toLowerCase();
+    const deptName = (deptMap.value[user.deptId] || '').toLowerCase();
+    
+    const matchesSearch = !query || nickname.includes(query) || deptName.includes(query);
+    const matchesSelected = !isOnlyShowSelected.value || templateInfo.value.users.includes(user.id);
+    
+    return matchesSearch && matchesSelected;
+  });
+});
+
 const isAllUsersSelected = computed(() => {
-  return userList.value.length > 0 && templateInfo.value.users.length === userList.value.length;
+  const selectableUsers = filteredUserList.value.filter(u => u.isBind !== '10');
+  if (selectableUsers.length === 0) return false;
+  return selectableUsers.every(user => templateInfo.value.users.includes(user.id));
 });
 
 const isUsersIndeterminate = computed(() => {
-  return templateInfo.value.users.length > 0 && templateInfo.value.users.length < userList.value.length;
+  const selectableUsers = filteredUserList.value.filter(u => u.isBind !== '10');
+  const selectedCount = selectableUsers.filter(user => templateInfo.value.users.includes(user.id)).length;
+  return selectedCount > 0 && selectedCount < selectableUsers.length;
 });
 
 const handleSelectAllUsers = (val: any) => {
   if (val) {
-    templateInfo.value.users = userList.value.map(user => user.id);
+    // 仅全选当前搜索/过滤后可见且未绑定的人员
+    const visibleIds = filteredUserList.value
+      .filter(user => user.isBind !== '10')
+      .map(user => user.id);
+    const existingSelected = [...templateInfo.value.users];
+    const newSelected = [...new Set([...existingSelected, ...visibleIds])];
+    templateInfo.value.users = newSelected;
   } else {
-    templateInfo.value.users = [];
+    // 仅从已选列表中移除当前可见的人员
+    const visibleIds = filteredUserList.value.map(user => user.id);
+    templateInfo.value.users = templateInfo.value.users.filter(id => !visibleIds.includes(id));
   }
 };
 
@@ -151,6 +185,11 @@ onMounted(async () => {
     const list = Array.isArray(res) ? res : (res as any).data;
     
     if (list && Array.isArray(list)) {
+      // 建立部门映射
+      list.forEach((d: any) => {
+        deptMap.value[d.id] = d.name;
+      });
+      allDeptIds.value = list.map((node: any) => node.id);
       const tree = handleTree(list, 'id', 'parentId');
       // 设置第一层级（根节点）为禁用选择状态，仅用于展开查看子部门
       deptTree.value = tree.map((node: any) => ({
@@ -204,6 +243,7 @@ onMounted(async () => {
             dataSourceValue: item.dataAggregationValue || '',
             templateItemId: item.id,
             indicatorAlias: item.indicatorAlias || item.indicatorName,
+            indicatorRuleDescription: item.indicatorRuleDescription || '',
           }));
         }
         hasSaved.value = true;
@@ -382,6 +422,7 @@ const handleAddIndicators = (selected: any[]) => {
       weight: 0,
       dataSourceType: 'system',
       dataSourceValue: defaultSystemValue,
+      indicatorRuleDescription: ind.indicatorRuleDescription || '',
     }));
 
   indicators.value = [...indicators.value, ...newIndicators];
@@ -531,7 +572,7 @@ const handlePublish = () => {
               >
                 {{ pageMode === 'view' ? '查看模式' : (hasSaved ? '已保存' : '草稿中') }}
               </Badge>
-              <span>{{ pageMode === 'view' ? '当前配置处于只读状态' : (hasSaved ? '所有更改已同步' : '未保存更改') }}</span>
+              <span>{{ pageMode === 'view' ? '指标描述处于只读状态' : (hasSaved ? '所有更改已同步' : '未保存更改') }}</span>
             </div>
           </div>
         </div>
@@ -684,7 +725,7 @@ const handlePublish = () => {
                         check-on-click-node
                         filterable
                         node-key="id"
-                        :default-expanded-keys="rootDeptIds"
+                        :default-expanded-keys="allDeptIds"
                         :expand-on-click-node="false"
                         :fit-input-width="true"
                         class="w-full dept-tree-select"
@@ -725,6 +766,8 @@ const handlePublish = () => {
                         v-model="templateInfo.users"
                         multiple
                         filterable
+                        :filter-method="(val: string) => userSearchQuery = val"
+                        @visible-change="(v: boolean) => { if (!v) { userSearchQuery = ''; isOnlyShowSelected = false; } }"
                         :disabled="pageMode === 'view'"
                         collapse-tags
                         collapse-tags-tooltip
@@ -734,32 +777,55 @@ const handlePublish = () => {
                         clearable
                       >
                         <el-option
-                          v-for="user in userList"
+                          v-for="user in filteredUserList"
                           :key="user.id"
                           :label="user.nickname"
                           :value="user.id"
+                          :disabled="user.isBind === '10'"
                         >
                           <div class="flex items-center gap-2">
                             <el-checkbox
                               :model-value="templateInfo.users.includes(user.id)"
                               size="small"
                               style="pointer-events: none;"
+                              :disabled="user.isBind === '10'"
                             />
-                            <span class="text-slate-700 font-medium">{{ user.nickname }}</span>
+                            <span :class="['font-medium', user.isBind === '10' ? 'text-slate-400' : 'text-slate-700']">
+                              {{ user.nickname }}
+                              <span v-if="user.isBind === '10'" class="text-[10px] ml-1 text-amber-500 font-bold bg-amber-50 px-1 rounded-sm border border-amber-100/50">(已绑定)</span>
+                            </span>
                           </div>
                         </el-option>
                         <template #footer>
-                          <div class="px-3 py-2 border-t border-slate-100 flex items-center justify-between bg-white sticky bottom-0 z-10">
-                            <el-checkbox
-                              :model-value="isAllUsersSelected"
-                              :indeterminate="isUsersIndeterminate"
-                              @change="handleSelectAllUsers"
-                            >
-                              <span class="text-xs font-bold text-slate-700">全选当前备选人员</span>
-                            </el-checkbox>
-                            <span class="text-[10px] text-slate-400 font-bold bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
-                              已选 {{ templateInfo.users.length }}/{{ userList.length }}
-                            </span>
+                          <div class="px-3 py-2 border-t border-slate-100 flex flex-col gap-2 bg-white sticky bottom-0 z-10">
+                            <div class="flex items-center justify-between">
+                              <el-checkbox
+                                :model-value="isAllUsersSelected"
+                                :indeterminate="isUsersIndeterminate"
+                                @change="handleSelectAllUsers"
+                              >
+                                <span class="text-xs font-bold text-slate-700">全选当前备选人员</span>
+                              </el-checkbox>
+                              <span class="text-[10px] text-slate-400 font-bold bg-slate-50 px-2 py-0.5 rounded-full border border-slate-100">
+                                已选 {{ templateInfo.users.length }}/{{ userList.length }}
+                              </span>
+                            </div>
+                            <div class="flex items-center justify-between gap-4 pt-1 border-t border-slate-50">
+                              <el-checkbox
+                                v-model="isOnlyShowSelected"
+                                size="small"
+                              >
+                                <span class="text-[11px] text-slate-500">仅显示已选</span>
+                              </el-checkbox>
+                              <div 
+                                v-if="userSearchQuery"
+                                class="text-[10px] text-blue-500 font-medium cursor-pointer flex items-center gap-0.5 hover:underline"
+                                @click.stop="userSearchQuery = ''"
+                              >
+                                <Filter class="h-2.5 w-2.5" />
+                                包含 "{{ userSearchQuery }}"
+                              </div>
+                            </div>
                           </div>
                         </template>
                       </el-select>
@@ -884,7 +950,7 @@ const handlePublish = () => {
                           <!-- Step 1: Aggregation -->
                           <div class="flex-1 bg-slate-50 border border-slate-100 rounded-xl p-4">
                             <div
-                              class="flex items-center gap-2 text-[11px] font-semibold text-slate-500 mb-3 tracking-wide"
+                              class="flex items-center gap-2 text-[13px] font-semibold text-slate-500 mb-3 tracking-wide"
                             >
                               <Filter class="h-3.5 w-3.5" />
                               1. 数据汇聚 (AGGREGATION)
@@ -896,7 +962,7 @@ const handlePublish = () => {
                                 :disabled="pageMode === 'view'"
                                 @update:model-value="(v) => handleSourceTypeChange(ind.id, String(v))"
                               >
-                                <SelectTrigger class="bg-white border-slate-200 shadow-sm font-semibold h-9 text-xs w-full">
+                                <SelectTrigger class="bg-white border-slate-200 shadow-sm font-semibold h-9 text-[13px] w-full">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -933,7 +999,7 @@ const handlePublish = () => {
                               </Select>
                               <div
                                 v-else
-                                class="bg-slate-100/70 border border-slate-200/50 rounded-md p-2.5 text-[11px] text-slate-500 text-center font-medium mx-auto w-full"
+                                class="bg-slate-100/70 border border-slate-200/50 rounded-md p-2.5 text-[12px] text-slate-500 text-center font-medium mx-auto w-full"
                               >
                                 接口直连最终数据<br>无需配置加和方式
                               </div>
@@ -944,7 +1010,7 @@ const handlePublish = () => {
                                   v-if="ind.dataSourceType === 'complete'"
                                   class="flex items-center gap-1.5 mt-1.5"
                                 >
-                                  <div class="h-7 text-[10px] text-slate-400 flex items-center italic">
+                                  <div class="h-7 text-[12px] text-slate-400 flex items-center italic">
                                     此模式下员工将在每日日报中手动输入数值
                                   </div>
                                 </div>
@@ -976,7 +1042,7 @@ const handlePublish = () => {
                                     </SelectContent>
                                   </Select>
                                 </div>
-                                <p class="mt-2 text-[10px] text-slate-400 opacity-80">
+                                <p class="mt-2 text-[12px] text-slate-400 opacity-80">
                                   每天提取此项并自动叠加
                                 </p>
                               </div>
@@ -998,7 +1064,7 @@ const handlePublish = () => {
 
                             <div class="relative z-10 w-full h-full flex flex-col">
                               <div
-                                class="flex items-center gap-2 text-[11px] font-semibold text-indigo-500 mb-3 tracking-wide"
+                                class="flex items-center gap-2 text-[13px] font-semibold text-indigo-500 mb-3 tracking-wide"
                               >
                                 <ArrowRight class="h-3.5 w-3.5" />
                                 2. 目标对比 (TARGET)
@@ -1032,19 +1098,19 @@ const handlePublish = () => {
                           <!-- Step 3: Scoring -->
                           <div class="flex-1 bg-emerald-50/40 border border-emerald-100 rounded-xl p-4">
                             <div
-                              class="flex items-center gap-2 text-[11px] font-semibold text-emerald-600/70 mb-3 tracking-wide"
+                              class="flex items-center gap-2 text-[13px] font-semibold text-emerald-600/70 mb-3 tracking-wide"
                             >
                               <Calculator class="h-3.5 w-3.5" />
                               3. 绩效转化 (SCORING)
                             </div>
                             <div
-                              class="flex items-center justify-between bg-white border border-emerald-200/60 px-3 py-2.5 rounded-md shadow-sm font-medium text-emerald-800 text-xs"
+                              class="flex items-center justify-between bg-white border border-emerald-200/60 px-3 py-2.5 rounded-md shadow-sm font-medium text-emerald-800 text-[13px]"
                             >
                               <span class="truncate pr-2">{{ ind.ruleType }}</span>
                               <ChevronRight class="h-4 w-4 text-emerald-400 shrink-0" />
                             </div>
-                            <p class="mt-3 text-[11px] text-slate-600/90 leading-relaxed font-medium">
-                              当前配置为：100%达成得满分，线性浮动，未达标逐级递减的分数转化模型。
+                            <p class="mt-3 text-[12px] text-slate-600/90 leading-relaxed font-medium">
+                              指标描述：{{ ind.indicatorRuleDescription || '暂无规则描述' }}
                             </p>
                           </div>
                         </div>

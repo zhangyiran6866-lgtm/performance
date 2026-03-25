@@ -6,7 +6,7 @@
 -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Warning, Edit, CircleCheck, TrendCharts, ArrowLeft, Calendar, Clock, Right, Aim, Operation as Calculator, PriceTag as Award, Notebook, } from '@element-plus/icons-vue';
+import { Warning, Edit, CircleCheck, TrendCharts, ArrowLeft, Calendar, Clock, Right, Aim, Operation as Calculator, PriceTag as Award, Notebook, ChatDotRound as MessageSquare } from '@element-plus/icons-vue';
 import { getDictOptions, getDictLabel } from '@/utils/dict';
 import { getEmployeePerformance, confirmEmployeePerformance, type PerformanceUserResultRespVO } from '@/api/workbench';
 
@@ -120,9 +120,7 @@ const quantitativeResults = computed(() => {
     return selectedCycle.value?.targetRespVOList || [];
 });
 
-const qualitativeResults = computed(() => {
-    return []; // Placeholder as VO doesn't detail this currently
-});
+// Fetch data from API
 </script>
 
 <template>
@@ -130,16 +128,16 @@ const qualitativeResults = computed(() => {
     <!-- Cycle List View -->
     <template v-if="!selectedCycle">
       <div v-loading="loading" class="flex-1 py-5 space-y-6 overflow-y-auto custom-scrollbar">
-        <div class="mx-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <div class="mx-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
           <h2 class="text-2xl font-black tracking-tight text-slate-900">
             我的考核目标与结果
           </h2>
           <p class="text-sm text-slate-500 mt-1">
-            <span class="font-bold text-slate-600">{{ cycleList[0]?.userName || 'XXX' }} (工号: {{ cycleList[0]?.userId || '---' }})</span> · 查阅您参与的所有考核周期的目标与最终评价结果。
+            <span class="font-bold text-slate-600">{{ cycleList.length > 0 ? cycleList[0]?.userName : '暂无数据' }} (工号: {{ cycleList.length > 0 ? cycleList[0]?.userId : '---' }})</span> · 查阅您参与的所有考核周期的目标与最终评价结果。
           </p>
         </div>
 
-        <div class="grid gap-4">
+        <div v-if="cycleList.length > 0" class="grid gap-4">
           <el-card
             v-for="cycle in cycleList"
             :key="cycle.cycleId"
@@ -147,6 +145,7 @@ const qualitativeResults = computed(() => {
             class="custom-card-hover border-slate-200 !rounded-3xl overflow-hidden cursor-pointer animate-in fade-in slide-in-from-bottom-4 duration-500 group"
             @click="selectedCycleId = cycle.cycleId"
           >
+            <!-- ... existing content ... -->
             <div
               class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
             >
@@ -208,17 +207,6 @@ const qualitativeResults = computed(() => {
                       {{ cycle.overallScore }}
                     </div>
                   </div>
-                  <div
-                    :class="[
-                      'w-10 h-10 rounded-lg flex items-center justify-center font-black text-lg shadow-sm border border-white/50',
-                      cycle.grade === 'A' ? 'bg-emerald-100 text-emerald-700' :
-                      cycle.grade === 'B' ? 'bg-blue-100 text-blue-700' :
-                      cycle.grade === 'C' ? 'bg-amber-100 text-amber-700' :
-                      'bg-slate-100 text-slate-700',
-                    ]"
-                  >
-                    {{ cycle.grade || '-' }}
-                  </div>
                 </div>
                 <div
                   v-else-if="String(cycle.status) === '0'"
@@ -234,6 +222,28 @@ const qualitativeResults = computed(() => {
               </div>
             </div>
           </el-card>
+        </div>
+        <div 
+          v-else-if="!loading" 
+          class="flex flex-col items-center justify-center py-24 bg-white/40 rounded-3xl border border-dashed border-slate-200 shadow-sm mx-3"
+        >
+          <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-6">
+            <el-icon :size="32" class="text-slate-300"><Notebook /></el-icon>
+          </div>
+          <h3 class="text-xl font-black text-slate-800 mb-2">暂无绩效考核数据</h3>
+          <p class="text-slate-500 text-center max-w-sm leading-relaxed px-6 text-sm">
+            您当前尚未参与任何生效的绩效考核周期。如有疑问，请咨询所属部门 HR 或管理员。
+          </p>
+          <div class="mt-8">
+            <el-button
+              type="primary"
+              plain
+              class="!rounded-xl"
+              @click="fetchList"
+            >
+              刷新数据
+            </el-button>
+          </div>
         </div>
       </div>
     </template>
@@ -334,10 +344,13 @@ const qualitativeResults = computed(() => {
                       <div :class="['absolute left-0 top-0 bottom-0 w-1.5 transition-colors', ['2', '1'].includes(currentStatus) || [2, 1].includes(selectedCycle.status) ? 'bg-emerald-400' : currentStatus === '0' ? 'bg-amber-400' : 'bg-slate-300']" />
                       <div class="px-5 py-3 flex flex-col md:flex-row gap-6 items-center justify-between">
                         <div class="flex-1 space-y-5 w-full">
-                          <div class="flex items-center gap-3">
+                          <div class="flex items-center gap-3 flex-wrap">
                             <span class="w-6 h-6 rounded-full border border-slate-200 text-slate-400 text-xs flex items-center justify-center font-bold">{{ index + 1 }}</span>
                             <h5 class="text-[22px] font-black text-[#1e293b] leading-tight">{{ ind.indicatorName }}</h5>
                             <span class="px-2.5 py-0.5 bg-blue-50 text-blue-500 text-[11px] font-bold rounded-full border-blue-100/50">{{ ind.month }}</span>
+                          </div>
+                          <div v-if="ind.indicatorDescription" class="text-[13px] text-slate-400 leading-relaxed mt-1 mb-4">
+                            <span class="text-slate-600 font-bold">指标描述：</span>{{ ind.indicatorDescription }}
                           </div>
                           <div class="flex flex-wrap gap-3">
                             <div class="flex items-center bg-slate-50 px-3.5 py-2 rounded-lg border border-slate-100 text-[13px] shadow-sm">
@@ -374,64 +387,108 @@ const qualitativeResults = computed(() => {
               
               <div v-if="String(selectedCycle.status) === '1' || currentStatus === '1'" class="mt-2 space-y-6 animate-in fade-in duration-700">
                 <!-- Score Dashboard -->
-                <div class="relative overflow-hidden group rounded-2xl bg-gradient-to-br from-indigo-600 via-blue-600 to-purple-600 p-8 text-white shadow-xl">
+                <div class="relative overflow-hidden group rounded-[24px] bg-gradient-to-br from-[#4f46e5] via-[#3b82f6] to-[#8b5cf6] p-6 text-white shadow-xl transition-all duration-500 hover:shadow-indigo-200/40">
                   <div class="absolute inset-0 opacity-10 pointer-events-none">
-                    <el-icon class="absolute -left-10 -bottom-10 text-[120px] rotate-12"><TrendCharts /></el-icon>
-                    <el-icon class="absolute -right-10 -top-10 text-[120px] -rotate-12"><Award /></el-icon>
+                    <el-icon class="absolute -left-6 -bottom-6 text-[120px] rotate-12"><TrendCharts /></el-icon>
+                    <el-icon class="absolute -right-6 -top-6 text-[120px] -rotate-12"><Award /></el-icon>
                   </div>
-                  <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+                  <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                     <div class="flex items-center gap-6">
-                      <div class="bg-white/10 backdrop-blur-md rounded-3xl p-5 shadow-2xl border border-white/20"><el-icon :size="48" class="text-blue-100"><Award /></el-icon></div>
+                      <div class="bg-white/10 backdrop-blur-xl rounded-[20px] p-4 shadow-xl border border-white/20 ring-1 ring-white/30">
+                        <el-icon :size="40" class="text-blue-50 drop-shadow-md"><Award /></el-icon>
+                      </div>
                       <div class="text-left">
-                        <div class="text-blue-100/70 font-black text-xs uppercase tracking-[0.2em] mb-1">综合考核得分</div>
-                        <div class="text-7xl font-black tracking-tighter leading-none shadow-sm drop-shadow-md">{{ selectedCycle.overallScore }}</div>
+                        <div class="flex items-center gap-2 mb-2">
+                          <div class="h-0.5 w-6 rounded-full bg-white/40"></div>
+                          <div class="text-blue-100 font-bold text-xs uppercase tracking-[0.2em] drop-shadow-sm">综合考核得分</div>
+                        </div>
+                        <div class="flex items-baseline gap-4">
+                          <div class="text-6xl font-black tracking-tighter leading-none drop-shadow-xl filter saturate-[1.2]">
+                            {{ selectedCycle.overallScore }}
+                          </div>
+                          <div v-if="selectedCycle.grade" class="px-4 py-1.5 bg-white/20 backdrop-blur-lg rounded-[14px] border border-white/30 shadow-lg self-end mb-0.5 scale-100 transform hover:scale-110 transition-transform duration-500 cursor-default">
+                             <div class="text-[8px] opacity-70 font-black uppercase text-center tracking-tighter">评估等第</div>
+                             <div class="text-xl font-black text-white italic tracking-widest drop-shadow-md mt-0.5 leading-none">{{ selectedCycle.grade }}</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div class="grid grid-cols-3 md:flex md:items-center gap-4 lg:gap-10 w-full md:w-auto">
-                      <div class="bg-black/10 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/5">
-                        <div class="text-2xl font-black">{{ quantitativeResults.length }}</div>
-                        <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">定量</div>
-                      </div>
-                      <div class="bg-black/10 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/5">
-                        <div class="text-2xl font-black">{{ qualitativeResults.length }}</div>
-                        <div class="text-[10px] text-white/50 font-bold mt-1 uppercase">定性</div>
-                      </div>
-                      <div class="bg-white/15 backdrop-blur rounded-2xl p-4 flex-1 text-center border border-white/20 shadow-xl scale-110">
-                        <div class="text-4xl font-black text-white leading-none">{{ selectedCycle.grade || '-' }}</div>
-                        <div class="text-[10px] text-blue-100/70 font-bold mt-1 uppercase">等第</div>
-                      </div>
+                    
+                    <div class="hidden lg:block opacity-10 transform scale-[1.8] rotate-12 select-none pointer-events-none">
+                       <el-icon><CircleCheck /></el-icon>
                     </div>
                   </div>
                 </div>
 
                 <!-- Result Details -->
-                <div class="space-y-5 text-left">
-                  <div class="flex items-center gap-3">
-                    <div class="bg-blue-100 p-2 rounded-xl"><el-icon class="text-blue-600"><Calculator /></el-icon></div>
-                    <h4 class="text-xl font-black text-slate-900">系统业绩测算明细</h4>
+                <div class="space-y-6 text-left">
+                  <div class="flex items-center justify-between px-2">
+                    <div class="flex items-center gap-4">
+                      <div class="bg-indigo-600 p-2.5 rounded-[14px] shadow-lg shadow-indigo-100"><el-icon class="text-white" :size="20"><Calculator /></el-icon></div>
+                      <div>
+                        <h4 class="text-2xl font-black text-slate-900 tracking-tight">绩效考评指标明细</h4>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-0.5">Performance Indicator Breakdown</p>
+                      </div>
+                    </div>
                   </div>
+                  
                   <div class="grid gap-4">
-                    <el-card v-for="(ind, index) in quantitativeResults" :key="ind.id" shadow="hover" class="border-slate-200 custom-result-card">
-                      <div class="p-2">
-                        <div class="flex items-center justify-between mb-6">
-                          <div class="flex items-center gap-3">
-                            <span class="h-7 w-7 bg-blue-50 text-blue-600 flex items-center justify-center rounded-lg text-sm font-black">{{ index + 1 }}</span>
-                            <h5 class="font-black text-slate-800 text-lg">{{ ind.indicatorName }}</h5>
-                          </div>
-                          <div class="text-right">
-                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">占比权重</div>
-                            <div class="text-lg font-black text-slate-700 leading-none mt-1">{{ ind.weight }}%</div>
+                    <el-card v-for="(ind, index) in quantitativeResults" :key="ind.id" shadow="always" class="!border-slate-100/50 !rounded-[20px] relative overflow-hidden">
+                      <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-400" />
+                      <div class="px-5 py-3">
+                        <!-- Header: Title & Info -->
+                        <div class="flex flex-col md:flex-row gap-6 items-center justify-between mb-4">
+                          <div class="flex-1 space-y-4 w-full">
+                            <div class="flex items-center gap-3 flex-wrap">
+                              <span class="w-6 h-6 rounded-full border border-slate-200 text-slate-400 text-xs flex items-center justify-center font-bold">{{ index + 1 }}</span>
+                              <h5 class="text-[22px] font-black text-[#1e293b] leading-tight">{{ ind.indicatorName }}</h5>
+                              <span class="px-2.5 py-0.5 bg-blue-50 text-blue-500 text-[11px] font-bold rounded-full border-blue-50">{{ ind.month || '年度' }}</span>
+                            </div>
+                            <div v-if="ind.indicatorDescription" class="text-[13px] text-slate-400 leading-relaxed mt-1 mb-4">
+                              <span class="text-slate-600 font-bold">指标描述：</span>{{ ind.indicatorDescription }}
+                            </div>
+                            <div v-if="ind.indicatorType" class="flex flex-wrap gap-3">
+                              <div class="flex items-center bg-slate-50 px-3.5 py-1.5 rounded-lg border border-slate-100 text-[12px] shadow-sm text-slate-500 font-bold">
+                                {{ ind.indicatorType }}
+                              </div>
+                            </div>
                           </div>
                         </div>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                          <div class="bg-slate-50/80 border border-slate-100 p-4 rounded-xl">
-                            <div class="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-tighter">目标参考</div>
-                            <div class="font-black text-slate-900">{{ ind.targetValue }}</div>
+
+                        <!-- Data Grid: Target, Actual, Score -->
+                        <div class="flex flex-col md:flex-row gap-4">
+                          <!-- Target Box -->
+                          <div class="flex-1 assessment-base-box bg-[#f8faff] rounded-[20px] border border-blue-50 px-5 py-2.5 flex flex-col min-h-[90px]">
+                            <div class="flex justify-between items-center mb-1">
+                              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">目标参考</span>
+                              <div class="bg-white/60 px-2 py-0.5 rounded-full text-[10px] font-black text-blue-400 border border-blue-50">权重 {{ ind.weight }}%</div>
+                            </div>
+                            <div class="flex-1 text-3xl font-black text-[#1e3a8a] tracking-tight leading-none flex items-center">{{ ind.targetValue || '---' }}</div>
                           </div>
-                          <div class="bg-gradient-to-br from-indigo-50 to-blue-100 border border-blue-200 p-4 rounded-xl shadow-sm scale-105 text-left">
-                            <div class="text-[10px] font-black text-blue-800 mb-2 uppercase tracking-tighter">当前状态</div>
-                            <div class="font-black text-indigo-700 text-lg leading-none drop-shadow-sm">{{ ind.status ? '已确认' : '处理中' }}</div>
+                          
+                          <!-- Completed Box -->
+                          <div class="flex-1 assessment-base-box bg-[#f8faff] rounded-[20px] border border-blue-50 px-5 py-2.5 flex flex-col min-h-[90px]">
+                            <div class="flex justify-between items-center mb-1">
+                              <span class="text-[11px] font-bold text-slate-400 uppercase tracking-tight">实际完成</span>
+                            </div>
+                            <div class="flex-1 text-3xl font-black text-[#1e3a8a] tracking-tight leading-none flex items-center">{{ ind.completedValue || ind.actualValue || '---' }}</div>
                           </div>
+
+                          <!-- Final Score Box -->
+                          <div class="flex-1 assessment-base-box bg-blue-600 rounded-[20px] border border-blue-700 px-5 py-2.5 flex flex-col min-h-[90px] shadow-lg shadow-blue-100/50 relative overflow-hidden group/score">
+                            <div class="flex justify-between items-center mb-1 relative z-10">
+                              <span class="text-[11px] font-bold text-blue-100 uppercase tracking-tight">考核得分</span>
+                              <el-icon class="text-white/20" :size="20"><Calculator /></el-icon>
+                            </div>
+                            <div class="flex-1 text-4xl font-black text-white tracking-tight leading-none flex items-center relative z-10">{{ ind.finalScore ?? ind.score ?? ind.initialScore ?? '---' }}</div>
+                            <div class="absolute -right-2 -bottom-2 text-white/5 text-6xl rotate-12 transition-transform duration-700 group-hover/score:scale-110"><Calculator /></div>
+                          </div>
+                        </div>
+
+                        <!-- Footer: Remarks -->
+                        <div v-if="ind.comment" class="mt-4 pt-4 border-t border-slate-50 flex gap-3 px-1">
+                          <el-icon class="text-slate-300 mt-1" :size="16"><MessageSquare /></el-icon>
+                          <p class="text-[13px] text-slate-500 font-medium italic leading-relaxed flex-1">{{ ind.comment }}</p>
                         </div>
                       </div>
                     </el-card>
